@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nova 12.31 - Cohere & Groq Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { slate: { 925: '#0f172a' } },
+                    animation: { 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite', 'spin-slow': 'spin 2s linear infinite' }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .dot-flashing {
+            position: relative; width: 6px; height: 6px; border-radius: 5px; background-color: #9880ff; color: #9880ff;
+            animation: dot-flashing 1s infinite linear alternate; animation-delay: 0.5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: ""; display: inline-block; position: absolute; top: 0; width: 6px; height: 6px; border-radius: 5px; background-color: #9880ff; color: #9880ff; animation: dot-flashing 1s infinite alternate;
+        }
+        .dot-flashing::before { left: -10px; animation-delay: 0s; }
+        .dot-flashing::after { left: 10px; animation-delay: 1s; }
+        @keyframes dot-flashing { 0% { background-color: #9880ff; } 50%, 100% { background-color: rgba(152, 128, 255, 0.2); } }
+        /* Enhanced content styling for Docs content */
+        .msg-content a, #doc-content-area a { color: #60a5fa; text-decoration: underline; word-break: break-all; cursor: pointer; }
+        .msg-content img, #doc-content-area img { max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; border: 1px solid rgba(255,255,255,0.1); }
+        .msg-content p, #doc-content-area div { margin-bottom: 0.5em; line-height: 1.6; }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        .msg-group:hover .msg-actions { opacity: 1; }
+        .msg-actions { opacity: 0; transition: opacity 0.2s; }
+        /* Recording Pulse */
+        @keyframes recordPulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        .recording-dot { animation: recordPulse 1.5s infinite; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans overflow-hidden selection:bg-blue-500/30">
+
+    <div class="flex h-[100dvh] w-full">
+        <!-- Sidebar -->
+        <aside class="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 p-6 flex-shrink-0">
+            <div class="flex items-center space-x-3 mb-10 px-2">
+                <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="ph-bold ph-infinity text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA</h1>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Cohere & Groq Edition</p>
+                </div>
+            </div>
+            <nav class="flex-1 space-y-2">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all"><i class="ph ph-chats-circle text-xl"></i><span class="font-medium">助理對話</span></button>
+                <button onclick="switchTab('schedule')" id="nav-schedule" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i class="ph ph-calendar-check text-xl"></i><span class="font-medium">行程管理</span></button>
+                <button onclick="switchTab('notes')" id="nav-notes" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i class="ph ph-notebook text-xl"></i><span class="font-medium">筆記/文件</span></button>
+            </nav>
+            <div class="mt-auto space-y-3">
+                <button onclick="openSettings()" class="flex items-center space-x-2 text-xs text-slate-500 hover:text-slate-300 w-full px-2"><i class="ph ph-gear"></i><span>設定 & API</span></button>
+                <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                    <div class="flex items-center space-x-2"><i id="status-icon" class="ph-fill ph-globe text-blue-400 text-lg"></i><span id="status-name" class="font-bold text-sm">Gemini</span></div>
+                    <p id="model-version-display" class="text-[10px] text-slate-500 mt-1">Ready</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
+            <!-- Mobile Header -->
+            <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova</span></div>
+                <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
+                    <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="openSettings()"><i class="ph ph-gear text-slate-400 text-xl"></i></button>
+                    <button onclick="toggleMobileMenu()"><i class="ph ph-list text-white text-2xl"></i></button>
+                </div>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-40 bg-slate-950/95 pt-20 px-6 backdrop-blur-md">
+                <nav class="space-y-4">
+                    <button onclick="switchTab('dashboard'); toggleMobileMenu()" class="flex items-center space-x-3 w-full p-4 rounded-xl bg-slate-800 text-white"><i class="ph ph-chats-circle text-xl"></i><span>助理對話</span></button>
+                    <button onclick="switchTab('schedule'); toggleMobileMenu()" class="flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800"><i class="ph ph-calendar-check text-xl"></i><span>行程管理</span></button>
+                    <button onclick="switchTab('notes'); toggleMobileMenu()" class="flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800"><i class="ph ph-notebook text-xl"></i><span>筆記/文件</span></button>
+                </nav>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                    <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-white">設定</h3><button onclick="closeSettings()"><i class="ph ph-x text-2xl text-slate-400"></i></button></div>
+                    <div class="space-y-4 max-h-[60vh] overflow-y-auto">
+                        
+                        <!-- Docs Monitor Section -->
+                        <div class="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 p-4 rounded-xl border border-blue-500/50 shadow-inner space-y-4">
+                            <div>
+                                <label class="block text-xs text-blue-300 mb-2 font-bold flex items-center gap-2"><i class="ph-fill ph-robot"></i> 系統代理 Google Doc (搜尋/爬蟲)</label>
+                                <input type="text" id="key-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs focus:border-blue-500 outline-none mb-2" placeholder="Apps Script URL (for Agent)">
+                            </div>
+                            
+                            <div class="grid grid-cols-1 gap-2">
+                                <div>
+                                    <label class="block text-xs text-emerald-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 A URL</label>
+                                    <input type="text" id="key-note-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none" placeholder="Apps Script URL (Notebook A)">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-teal-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 B URL</label>
+                                    <input type="text" id="key-note-doc-url-2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-teal-500 outline-none" placeholder="Apps Script URL (Notebook B)">
+                                </div>
+                            </div>
+
+                            <div class="border-t border-white/10 pt-2">
+                                 <label class="block text-xs text-red-300 mb-1 font-bold"><i class="ph-fill ph-upload"></i> Google Drive 上傳 URL (錄音用)</label>
+                                 <input type="text" id="key-drive-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500 outline-none" placeholder="Apps Script URL (Drive Upload)">
+                                 
+                                 <!-- SCRIPT HELPER -->
+                                 <details class="mt-2 p-2 bg-slate-950/50 rounded border border-slate-700/50">
+                                    <summary class="text-[10px] text-blue-400 cursor-pointer font-bold select-none hover:text-blue-300"><i class="ph-bold ph-code"></i> 如何建立 Google Drive 上傳腳本？(點擊展開)</summary>
+                                    <div class="mt-2 text-[10px] text-slate-400 leading-relaxed">
+                                        <p class="mb-1">1. 建立新的 Google Apps Script 專案。</p>
+                                        <p class="mb-1">2. 貼上以下程式碼 (覆蓋原本內容)：</p>
+                                        <pre class="bg-slate-900 p-2 rounded border border-slate-700 text-green-400 font-mono select-all overflow-x-auto whitespace-pre-wrap break-all">
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var filename = data.filename;
+    var mimeType = data.mimeType;
+    var base64 = data.data;
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, filename);
+    var file = DriveApp.createFile(blob);
+    return ContentService.createTextOutput(JSON.stringify({status: "success", fileId: file.getId(), url: file.getUrl()})).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", message: error.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+                                        </pre>
+                                        <p class="mt-2 mb-1">3. 點擊「部署」>「新增部署」。</p>
+                                        <p class="mb-1">4. 類型選「網頁應用程式」，執行身分「我」，<strong class="text-red-400">誰可以存取選「任何人」</strong>。</p>
+                                        <p>5. 複製產生的網頁應用程式網址，貼入上方欄位。</p>
+                                    </div>
+                                 </details>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <span id="doc-monitor-status" class="text-[10px] text-slate-500">未設定</span>
+                                <button onclick="testDocConnection()" class="text-[10px] bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500">測試連線</button>
+                            </div>
+                        </div>
+                        <div class="space-y-3 pt-2">
+                            <div><label class="block text-xs text-blue-400 mb-1">Gemini API Key</label><input type="password" id="key-gemini" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-blue-500 outline-none"></div>
+                            <div><label class="block text-xs text-green-400 mb-1">SerpApi Key</label><input type="password" id="key-serpapi" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-green-500 outline-none" placeholder="Your SerpApi Key"></div>
+                            <div><label class="block text-xs text-rose-400 mb-1">Groq API Key</label><input type="password" id="key-groq" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-rose-500 outline-none"></div>
+                            <div><label class="block text-xs text-violet-400 mb-1">Cohere API Key</label><input type="password" id="key-cohere" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-violet-500 outline-none"></div>
+                            <div><label class="block text-xs text-orange-400 mb-1">Cerebras API Key</label><input type="password" id="key-cerebras" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-orange-500 outline-none"></div>
+                            <div><label class="block text-xs text-emerald-400 mb-1">OpenAI API Key</label><input type="password" id="key-openai" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none"></div>
+                            <div><label class="block text-xs text-slate-300 mb-1">Grok API Key</label><input type="password" id="key-grok" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-slate-500 outline-none"></div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3"><button onclick="closeSettings()" class="px-4 py-2 text-slate-400 text-sm">取消</button><button onclick="saveKeys()" class="px-6 py-2 bg-blue-600 text-white rounded-lg">儲存</button></div>
+                </div>
+            </div>
+
+            <!-- ALARM MODAL -->
+            <div id="alarm-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6">
+                <div class="bg-slate-900 border border-red-500/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.3)] animate-pulse">
+                    <i class="ph-fill ph-alarm text-6xl text-red-500 mb-4 inline-block animate-bounce"></i>
+                    <h3 class="text-2xl font-bold text-white mb-2">時間到！</h3>
+                    <p id="alarm-text" class="text-lg text-slate-300 mb-8">提醒事項內容</p>
+                    <button onclick="stopAlarm()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
+                        <i class="ph-bold ph-check-circle mr-2"></i> 確 定 (停止)
+                    </button>
+                </div>
+            </div>
+
+            <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
+                <div class="flex-1 flex flex-col h-full min-w-0 relative">
+                    <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar">
+                         <div class="flex items-center space-x-2 mr-4">
+                            <span id="web-search-badge" class="hidden md:flex items-center space-x-1 text-[10px] bg-blue-900/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full"><i class="ph-bold ph-globe"></i><span>連網搜尋</span></span>
+                            <!-- Recording Indicator -->
+                            <div id="recording-status" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2">
+                                <div class="w-2 h-2 bg-red-500 rounded-full recording-dot"></div>
+                                <span class="text-xs text-red-200 font-bold">錄音中...</span>
+                            </div>
+                            <span id="doc-monitor-badge" class="hidden items-center space-x-1 text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse"><i class="ph-bold ph-arrows-clockwise"></i><span>Docs 監控中</span></span>
+                            <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
+                         </div>
+                         <div class="flex space-x-1">
+                            <button onclick="setModel('gemini')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white transition-all whitespace-nowrap" data-model="gemini">Gemini</button>
+                            <button onclick="setModel('groq')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="groq">Groq</button>
+                            <button onclick="setModel('cohere')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="cohere">Cohere</button>
+                            <button onclick="setModel('cerebras')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="cerebras">Cerebras</button>
+                            <button onclick="setModel('gpt')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="gpt">GPT</button>
+                         </div>
+                    </div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
+                    <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                        <div id="input-wrapper" class="flex items-center bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
+                            <!-- NEW: Continuous Mode Button -->
+                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
+                            
+                            <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="切換搜尋 (Gemini Only)"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
+                            <button id="voice-btn" onclick="toggleVoice()" class="p-3 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
+                            <input type="text" id="user-input" placeholder="貼上網址自動分析，或輸入「搜尋：關鍵字」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
+                            <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
+                        </div>
+                        <div id="search-hint" class="text-[10px] text-blue-400 mt-2 text-center hidden">🌐 已開啟連網搜尋 (Gemini)</div>
+                    </div>
+                </div>
+                
+                <!-- Right Sidebar -->
+                <div class="hidden lg:flex w-80 bg-slate-900 flex-col p-6 space-y-6 border-l border-slate-800 overflow-y-auto shrink-0">
+                    <div class="bg-gradient-to-br from-indigo-900 to-slate-800 rounded-3xl p-6 text-white shadow-lg border border-slate-700 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start">
+                                <div><h3 class="text-slate-300 text-xs font-bold uppercase mb-1">目前天氣</h3><div class="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="cycleManualLocation()"><i class="ph-fill ph-map-pin text-blue-400"></i><span id="location-name" class="text-lg font-bold text-white border-b border-dashed border-slate-500">未定位</span></div></div><i id="weather-icon" class="ph-fill ph-cloud-sun text-4xl text-yellow-400"></i>
+                            </div>
+                            <div class="mt-4 flex items-end space-x-2"><span id="weather-temp" class="text-5xl font-bold">--°</span><span id="weather-desc" class="text-slate-300 text-sm mb-2">--</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 rounded-2xl p-5 border border-slate-800">
+                        <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-200 text-sm flex items-center gap-2"><i class="ph-fill ph-calendar-check text-blue-500"></i>近期任務</h3><button onclick="switchTab('schedule')" class="text-xs text-blue-400">管理</button></div>
+                        <div id="mini-todo-list" class="space-y-2"></div>
+                    </div>
+                    <div class="bg-slate-950 rounded-2xl p-5 border border-slate-800">
+                         <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-200 text-sm flex items-center gap-2"><i class="ph-fill ph-notebook text-emerald-500"></i>最新筆記</h3><button onclick="switchTab('notes')" class="text-xs text-blue-400">查看</button></div>
+                        <div id="mini-note-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Views -->
+            <div id="view-schedule" class="hidden flex-col h-full w-full p-6 overflow-y-auto"><div class="max-w-3xl mx-auto w-full"><header class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">行程管理</h2><button onclick="addTodoManually()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2"><i class="ph-bold ph-plus"></i><span>新增</span></button></header><div id="full-todo-list" class="space-y-3"></div></div></div>
+            
+            <!-- Notes View with Write Feature (Updated) -->
+            <div id="view-notes" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
+                <div class="max-w-5xl mx-auto w-full">
+                    
+                    <!-- Google Docs Writer Widget -->
+                    <div class="bg-gradient-to-r from-blue-900/40 to-slate-900 border border-blue-500/30 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-lg">
+                        <div class="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-notebook text-emerald-400"></i> 隨手記事本</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="openNoteDocViewer()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg border border-slate-600 flex items-center gap-2 transition-colors"><i class="ph-bold ph-book-open"></i> 閱讀</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Notebook Switcher -->
+                            <div class="flex space-x-2 mb-4 bg-slate-950/50 p-1 rounded-lg inline-flex">
+                                <button onclick="setActiveNotebook(1)" id="btn-nb-1" class="flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white">筆記本 A</button>
+                                <button onclick="setActiveNotebook(2)" id="btn-nb-2" class="flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white">筆記本 B</button>
+                            </div>
+                            
+                            <!-- Tabs -->
+                            <div class="flex space-x-2 mb-3">
+                                <button onclick="setWriteMode('text')" id="btn-mode-text" class="text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all">純文字 / 貼上圖片 (Ctrl+V)</button>
+                                <button onclick="setWriteMode('image')" id="btn-mode-image" class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all">圖片網址</button>
+                                <button onclick="setWriteMode('link')" id="btn-mode-link" class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all">超連結</button>
+                            </div>
+
+                            <div class="flex flex-col gap-3">
+                                <!-- Inputs -->
+                                <div class="relative">
+                                    <textarea id="doc-input-main" rows="5" placeholder="輸入文字內容，或直接 Ctrl+V 貼上圖片..." class="w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none pr-24 resize-none" onkeydown="handleNoteKeydown(event)"></textarea>
+                                    <div id="paste-indicator" class="hidden absolute right-3 top-3 text-[10px] text-emerald-400 bg-emerald-900/50 px-2 py-0.5 rounded border border-emerald-500/50 animate-pulse">
+                                        <i class="ph-bold ph-image"></i> 圖片已就緒
+                                    </div>
+                                    <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
+                                    
+                                    <!-- GALLERY UPLOAD BTN -->
+                                    <button onclick="triggerPhotoUpload()" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></button>
+                                    <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
+
+                                    <!-- CAMERA UPLOAD BTN -->
+                                    <button onclick="triggerCameraUpload()" class="absolute right-20 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="拍照上傳"><i class="ph-bold ph-camera text-xl"></i></button>
+                                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event)">
+
+                                    <!-- NOTE VOICE BTN -->
+                                    <button onclick="toggleNoteVoice()" id="note-voice-btn" class="absolute right-10 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="語音輸入"><i id="note-voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
+                                </div>
+                                <input type="text" id="doc-input-sub" placeholder="輸入連結網址 (例如: https://...)" class="hidden w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
+                                
+                                <div class="flex justify-end">
+                                    <button onclick="handleDocWriteBtn()" id="note-send-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                                        <i class="ph-bold ph-paper-plane-right"></i> 發送寫入
+                                    </button>
+                                </div>
+                            </div>
+                            <p id="active-notebook-label" class="text-[10px] text-slate-400 mt-2 opacity-80">* 目前寫入目標：筆記本 A</p>
+                        </div>
+                    </div>
+
+                    <header class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">本地筆記中心</h2><button onclick="addNoteManually()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2"><i class="ph-bold ph-plus"></i><span>新增</span></button></header>
+                    <div id="full-note-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+            
+            <!-- Full Doc Viewer Modal -->
+            <div id="doc-viewer-modal" class="hidden fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col p-4">
+                <div class="flex justify-between items-center mb-4 shrink-0">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-fill ph-book-open text-blue-400"></i> 文件瀏覽器</h3>
+                    <div class="flex gap-2">
+                        <button onclick="refreshNoteDocView()" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-xs"><i class="ph-bold ph-arrows-clockwise"></i> 重新整理</button>
+                        <button onclick="closeDocViewer()" class="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700"><i class="ph-bold ph-x text-lg"></i></button>
+                    </div>
+                </div>
+                <div class="flex-1 bg-white text-slate-900 rounded-xl p-6 overflow-y-auto shadow-2xl font-serif leading-relaxed text-lg" id="doc-content-area">
+                    <div class="flex items-center justify-center h-full text-slate-400 gap-2"><div class="dot-flashing bg-slate-400"></div> 載入中...</div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let recognition = null;
+        let noteRecognition = null;
+        let voiceTimer = null;
+        let initialInput = "";
+        
+        let alarmInterval = null;
+        let alarmAudioCtx = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        const appState = {
+            currentModel: 'gemini', detectedGeminiModel: null,
+            docMonitorUrl: localStorage.getItem('nova_doc_url') || '',
+            noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', 
+            noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '',
+            activeNotebook: 1,
+            driveUrl: localStorage.getItem('nova_drive_url') || '',
+            
+            messages: JSON.parse(localStorage.getItem('nova_messages') || '[]'),
+            todos: JSON.parse(localStorage.getItem('nova_todos') || '[]'),
+            notes: JSON.parse(localStorage.getItem('nova_notes') || '[]'),
+            weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
+            keys: { 
+                gemini: localStorage.getItem('nova_key_gemini')||'', 
+                cerebras: localStorage.getItem('nova_key_cerebras')||'', 
+                groq: localStorage.getItem('nova_key_groq')||'',
+                cohere: localStorage.getItem('nova_key_cohere')||'',
+                openai: localStorage.getItem('nova_key_openai')||'', 
+                grok: localStorage.getItem('nova_key_grok')||'',
+                serpapi: localStorage.getItem('nova_key_serpapi')||''
+            },
+            isThinking: false, isListening: false, isNoteListening: false, isSearchEnabled: false,
+            isContinuous: false,
+            manualLocIndex: 0,
+            manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
+            pendingReminder: null,
+            reminderStage: 0 
+        };
+        
+        const MODEL_CONFIG = {
+            gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' },
+            groq: { name: 'Groq', color: 'text-rose-400', bg: 'bg-rose-600', icon: 'ph-rocket' },
+            cohere: { name: 'Cohere', color: 'text-violet-400', bg: 'bg-violet-600', icon: 'ph-cpu' },
+            cerebras: { name: 'Cerebras', color: 'text-orange-400', bg: 'bg-orange-600', icon: 'ph-rocket-launch' },
+            gpt: { name: 'ChatGPT', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' },
+            grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' }
+        };
+
+        // --- UTILS ---
+        function saveMessages() { localStorage.setItem('nova_messages', JSON.stringify(appState.messages)); }
+        function saveData() { localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); }
+        function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+        function formatMessage(text) { if (!text) return ''; let safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>'); safe = safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-blue-400 underline break-all">$1</a>'); return safe.replace(/\n/g, '<br>'); }
+        function escapeHtml(t){return t?t.replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">"):""}
+
+        // --- GLOBAL HANDLERS ---
+        function handleEnter(e) { if(e.key==='Enter') handleSendMessage(); }
+
+        // --- RENDERERS ---
+        function renderAll() { renderMessages(); renderTodos(); renderNotes(); renderWeather(); }
+        function renderMessages() { 
+            const container = document.getElementById('chat-container');
+            if(!container) return;
+            container.innerHTML = appState.messages.map(msg => { 
+                const isUser = msg.sender === 'user'; 
+                const modelInfo = isUser ? null : MODEL_CONFIG[msg.model]; 
+                let sourcesHTML = ''; 
+                if (msg.sources?.length) sourcesHTML = `<div class="mt-3 pt-3 border-t border-slate-700/50"><p class="text-[10px] text-slate-400 mb-1 font-bold">來源：</p><div class="flex flex-wrap gap-2">${msg.sources.map((s,i)=>`<a href="${s.uri}" target="_blank" class="text-[10px] bg-slate-950/50 text-blue-400 px-2 py-1 rounded border border-slate-700/50 block truncate max-w-[150px]">${i+1}. ${s.title}</a>`).join('')}</div></div>`; 
+                return `<div class="group flex ${isUser ? 'justify-end' : 'justify-start items-start space-x-3'} fade-in relative mb-4">
+                    ${!isUser ? `<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${modelInfo?.bg||'bg-slate-700'}"><i class="ph-fill ${modelInfo?.icon||'ph-robot'} text-white text-sm"></i></div>` : ''}
+                    <div class="msg-group relative max-w-[90%] md:max-w-[80%] rounded-2xl p-4 shadow-sm ${isUser ? 'bg-slate-800 text-white rounded-br-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'}">
+                        ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-1 block ${modelInfo?.color||'text-slate-400'} opacity-80">${modelInfo?.name||'System'}</span>` : ''}
+                        <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text, msg.isHtml)}</div>
+                        ${sourcesHTML}
+                        <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
+                        <button onclick="deleteMessage(${msg.id})" class="msg-actions absolute top-2 right-2 p-1 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/50 rounded-full"><i class="ph-bold ph-trash text-xs"></i></button>
+                    </div>
+                </div>`; 
+            }).join(''); 
+            container.scrollTop = container.scrollHeight; 
+        }
+
+        function renderThinkingState(show) { 
+            const el = document.getElementById('thinking-indicator'); 
+            const container = document.getElementById('chat-container');
+            if(show && !el && container) container.insertAdjacentHTML('beforeend', `<div id="thinking-indicator" class="flex justify-start items-center space-x-3 fade-in"><div class="w-8 h-8 rounded-full flex items-center justify-center ${MODEL_CONFIG[appState.currentModel].bg}"><i class="ph-fill ${MODEL_CONFIG[appState.currentModel].icon} text-white text-sm"></i></div><div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none"><div class="dot-flashing ml-2"></div></div></div>`); 
+            else if(!show && el) el.remove(); 
+        }
+
+        function renderTodos() { 
+            const el = document.getElementById('full-todo-list');
+            if(!el) return;
+            el.innerHTML=appState.todos.map(t=>`<div class="group bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between hover:border-slate-600 transition-all slide-in"><div class="flex items-center space-x-4"><button onclick="toggleTodo(${t.id})" class="text-slate-500 hover:text-blue-400"><i class="ph${t.done?'-fill ph-check-circle text-green-500':' ph-circle'} text-2xl"></i></button><div><p class="text-base ${t.done?'line-through text-slate-600':'text-slate-200'}">${escapeHtml(t.text)}</p><span class="text-xs text-slate-500">${t.time}</span></div></div><button onclick="deleteTodo(${t.id})" class="text-slate-500 hover:text-red-400 p-2"><i class="ph ph-trash"></i></button></div>`).join('')||'<p class="text-slate-500 text-center mt-10">無任務</p>'; 
+            const mini = document.getElementById('mini-todo-list');
+            if(mini) mini.innerHTML=appState.todos.slice(0,3).map(t=>`<div class="flex items-center space-x-3 p-2 bg-slate-950/50 rounded-lg border border-slate-800/50"><div class="w-1.5 h-8 rounded-full ${t.done?'bg-green-500':'bg-blue-500'}"></div><div class="flex-1 min-w-0"><p class="text-xs truncate ${t.done?'line-through text-slate-600':'text-slate-300'}">${escapeHtml(t.text)}</p></div></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無待辦</p>'; 
+        }
+
+        function renderNotes() { 
+            const el = document.getElementById('full-note-list');
+            if(!el) return;
+            el.innerHTML=appState.notes.map(n=>`<div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 hover:border-slate-600 flex flex-col h-48 relative overflow-hidden slide-in"><div class="flex justify-between mb-2"><h3 class="text-lg font-bold text-white truncate pr-2">${escapeHtml(n.title)}</h3><span class="text-xs text-slate-500 whitespace-nowrap">${n.date}</span></div><p class="text-slate-300 text-sm overflow-y-auto flex-1 scrollbar-thin">${escapeHtml(n.content)}</p><button onclick="deleteNote(${n.id})" class="absolute bottom-4 right-4 text-slate-600 hover:text-red-400"><i class="ph ph-trash text-lg"></i></button></div>`).join('')||'<p class="text-slate-500 text-center col-span-3 mt-10">無筆記</p>'; 
+            const mini = document.getElementById('mini-note-list');
+            if(mini) mini.innerHTML=appState.notes.slice(0,2).map(n=>`<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 cursor-pointer hover:border-slate-700" onclick="switchTab('notes')"><h4 class="text-slate-300 text-xs font-bold mb-1 truncate">${escapeHtml(n.title)}</h4><p class="text-slate-500 text-[10px] line-clamp-1">${escapeHtml(n.content)}</p></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無筆記</p>'; 
+        }
+
+        function renderWeather() { 
+            const {temp,condition,humidity,wind,loc}=appState.weather; 
+            let icon='ph-cloud',color='text-slate-400',desc='多雲'; 
+            if(condition==='sunny'){icon='ph-sun';color='text-yellow-400';desc='晴朗';} 
+            if(condition==='rainy'){icon='ph-cloud-rain';color='text-blue-400';desc='有雨';} 
+            
+            const locEl = document.getElementById('location-name'); 
+            if(locEl) locEl.innerText=loc; 
+            
+            const tempEl = document.getElementById('weather-temp'); 
+            if(tempEl) tempEl.innerText=`${temp}°`; 
+            
+            const descEl = document.getElementById('weather-desc'); 
+            if(descEl) descEl.innerText=desc; 
+            
+            const iconEl = document.getElementById('weather-icon'); 
+            if(iconEl) iconEl.className=`ph-fill ${icon} text-4xl ${color}`; 
+            
+            const humEl = document.getElementById('weather-humidity'); 
+            if(humEl) humEl.innerText=`濕度 ${humidity}%`; 
+            
+            const windEl = document.getElementById('weather-wind'); 
+            if(windEl) windEl.innerText=`風速 ${wind}km/h`; 
+            
+            const mTemp = document.getElementById('mobile-weather-temp'); 
+            if(mTemp) mTemp.innerText=loc==='未定位'?'定位':`${temp}°`; 
+            
+            const mIcon = document.getElementById('mobile-weather-icon'); 
+            if(mIcon) mIcon.className=`ph-fill ${loc==='未定位'?'ph-navigation-arrow':icon} ${color}`; 
+        }
+
+        function updateModelUI(){ 
+            const conf=MODEL_CONFIG[appState.currentModel]; 
+            const statusName = document.getElementById('status-name'); if(statusName) statusName.innerText=conf.name; 
+            const statusIcon = document.getElementById('status-icon'); if(statusIcon) statusIcon.className=`ph-fill ${conf.icon} text-lg ${conf.color}`; 
+            document.querySelectorAll('.model-pill').forEach(b=>{ b.className = `model-pill px-3 py-1 rounded-lg text-[10px] font-bold ${b.dataset.model===appState.currentModel ? `${conf.bg} text-white` : 'bg-slate-800 text-slate-400'} transition-all whitespace-nowrap`; }); 
+            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-center bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='cerebras'?'orange':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
+            const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
+            if(searchBtn) {
+                if(appState.isSearchEnabled){ searchBtn.classList.add('text-blue-400','bg-blue-900/30'); searchBtn.classList.remove('text-slate-500'); if(badge)badge.classList.remove('hidden'); if(hint)hint.classList.remove('hidden'); }
+                else{ searchBtn.classList.remove('text-blue-400','bg-blue-900/30'); searchBtn.classList.add('text-slate-500'); if(badge)badge.classList.add('hidden'); if(hint)hint.classList.add('hidden'); }
+            }
+            if(appState.currentModel!=='gemini'&&appState.isSearchEnabled){setModel('gemini');} 
+        }
+
+        // --- ACTIONS ---
+        function addMessage(text, sender, model, sources=[]) { appState.messages.push({id:Date.now(), text, sender, model, sources, time:getTime()}); saveMessages(); renderMessages(); }
+        function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); saveMessages(); renderMessages(); }
+        function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; saveMessages(); renderMessages(); } }
+        function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveData();renderTodos();} }
+        function deleteTodo(id){ appState.todos=appState.todos.filter(x=>x.id!==id); saveData(); renderTodos(); }
+        function deleteNote(id){ appState.notes=appState.notes.filter(x=>x.id!==id); saveData(); renderNotes(); }
+        function addTodoManually(){ const t=prompt("任務"); if(t){appState.todos.push({id:Date.now(),text:t,done:false,time:'手動'});saveData();renderTodos();} }
+        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){appState.notes.push({id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString()});saveData();renderNotes();} }
+        function switchTab(id){ ['dashboard','schedule','notes'].forEach(t=>document.getElementById(`view-${t}`).classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); document.getElementById(`view-${id}`).classList.add('flex'); document.querySelectorAll('.nav-item').forEach(b=>{b.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all';}); const active=document.getElementById(`nav-${id}`); if(active)active.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all'; }
+        function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
+        function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+        function saveKeys(){ 
+            appState.keys.gemini=document.getElementById('key-gemini').value.trim(); 
+            appState.keys.cerebras=document.getElementById('key-cerebras').value.trim(); 
+            appState.keys.groq=document.getElementById('key-groq').value.trim();
+            appState.keys.cohere=document.getElementById('key-cohere').value.trim();
+            appState.keys.openai=document.getElementById('key-openai').value.trim(); 
+            appState.keys.grok=document.getElementById('key-grok').value.trim(); 
+            appState.keys.serpapi=document.getElementById('key-serpapi').value.trim(); 
+            appState.docMonitorUrl=document.getElementById('key-doc-url').value.trim(); 
+            appState.noteDocUrl=document.getElementById('key-note-doc-url').value.trim(); 
+            appState.noteDocUrl2=document.getElementById('key-note-doc-url-2').value.trim(); 
+            appState.driveUrl=document.getElementById('key-drive-url').value.trim(); 
+            
+            localStorage.setItem('nova_key_gemini',appState.keys.gemini); 
+            localStorage.setItem('nova_key_cerebras',appState.keys.cerebras); 
+            localStorage.setItem('nova_key_groq',appState.keys.groq); 
+            localStorage.setItem('nova_key_cohere',appState.keys.cohere); 
+            localStorage.setItem('nova_key_openai',appState.keys.openai); 
+            localStorage.setItem('nova_key_grok',appState.keys.grok); 
+            localStorage.setItem('nova_key_serpapi',appState.keys.serpapi); 
+            localStorage.setItem('nova_doc_url', appState.docMonitorUrl); 
+            localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); 
+            localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); 
+            localStorage.setItem('nova_drive_url', appState.driveUrl); 
+            
+            appState.detectedGeminiModel=null; 
+            updateModelUI(); 
+            startDocMonitor(); 
+            closeSettings(); 
+            addMessage("設定已儲存", 'system'); 
+        }
+        function setModel(m){ appState.currentModel=m; updateModelUI(); }
+        function toggleMobileMenu(){document.getElementById('mobile-menu').classList.toggle('hidden');}
+        function updateSendButtonState(isLoading) { const btn=document.getElementById('send-btn'),icon=document.getElementById('send-icon'); if(isLoading){btn.classList.add('cursor-not-allowed','opacity-70');icon.classList.remove('ph-paper-plane-right');icon.classList.add('ph-spinner','animate-spin');}else{btn.classList.remove('cursor-not-allowed','opacity-70');icon.classList.remove('ph-spinner','animate-spin');icon.classList.add('ph-paper-plane-right');} }
+        function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
+        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手動)", false); }
+        async function tryGetLocation(silent=false) { if(!silent) updateLocStatus("GPS..."); if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((p) => fetchWeather(p.coords.latitude, p.coords.longitude, "GPS", silent), (e) => getIPLocation(silent), { timeout: 5000 }); } else getIPLocation(silent); }
+        async function getIPLocation(silent) { if(!silent) updateLocStatus("IP..."); try { const res = await fetch('https://ipapi.co/json/'); if(!res.ok)throw new Error(); const data=await res.json(); fetchWeather(data.latitude, data.longitude, `${data.city}(IP)`, silent); } catch(e){ try { const res2 = await fetch('https://ipwho.is/'); const data2 = await res2.json(); if(!data2.success)throw new Error(); fetchWeather(data2.latitude, data2.longitude, `${data2.city}(IP)`, silent); } catch(e2) { updateLocStatus("失敗"); if(!silent) addMessage("⚠️ 定位失敗，已切換至預設城市", "system"); const def = appState.manualLocs[0]; fetchWeather(def.lat, def.lon, def.name + " (預設)", true); } } }
+        async function fetchWeather(lat, lon, locName, silent) { try { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`; const res = await fetch(url); const data = await res.json(); if(data.current) { const c = data.current; appState.weather = { temp: Math.round(c.temperature_2m), humidity: c.relative_humidity_2m, wind: c.wind_speed_10m, condition: wmoToCondition(c.weather_code), loc: locName }; renderWeather(); updateLocStatus("已更新"); if(!silent) addMessage(`✅ 天氣已更新: ${c.temperature_2m}°C`, "system"); } } catch(e) { updateLocStatus("錯誤"); } }
+        function updateLocStatus(msg) { 
+            const el = document.getElementById('location-status'); 
+            if(el) el.innerText = msg; 
+            if(msg==="已更新"||msg.includes("預設")||msg.includes("手動")) { 
+                const {loc, temp} = appState.weather; 
+                const locName = document.getElementById('location-name'); if(locName) locName.innerText = loc; 
+                const mTemp = document.getElementById('mobile-weather-temp'); if(mTemp) mTemp.innerText = `${temp}°`; 
+            } 
+        }
+        function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
+
+        // --- GLOBAL ACTIONS (Moved to top level) ---
+        function toggleVoice() { 
+            if (!recognition) { alert("瀏覽器不支援"); return; }
+            if (appState.isListening) {
+                // Manual Stop: Turn off everything
+                appState.isContinuous = false; 
+                document.getElementById('continuous-btn').classList.remove('text-emerald-400', 'animate-pulse');
+                document.getElementById('continuous-btn').classList.add('text-slate-500');
+                document.getElementById('continuous-icon').classList.remove('animate-spin-slow'); 
+                
+                recognition.stop();
+                if(voiceTimer) clearTimeout(voiceTimer);
+            } else {
+                const input = document.getElementById('user-input');
+                initialInput = input.value; 
+                recognition.start();
+            }
+        }
+        
+        function toggleContinuous() {
+            appState.isContinuous = !appState.isContinuous;
+            const btn = document.getElementById('continuous-btn');
+            const icon = document.getElementById('continuous-icon');
+            
+            if (appState.isContinuous) {
+                btn.classList.remove('text-slate-500');
+                btn.classList.add('text-emerald-400', 'bg-emerald-900/30', 'animate-pulse');
+                icon.classList.add('animate-spin-slow'); // Add visual feedback
+                addMessage("🔄 已開啟連續對話模式：說完話後6秒自動發送，麥克風將持續開啟。", "system");
+                
+                // If not listening, start listening automatically
+                if (!appState.isListening && recognition) {
+                    initialInput = document.getElementById('user-input').value;
+                    recognition.start();
+                }
+            } else {
+                btn.classList.add('text-slate-500');
+                btn.classList.remove('text-emerald-400', 'bg-emerald-900/30', 'animate-pulse');
+                icon.classList.remove('animate-spin-slow');
+                addMessage("⏹️ 已關閉連續對話模式。", "system");
+                // Stop listening if currently active
+                if (appState.isListening && recognition) {
+                    recognition.stop();
+                }
+            }
+        }
+
+        function updateVoiceUI() { 
+            const btn=document.getElementById('voice-btn'),icon=document.getElementById('voice-icon'); 
+            if(appState.isListening){btn.classList.add('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone','ph-microphone-stage');}
+            else{btn.classList.remove('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone-stage','ph-microphone');} 
+        }
+        function toggleNoteVoice() { 
+            if (!noteRecognition) { alert("瀏覽器不支援"); return; }
+            if (appState.isNoteListening) noteRecognition.stop(); 
+            else noteRecognition.start(); 
+        }
+        function updateNoteVoiceUI() { 
+            const btn=document.getElementById('note-voice-btn'),icon=document.getElementById('note-voice-icon'); 
+            if(appState.isNoteListening){btn.classList.add('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone','ph-microphone-stage');}
+            else{btn.classList.remove('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone-stage','ph-microphone');} 
+        }
+
+        // --- NOTEBOOK 2 LOGIC ---
+        function setActiveNotebook(num) {
+            appState.activeNotebook = num;
+            const btn1 = document.getElementById('btn-nb-1');
+            const btn2 = document.getElementById('btn-nb-2');
+            const label = document.getElementById('active-notebook-label');
+            
+            if(num === 1) {
+                btn1.classList.add('bg-emerald-600', 'text-white');
+                btn1.classList.remove('text-slate-400', 'hover:text-white');
+                btn2.classList.remove('bg-teal-600', 'text-white');
+                btn2.classList.add('text-slate-400', 'hover:text-white');
+                label.innerText = '* 目前寫入目標：筆記本 A (URL 1)';
+            } else {
+                btn2.classList.add('bg-teal-600', 'text-white');
+                btn2.classList.remove('text-slate-400', 'hover:text-white');
+                btn1.classList.remove('bg-emerald-600', 'text-white');
+                btn1.classList.add('text-slate-400', 'hover:text-white');
+                label.innerText = '* 目前寫入目標：筆記本 B (URL 2)';
+            }
+        }
+
+        // --- PHOTO LOGIC ---
+        function triggerPhotoUpload() {
+            document.getElementById('photo-input').click();
+        }
+        
+        function triggerCameraUpload() {
+            document.getElementById('camera-input').click();
+        }
+        
+        function handlePhotoSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                appState.pastedImageBase64 = evt.target.result;
+                const indicator = document.getElementById('paste-indicator');
+                if(indicator) indicator.classList.remove('hidden');
+                const docInput = document.getElementById('doc-input-main');
+                docInput.value = "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- AUDIO RECORDING ---
+        async function startAudioRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                addMessage("⚠️ 您的瀏覽器不支援錄音功能", 'system');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = uploadAudioRecording;
+                
+                mediaRecorder.start();
+                document.getElementById('recording-status').classList.remove('hidden');
+                document.getElementById('recording-status').classList.add('flex');
+                addMessage("🎙️ 開始錄音...", 'system');
+            } catch (err) {
+                console.error("Recording error:", err);
+                addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system');
+            }
+        }
+
+        function stopAudioRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('recording-status').classList.add('hidden');
+                document.getElementById('recording-status').classList.remove('flex');
+                addMessage("⏹️ 錄音結束，處理中...", 'system');
+            }
+        }
+
+        async function uploadAudioRecording() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const dateStr = new Date().toISOString().split('T')[0];
+            const filename = `${dateStr}-Audio.webm`;
+            
+            if (!appState.driveUrl) {
+                // No Drive URL? Offer Download
+                const url = URL.createObjectURL(audioBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                addMessage(`⚠️ 未設定 Drive 上傳 URL，已自動下載檔案: ${filename}`, 'system');
+                return;
+            }
+
+            // Upload to GAS
+            addMessage(`☁️ 正在上傳 ${filename} 到 Google Drive...`, 'system');
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = async function() {
+                const base64data = reader.result.split(',')[1];
+                try {
+                    const res = await fetch(appState.driveUrl, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            filename: filename,
+                            mimeType: 'audio/webm',
+                            data: base64data
+                        })
+                    });
+                    addMessage(`✅ 錄音已發送至雲端硬碟排程 (若失敗請檢查 Apps Script 設定)`, 'system');
+                } catch (e) {
+                    addMessage(`❌ 上傳失敗: ${e.message}`, 'system');
+                }
+            };
+        }
+
+        // --- WEB SCRAPER ---
+        async function fetchUrlViaGas(url) {
+            if (!appState.docMonitorUrl) return null;
+            try {
+                const res = await fetch(appState.docMonitorUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ type: 'scrape_and_log', url: url })
+                });
+                const text = await res.text();
+                if (text && !text.startsWith("Error")) return text;
+                return null;
+            } catch (e) {
+                console.error("GAS Scrape Error:", e);
+                return null;
+            }
+        }
+        
+        async function searchViaSerpApi(query) {
+            if (!appState.keys.serpapi) return null;
+            addMessage(`🔍 正在透過 SerpApi (Google) 搜尋：${query}...`, 'system');
+            
+            const targetUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${appState.keys.serpapi}&engine=google&gl=tw&hl=zh-tw`;
+            
+            const proxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            ];
+
+            let serpData = null;
+            let lastErrorMsg = "";
+
+            for (const proxy of proxies) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    const res = await fetch(proxy, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
+                    if (!res.ok) {
+                        lastErrorMsg = `HTTP ${res.status}`;
+                        continue;
+                    }
+
+                    const data = await res.json();
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    serpData = data;
+                    break;
+                } catch (err) {
+                    lastErrorMsg = err.name === 'AbortError' ? '連線逾時' : err.message;
+                    console.warn("Proxy attempt failed:", proxy, lastErrorMsg);
+                    if (err.message && err.message.toLowerCase().includes("invalid api key")) {
+                        throw new Error("SerpApi 金鑰無效或已耗盡");
+                    }
+                }
+            }
+
+            if (!serpData) {
+                throw new Error(`SerpApi 代理連線皆失敗 (${lastErrorMsg})`);
+            }
+            
+            let resultText = "【SerpApi 搜尋結果】\n";
+            if (serpData.organic_results && serpData.organic_results.length > 0) {
+                serpData.organic_results.slice(0, 5).forEach((item, index) => {
+                    resultText += `${index + 1}. [${item.title}](${item.link})\n   ${item.snippet || ''}\n`;
+                });
+            } else {
+                resultText += "未找到相關結果。";
+            }
+            
+            return resultText;
+        }
+        
+        async function searchViaGas(query) {
+             if (!appState.docMonitorUrl) return null;
+             
+             try {
+                addMessage(`🔍 正在透過 Google News/Wiki 搜尋：${query}...`, 'system');
+                const res = await fetch(appState.docMonitorUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ type: 'search', query: query })
+                });
+                const text = await res.text();
+                if (text && !text.startsWith("Error")) return text;
+                return "搜尋失敗或無結果";
+            } catch (e) {
+                console.error("GAS Search Error:", e);
+                return "搜尋連線錯誤";
+            }
+        }
+
+        async function extractContentFromUrl(url) {
+            if (appState.docMonitorUrl) {
+                const gasContent = await fetchUrlViaGas(url);
+                if (gasContent) return gasContent;
+            }
+            try {
+                if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('facebook.com') || url.includes('twitter.com') || url.includes('x.com')) return null;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+                if (!data.contents) return null;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                const scripts = doc.querySelectorAll('script, style, nav, footer, header, aside, iframe, noscript');
+                scripts.forEach(node => node.remove());
+                let text = doc.body.innerText || "";
+                text = text.replace(/\s+/g, ' ').trim();
+                return text.substring(0, 15000); 
+            } catch (e) { return null; }
+        }
+
+        async function getYouTubeMetadata(url) {
+            try {
+                const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(oembedUrl)}`;
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+                if (!data.contents) return null;
+                return JSON.parse(data.contents);
+            } catch (e) { return null; }
+        }
+
+        // --- PASTE HANDLER ---
+        function handlePaste(e) {
+            const items = (e.clipboardData || window.clipboardData).items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image") !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        appState.pastedImageBase64 = event.target.result;
+                        const indicator = document.getElementById('paste-indicator');
+                        if(indicator) indicator.classList.remove('hidden');
+                        const docInput = document.getElementById('doc-input-main');
+                        if(docInput) docInput.value = "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]";
+                    };
+                    reader.readAsDataURL(blob);
+                    e.preventDefault(); 
+                    return;
+                }
+            }
+        }
+        
+        function handleNoteKeydown(e) {
+            if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+            
+            if (appState.pastedImageBase64) {
+                 const docInput = document.getElementById('doc-input-main');
+                 if (docInput.value === "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]" || docInput.value === "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]") {
+                     appState.pastedImageBase64 = null;
+                     document.getElementById('paste-indicator').classList.add('hidden');
+                     docInput.value = "";
+                 }
+            }
+            if (e.ctrlKey && e.key === 'Enter') {
+                handleDocWriteBtn();
+            }
+        }
+        
+        function clearNoteInput() {
+             document.getElementById('doc-input-main').value = '';
+             document.getElementById('doc-input-sub').value = '';
+             appState.pastedImageBase64 = null;
+             document.getElementById('paste-indicator').classList.add('hidden');
+        }
+
+        // --- DOC WRITER UI LOGIC ---
+        function setWriteMode(mode) {
+            appState.writeMode = mode;
+            ['text', 'image', 'link'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if(m === mode) btn.className = 'text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all';
+                else btn.className = 'text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all';
+            });
+            const mainInput = document.getElementById('doc-input-main');
+            const subInput = document.getElementById('doc-input-sub');
+            
+            if(mode === 'text') {
+                mainInput.placeholder = "輸入文字內容，或直接 Ctrl+V 貼上圖片...";
+                subInput.classList.add('hidden');
+            } else if (mode === 'image') {
+                mainInput.placeholder = "輸入圖片網址 (https://...)";
+                subInput.classList.add('hidden');
+            } else if (mode === 'link') {
+                mainInput.placeholder = "輸入連結顯示文字";
+                subInput.placeholder = "輸入連結網址 (https://...)";
+                subInput.classList.remove('hidden');
+            }
+        }
+
+        async function handleDocWriteBtn() {
+            // Pick active URL based on toggle
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
+            
+            if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
+            
+            const mainVal = document.getElementById('doc-input-main').value.trim();
+            const subVal = document.getElementById('doc-input-sub').value.trim();
+            const sendBtn = document.getElementById('note-send-btn');
+            
+            let payload = {};
+            
+            let currentMode = appState.writeMode;
+            if ((currentMode === 'image' || currentMode === 'link') && 
+                !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
+                currentMode = 'text';
+            }
+            
+            if (appState.pastedImageBase64 && (mainVal.includes("[已偵測到"))) {
+                payload = { type: 'image_base64', content: appState.pastedImageBase64 };
+            } else {
+                if(!mainVal && appState.writeMode !== 'image_base64') return; 
+                
+                if(currentMode === 'text') payload = { type: 'text', content: mainVal };
+                else if (currentMode === 'image') payload = { type: 'image', content: mainVal };
+                else if (currentMode === 'link') {
+                    if(!subVal) return alert("請輸入連結網址");
+                    payload = { type: 'link', text: mainVal, content: subVal };
+                }
+            }
+            
+            if(sendBtn) {
+                const originalText = sendBtn.innerHTML;
+                sendBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> ⏳ 寫入中...';
+                sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                
+                try {
+                    await fetch(targetUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
+                    addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system');
+                    clearNoteInput();
+                } catch(e) { alert("寫入失敗，請檢查 URL"); }
+                finally {
+                    sendBtn.innerHTML = originalText;
+                    sendBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        // --- DOC VIEWER ---
+        function openNoteDocViewer() { 
+            // Use active notebook URL
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
+            if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`);
+            
+            document.getElementById('doc-viewer-modal').classList.remove('hidden'); 
+            refreshNoteDocView(); 
+        }
+        function closeDocViewer() { document.getElementById('doc-viewer-modal').classList.add('hidden'); }
+        
+        async function refreshNoteDocView() {
+            const area = document.getElementById('doc-content-area');
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
+            
+            area.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 gap-2"><div class="dot-flashing bg-slate-400"></div> 讀取中...</div>';
+            try {
+                const res = await fetch(targetUrl);
+                const text = await res.text();
+                area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>';
+            } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
+        }
+
+        // --- HANDLERS & AI LOGIC ---
+        function handleSendMessageInternal(text, isHidden=false) {
+             if(!isHidden) addMessage(text, 'user');
+             fetchAIResponse(text, appState.currentModel).then(res => {
+                 if(typeof res === 'string') addMessage(res, 'ai', appState.currentModel);
+                 else addMessage(res.text, 'ai', appState.currentModel, res.sources);
+             }).catch(e => { addMessage("無法分析文件更新：" + e.message, 'system'); });
+        }
+        
+        async function handleSendMessage() {
+            if(appState.isThinking) return;
+            const input = document.getElementById('user-input');
+            let text = input.value.trim();
+            if (text.length > 4 && text.length % 2 === 0) {
+                 const mid = text.length / 2;
+                 if (text.substring(0, mid) === text.substring(mid)) { text = text.substring(0, mid); }
+            }
+            if(!text) return;
+
+            // --- Voice Recording Commands ---
+            if (text.includes("開始錄音")) {
+                input.value = '';
+                initialInput = '';
+                addMessage(text, 'user');
+                startAudioRecording();
+                return;
+            }
+            if (text.includes("停止錄音")) {
+                input.value = '';
+                initialInput = '';
+                addMessage(text, 'user');
+                stopAudioRecording();
+                return;
+            }
+
+            appState.isThinking = true;
+            updateSendButtonState(true);
+            addMessage(text, 'user');
+            
+            // --- CRITICAL FIX: Reset input & voice buffer immediately ---
+            input.value = '';
+            initialInput = ''; // Reset base to prevent old transcript re-appearing
+            if (recognition && !appState.isContinuous) {
+                recognition.stop();
+            }
+            // -----------------------------------------------------------
+            
+            renderThinkingState(true);
+
+            // --- REMINDER LOGIC (Updated Smart Flow) ---
+            if (appState.pendingReminder && appState.reminderStage > 0) {
+                // We are in a follow-up stage
+                const todo = appState.todos.find(t => t.id === appState.pendingReminder);
+                if (todo) {
+                    let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text;
+                    
+                    // Attempt to parse again with combined info
+                    const timeInfo = parseTimeNatural(combinedText);
+                    
+                    if (timeInfo.complete) {
+                        todo.time = new Date(timeInfo.timestamp).toLocaleString();
+                        todo.alertTime = timeInfo.timestamp;
+                        todo.alerted = false;
+                        delete todo.tempTimeStr;
+                        appState.pendingReminder = null;
+                        appState.reminderStage = 0;
+                        addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system');
+                    } else if (timeInfo.missing === 'date') {
+                        // Still missing date, but maybe have time
+                        todo.tempTimeStr = combinedText; // store what we have
+                        addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system');
+                        appState.reminderStage = 2; // Stay in clarifying
+                    } else if (timeInfo.missing === 'ampm') {
+                        todo.tempTimeStr = combinedText;
+                        addMessage(`請問是「上午」還是「下午」？`, 'system');
+                        appState.reminderStage = 2;
+                    } else {
+                        // Fallback if parsing failed completely
+                        addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system');
+                    }
+                    saveData();
+                    renderTodos();
+                }
+                
+                appState.isThinking = false;
+                updateSendButtonState(false);
+                renderThinkingState(false);
+                return;
+            }
+
+            const reminderMatch = text.match(/^(?:提醒|reminder)[\s:：]?(.*)$/i);
+            if (reminderMatch && reminderMatch[1]) {
+                const content = reminderMatch[1] || "未命名事項";
+                const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false };
+                appState.todos.push(newTodo);
+                appState.pendingReminder = newTodo.id;
+                appState.reminderStage = 1; // Start stage 1
+                saveData();
+                renderTodos();
+                
+                addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？`, 'system');
+                
+                appState.isThinking = false;
+                updateSendButtonState(false);
+                renderThinkingState(false);
+                return;
+            }
+            // --- END REMINDER LOGIC ---
+
+            try {
+                let systemPromptAddon = "";
+                let injectedContext = "";
+                let modelToUse = appState.currentModel;
+                let enableSearchTool = false;
+                
+                if (appState.isSearchEnabled) enableSearchTool = true;
+
+                // --- SEARCH LOGIC FIX ---
+                // New regex to allow "搜尋[keyword]" without space
+                const searchMatch = text.match(/^(?:搜尋|查詢|搜索|查|找|search|query)[:：\s]*(.+)/i);
+                
+                if (searchMatch) {
+                    if (appState.keys.serpapi) {
+                        try {
+                            const searchResult = await searchViaSerpApi(searchMatch[1]);
+                            addMessage(searchResult, 'system');
+                            injectedContext = `\n\n[系統 SerpApi 搜尋結果]:\n${searchResult}\n\n[指令]: 請根據上述搜尋結果回答使用者的問題。`;
+                            enableSearchTool = false;
+                        } catch (serpErr) {
+                            addMessage(`⚠️ ${serpErr.message}，正在退回使用備用搜尋。`, 'system');
+                            if (appState.keys.gemini) {
+                                modelToUse = 'gemini';
+                                enableSearchTool = true;
+                                systemPromptAddon += `(系統指令: 使用者正在要求搜尋。請務必使用 Google Search 工具查找「${searchMatch[1]}」的最新資訊，並詳細回答。若您無法使用工具，請誠實告知。)`;
+                            }
+                        }
+                    }
+                    else if (appState.docMonitorUrl) {
+                        const searchResult = await searchViaGas(searchMatch[1]);
+                        addMessage(searchResult, 'system');
+                        injectedContext = `\n\n[系統搜尋結果]:\n${searchResult}\n\n[指令]: 請根據上述搜尋結果回答使用者的問題。`;
+                        enableSearchTool = false; 
+                    } 
+                    else if (appState.keys.gemini) {
+                        modelToUse = 'gemini';
+                        enableSearchTool = true;
+                        systemPromptAddon += `(系統指令: 使用者正在要求搜尋。請務必使用 Google Search 工具查找「${searchMatch[1]}」的最新資訊，並詳細回答。若您無法使用工具，請誠實告知。)`;
+                    }
+                }
+
+                const urlMatch = text.match(/https?:\/\/[^\s]+/);
+                if (urlMatch) {
+                    const url = urlMatch[0];
+                    if (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('twitter.com') && !url.includes('facebook.com')) {
+                        addMessage(`🔍 正在透過 Google Doc 代理抓取網頁...`, 'system');
+                        const content = await fetchUrlViaGas(url);
+                        if (content) {
+                            injectedContext = `\n\n[系統: 已透過 Google Doc 成功抓取網頁內容 (${url})，請根據以下內容回答]:\n${content}\n\n`;
+                            enableSearchTool = false; 
+                        } else {
+                            systemPromptAddon += `(系統: 嘗試抓取網頁失敗，請嘗試使用您的 Search 工具搜尋該網址內容)`;
+                            if (appState.keys.gemini) { modelToUse = 'gemini'; enableSearchTool = true; }
+                        }
+                    } else if (url.includes('youtube') || url.includes('youtu.be')) {
+                         if (appState.keys.gemini) {
+                            modelToUse = 'gemini';
+                            enableSearchTool = true; 
+                            systemPromptAddon += `(系統: 這是一個 YouTube 連結。請使用 Search 工具搜尋該影片的標題、摘要或評論內容來回答。)`;
+                         }
+                    }
+                }
+
+                const prompt = `${text}\n${systemPromptAddon}\n${injectedContext}`;
+                const res = await fetchAIResponse(prompt, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "" });
+                
+                if(typeof res === 'string') addMessage(res, 'ai', modelToUse);
+                else addMessage(res.text, 'ai', modelToUse, res.sources);
+
+            } catch (error) {
+                console.error("Handler Error:", error);
+                addMessage(`[系統錯誤] ${error.message || '未知錯誤'}`, 'system');
+            } finally {
+                appState.isThinking = false;
+                updateSendButtonState(false);
+                renderThinkingState(false);
+            }
+        }
+
+        // --- NEW: Natural Language Time Parser ---
+        function parseTimeNatural(str) {
+            const now = new Date();
+            let result = { complete: false, timestamp: null, missing: null };
+            
+            // 1. Check relative "X hours/mins later"
+            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
+            if (relMatch) {
+                const amount = parseInt(relMatch[1]);
+                const unit = relMatch[2];
+                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
+                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
+                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
+                return { complete: true, timestamp: now.getTime() };
+            }
+
+            // 2. Check "Tomorrow/Today"
+            let targetDate = new Date();
+            let hasDate = false;
+            if (str.includes('明天') || str.includes('tomorrow')) {
+                targetDate.setDate(targetDate.getDate() + 1);
+                hasDate = true;
+            } else if (str.includes('後天')) {
+                targetDate.setDate(targetDate.getDate() + 2);
+                hasDate = true;
+            } else if (str.match(/\d{1,2}月\d{1,2}日/)) {
+                // Simple date parse e.g. 2月15日
+                const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/);
+                targetDate.setMonth(parseInt(dMatch[1]) - 1);
+                targetDate.setDate(parseInt(dMatch[2]));
+                hasDate = true;
+            } else if (str.includes('今天') || str.includes('today')) {
+                hasDate = true;
+            }
+
+            // 3. Check Time "HH:MM" or "X點"
+            let hour = -1, minute = 0;
+            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); // 10:30
+            const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); // 10點30
+            
+            if (timeMatch) {
+                hour = parseInt(timeMatch[1]);
+                minute = parseInt(timeMatch[2]);
+            } else if (hourMatch) {
+                hour = parseInt(hourMatch[1]);
+                if (hourMatch[2]) minute = parseInt(hourMatch[2]);
+            }
+
+            // 4. Check AM/PM
+            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
+            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
+
+            if (hour !== -1) {
+                // Ambiguity check
+                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) {
+                    return { complete: false, missing: 'ampm' }; 
+                }
+                
+                if (isPM && hour < 12) hour += 12;
+                if (isAM && hour === 12) hour = 0; // 12 AM is 00:00
+
+                targetDate.setHours(hour, minute, 0, 0);
+                
+                // If no date specified, assume today (or tomorrow if time passed)
+                if (!hasDate) {
+                    if (targetDate < new Date()) {
+                        return { complete: false, missing: 'date' };
+                    }
+                }
+                
+                return { complete: true, timestamp: targetDate.getTime() };
+            }
+
+            return { complete: false, missing: 'time' };
+        }
+
+        async function fetchAIResponse(userText, model, options = {}) {
+            const fetchWithTimeout = async (url, options, timeout = 30000) => {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), timeout);
+                try { const response = await fetch(url, { ...options, signal: controller.signal }); clearTimeout(id); return response; } 
+                catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時 (30s)' : error.message); }
+            };
+
+            try {
+                const key = appState.keys[model];
+                if(!key) throw new Error(`請至 [設定] 填入完整的 ${MODEL_CONFIG[model].name} API Key`);
+
+                if(model === 'gemini') {
+                    if(!appState.detectedGeminiModel) appState.detectedGeminiModel = await detectAvailableGeminiModel(key);
+                    const modelName = appState.detectedGeminiModel.replace('models/', '');
+                    
+                    const payload = { 
+                        contents: [{ parts: [{ text: userText }] }],
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+                    };
+
+                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch) {
+                        payload.tools = [{ google_search: {} }];
+                    }
+
+                    const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(payload) 
+                    });
+                    
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(`Gemini 錯誤: ${data.error?.message || res.status}`);
+
+                    const candidate = data.candidates?.[0];
+                    if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
+
+                    let outputText = "";
+                    if (candidate.content && candidate.content.parts) {
+                        outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join("");
+                    }
+
+                    let sources = [];
+                    if (candidate.groundingMetadata?.groundingAttributions) {
+                        candidate.groundingMetadata.groundingAttributions.forEach(attr => {
+                            if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri });
+                        });
+                    }
+
+                    if (!outputText && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。";
+                    else if (!outputText) outputText = "(無回傳文字內容)";
+
+                    return { text: outputText, sources: sources };
+                    
+                } else if (model === 'groq') {
+                    const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: userText }] }) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error?.message || `Groq 錯誤 (${res.status})`);
+                    return data.choices?.[0]?.message?.content || "無回應";
+                } else if (model === 'cohere') {
+                    const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { 
+                        method: 'POST', 
+                        headers: { 
+                            'Authorization': `Bearer ${key}`, 
+                            'Content-Type': 'application/json', 
+                            'Accept': 'application/json' 
+                        }, 
+                        body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText }) 
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(`Cohere 錯誤: ${data.message || res.status}`);
+                    return data.text || "無回應";
+                } else if(model === 'cerebras') {
+                    const res = await fetchWithTimeout('https://api.cerebras.ai/v1/chat/completions', { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:"llama-3.3-70b", messages:[{role:"user", content:userText}], stream:false}) });
+                    const data = await res.json(); 
+                    if (!res.ok) throw new Error(data.error?.message || `Cerebras 錯誤 (${res.status})`);
+                    return data.choices?.[0]?.message?.content || "無回應";
+                } else {
+                    const ep = model==='gpt'?'https://api.openai.com/v1/chat/completions':'https://api.x.ai/v1/chat/completions';
+                    const mName = model==='gpt'?'gpt-4o-mini':'grok-beta';
+                    const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:userText}]}) });
+                    const data = await res.json(); 
+                    if (!res.ok) throw new Error(data.error?.message || `API 錯誤 (${res.status})`);
+                    return data.choices?.[0]?.message?.content || "無回應";
+                }
+            } catch(e) { throw e; }
+        }
+
+        async function detectAvailableGeminiModel(apiKey) {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                const data = await res.json();
+                const models = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent"));
+                return (models.find(m=>m.name.includes("gemini-1.5-flash")) || models[0]).name;
+            } catch(e) { return 'gemini-1.5-flash'; }
+        }
+
+        function testDocConnection() {
+            const url = document.getElementById('key-doc-url').value.trim();
+            if(!url) return alert("請輸入 URL");
+            document.getElementById('doc-monitor-status').innerText = "測試中...";
+            fetch(url).then(r=>r.text()).then(t=>{
+                alert("連線成功！");
+                document.getElementById('doc-monitor-status').innerText = "測試成功";
+            }).catch(e=>{
+                alert("連線失敗：" + e.message);
+                document.getElementById('doc-monitor-status').innerText = "測試失敗";
+            });
+        }
+
+        function startDocMonitor() {
+            if(appState.docMonitorInterval) clearInterval(appState.docMonitorInterval);
+            if(!appState.docMonitorUrl) return;
+            document.getElementById('doc-monitor-badge').classList.remove('hidden');
+            document.getElementById('doc-monitor-badge').classList.add('flex');
+        }
+        
+        // --- NEW ALARM FUNCTIONS ---
+        function playAlarmSound() {
+            try {
+                if (!alarmAudioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) alarmAudioCtx = new AudioContext();
+                }
+                if (alarmAudioCtx && alarmAudioCtx.state === 'suspended') {
+                    alarmAudioCtx.resume();
+                }
+                if (alarmAudioCtx) {
+                    const osc = alarmAudioCtx.createOscillator();
+                    const gain = alarmAudioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(alarmAudioCtx.destination);
+                    
+                    // Alarm Beep
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime); 
+                    osc.frequency.linearRampToValueAtTime(440, alarmAudioCtx.currentTime + 0.1);
+                    osc.frequency.linearRampToValueAtTime(880, alarmAudioCtx.currentTime + 0.2);
+                    
+                    gain.gain.setValueAtTime(0.2, alarmAudioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, alarmAudioCtx.currentTime + 0.5);
+                    
+                    osc.start();
+                    osc.stop(alarmAudioCtx.currentTime + 0.5);
+                }
+            } catch(e) { console.error("Audio play failed", e); }
+        }
+
+        function triggerAlarm(text) {
+            const modal = document.getElementById('alarm-modal');
+            const textEl = document.getElementById('alarm-text');
+            if(modal && textEl) {
+                textEl.innerText = text;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                
+                if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+                playAlarmSound();
+
+                if(alarmInterval) clearInterval(alarmInterval);
+                alarmInterval = setInterval(() => {
+                    if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+                    playAlarmSound();
+                }, 2000); 
+            }
+        }
+
+        function stopAlarm() {
+            const modal = document.getElementById('alarm-modal');
+            if(modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            if(alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+            if(navigator.vibrate) navigator.vibrate(0);
+        }
+        
+        function checkReminders() {
+            const now = Date.now();
+            let changed = false;
+            appState.todos.forEach(todo => {
+                if (todo.alertTime && !todo.alerted && !todo.done) {
+                    if (now >= todo.alertTime) {
+                        todo.alerted = true;
+                        changed = true;
+                        addMessage(`⏰ 提醒時間到：${todo.text}`, 'system');
+                        triggerAlarm(todo.text); 
+                    }
+                }
+            });
+            if (changed) {
+                saveData();
+                renderTodos();
+            }
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            if(appState.messages.length === 0) {
+                appState.messages.push({ id: 1, text: 'Nova 12.31 Hybrid Fix V3 就緒！\n修復了手機端語音輸入重複與自動發送失效的問題。', sender: 'ai', model: 'gemini', time: getTime() });
+            }
+            renderAll();
+            
+            const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+            
+            safeSet('key-gemini', appState.keys.gemini);
+            safeSet('key-cerebras', appState.keys.cerebras);
+            safeSet('key-groq', appState.keys.groq);
+            safeSet('key-cohere', appState.keys.cohere);
+            safeSet('key-openai', appState.keys.openai);
+            safeSet('key-grok', appState.keys.grok);
+            safeSet('key-serpapi', appState.keys.serpapi);
+            safeSet('key-doc-url', appState.docMonitorUrl);
+            safeSet('key-note-doc-url', appState.noteDocUrl);
+            safeSet('key-note-doc-url-2', appState.noteDocUrl2);
+            safeSet('key-drive-url', appState.driveUrl);
+            
+            const inputMain = document.getElementById('doc-input-main');
+            if(inputMain) inputMain.addEventListener('paste', handlePaste);
+            
+            setInterval(checkReminders, 10000);
+
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
+                
+                recognition = new SR(); 
+                recognition.lang = 'zh-TW'; 
+                recognition.continuous = true; 
+                recognition.interimResults = true; 
+                
+                let voiceTimer = null;
+                let finalTranscript = ''; 
+                
+                recognition.onstart = () => {
+                    appState.isListening = true;
+                    updateVoiceUI();
+                    const input = document.getElementById('user-input');
+                    initialInput = input.value; 
+                    finalTranscript = ''; 
+                    if(input.value === '') input.placeholder = "聆聽中... (6秒後自動發送)";
+                };
+                
+                recognition.onend = () => {
+                    appState.isListening = false;
+                    updateVoiceUI();
+                    document.getElementById('user-input').placeholder = "貼上網址自動分析，或輸入「搜尋：關鍵字」...";
+                    
+                    if(voiceTimer) {
+                        clearTimeout(voiceTimer);
+                        voiceTimer = null;
+                        const input = document.getElementById('user-input');
+                        if(input.value.trim() !== initialInput.trim()) {
+                             handleSendMessage();
+                        }
+                    }
+
+                    if (appState.isContinuous) {
+                        recognition.start();
+                    }
+                };
+                
+                recognition.onresult = (e) => {
+                    let transcript = "";
+                    for (let i = 0; i < e.results.length; ++i) {
+                        transcript += e.results[i][0].transcript;
+                    }
+
+                    if (transcript.length > 0) {
+                         const len = transcript.length;
+                         if (len % 2 === 0) {
+                             if (transcript.substring(0, len/2) === transcript.substring(len/2)) {
+                                 transcript = transcript.substring(0, len/2);
+                             }
+                         }
+                         const split = transcript.split(' ');
+                         if (split.length >= 2) {
+                             const half = split.length / 2;
+                             if (Number.isInteger(half)) {
+                                 const firstHalf = split.slice(0, half).join(' ');
+                                 const secondHalf = split.slice(half).join(' ');
+                                 if (firstHalf === secondHalf) {
+                                     transcript = firstHalf;
+                                 }
+                             }
+                         }
+                    }
+                    
+                    const input = document.getElementById('user-input');
+                    input.value = initialInput + (initialInput && transcript ? " " : "") + transcript;
+                    
+                    if (voiceTimer) clearTimeout(voiceTimer);
+                    voiceTimer = setTimeout(() => {
+                        handleSendMessage(); 
+                        voiceTimer = null;   
+                        recognition.stop(); 
+                    }, 6000);
+                };
+                
+                noteRecognition = new SR();
+                noteRecognition.lang = 'zh-TW';
+                noteRecognition.continuous = true; 
+                noteRecognition.interimResults = true;
+                
+                let noteVoiceTimer = null;
+                let noteFinalTranscript = '';
+
+                noteRecognition.onstart = () => { 
+                    appState.isNoteListening = true; 
+                    updateNoteVoiceUI(); 
+                    const el = document.getElementById('doc-input-main');
+                    initialInput = el.value;
+                    noteFinalTranscript = '';
+                    if (el.value === "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]") {
+                         appState.pastedImageBase64 = null;
+                         document.getElementById('paste-indicator').classList.add('hidden');
+                         el.value = "";
+                         initialInput = "";
+                    }
+                };
+                
+                noteRecognition.onend = () => { 
+                    appState.isNoteListening = false; 
+                    updateNoteVoiceUI(); 
+                    if(noteVoiceTimer) clearTimeout(noteVoiceTimer);
+                };
+                
+                noteRecognition.onresult = (e) => {
+                    let transcript = "";
+                    for (let i = 0; i < e.results.length; ++i) {
+                        transcript += e.results[i][0].transcript;
+                    }
+
+                    if (transcript.length > 0 && transcript.length % 2 === 0) {
+                        const mid = transcript.length / 2;
+                        if (transcript.substring(0, mid) === transcript.substring(mid)) {
+                            transcript = transcript.substring(0, mid);
+                        }
+                    }
+                    
+                    const el = document.getElementById('doc-input-main');
+                    const separator = (initialInput && transcript) ? "\n" : "";
+                    el.value = initialInput + separator + transcript;
+                    
+                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer);
+                    noteVoiceTimer = setTimeout(() => {
+                        noteRecognition.stop();
+                    }, 6000);
+                };
+            }
+
+            tryGetLocation(true);
+            updateModelUI();
+        };
+    </script>
+</body>
+</html>
