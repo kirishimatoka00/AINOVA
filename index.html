@@ -97,9 +97,9 @@
 
             <!-- Settings Modal -->
             <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                    <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-white">設定</h3><button onclick="closeSettings()"><i class="ph ph-x text-2xl text-slate-400"></i></button></div>
-                    <div class="space-y-4 max-h-[60vh] overflow-y-auto">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+                    <div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-bold text-white">設定</h3><button onclick="closeSettings()"><i class="ph ph-x text-2xl text-slate-400"></i></button></div>
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2">
                         
                         <!-- Docs Monitor Section -->
                         <div class="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 p-4 rounded-xl border border-blue-500/50 shadow-inner space-y-4">
@@ -156,7 +156,7 @@ function doPost(e) {
                                 <button onclick="testDocConnection()" class="text-[10px] bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500">測試連線</button>
                             </div>
                         </div>
-                        <div class="space-y-3 pt-2">
+                        <div class="space-y-3 pt-2 pb-4 border-b border-slate-800">
                             <div><label class="block text-xs text-blue-400 mb-1">Gemini API Key</label><input type="password" id="key-gemini" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-blue-500 outline-none"></div>
                             <div><label class="block text-xs text-green-400 mb-1">SerpApi Key</label><input type="password" id="key-serpapi" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-green-500 outline-none" placeholder="Your SerpApi Key"></div>
                             <div><label class="block text-xs text-rose-400 mb-1">Groq API Key</label><input type="password" id="key-groq" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-rose-500 outline-none"></div>
@@ -165,7 +165,18 @@ function doPost(e) {
                             <div><label class="block text-xs text-slate-300 mb-1">Grok API Key</label><input type="password" id="key-grok" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-slate-500 outline-none"></div>
                         </div>
                     </div>
-                    <div class="mt-6 flex justify-end space-x-3"><button onclick="closeSettings()" class="px-4 py-2 text-slate-400 text-sm">取消</button><button onclick="saveKeys()" class="px-6 py-2 bg-blue-600 text-white rounded-lg">儲存</button></div>
+                    <!-- Export / Import / Save controls in Footer -->
+                    <div class="mt-4 pt-2 flex justify-between items-center shrink-0">
+                        <div class="flex space-x-2">
+                            <button onclick="exportSettings()" class="flex items-center gap-1 text-xs text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-download-simple"></i> 匯出設定</button>
+                            <button onclick="triggerImportSettings()" class="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-2 rounded-lg hover:bg-emerald-800/50 transition-colors"><i class="ph-bold ph-upload-simple"></i> 匯入設定</button>
+                            <input type="file" id="import-settings-input" accept=".json" class="hidden" onchange="importSettings(event)">
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="closeSettings()" class="px-4 py-2 text-slate-400 text-sm">取消</button>
+                            <button onclick="saveKeys()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500">儲存</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -196,7 +207,7 @@ function doPost(e) {
                          </div>
                          
                          <!-- Update 2: Dropdown Model Selection -->
-                         <div class="flex space-x-1 ml-auto">
+                         <div class="flex space-x-1 ml-auto shrink-0">
                              <select id="main-model-select" onchange="setModel(this.value)" class="bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-1 outline-none focus:border-blue-500 font-bold tracking-wide">
                                  <option value="gemini">Gemini (2.5 Flash)</option>
                                  <option value="grok">Grok (4.1 Fast)</option>
@@ -367,7 +378,7 @@ function doPost(e) {
             reminderStage: 0 
         };
         
-        // Update 1: Model Config
+        // Update 1: Model Config (No Cerebras, Zeabur, OpenRouter)
         const MODEL_CONFIG = {
             gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' },
             grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' },
@@ -482,6 +493,73 @@ function doPost(e) {
             if(appState.currentModel!=='gemini'&&appState.isSearchEnabled){setModel('gemini');} 
         }
 
+        // --- EXPORT / IMPORT SETTINGS (NEW) ---
+        function exportSettings() {
+            const data = {
+                keys: appState.keys,
+                urls: {
+                    docMonitorUrl: appState.docMonitorUrl,
+                    noteDocUrl: appState.noteDocUrl,
+                    noteDocUrl2: appState.noteDocUrl2,
+                    driveUrl: appState.driveUrl
+                }
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `NOVA12_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerImportSettings() {
+            document.getElementById('import-settings-input').click();
+        }
+
+        function importSettings(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if (data.keys) {
+                        appState.keys.gemini = data.keys.gemini || '';
+                        appState.keys.groq = data.keys.groq || '';
+                        appState.keys.cohere = data.keys.cohere || '';
+                        appState.keys.openai = data.keys.openai || '';
+                        appState.keys.grok = data.keys.grok || '';
+                        appState.keys.serpapi = data.keys.serpapi || '';
+                    }
+                    if (data.urls) {
+                        appState.docMonitorUrl = data.urls.docMonitorUrl || '';
+                        appState.noteDocUrl = data.urls.noteDocUrl || '';
+                        appState.noteDocUrl2 = data.urls.noteDocUrl2 || '';
+                        appState.driveUrl = data.urls.driveUrl || '';
+                    }
+                    
+                    const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+                    safeSet('key-gemini', appState.keys.gemini);
+                    safeSet('key-groq', appState.keys.groq);
+                    safeSet('key-cohere', appState.keys.cohere);
+                    safeSet('key-openai', appState.keys.openai);
+                    safeSet('key-grok', appState.keys.grok);
+                    safeSet('key-serpapi', appState.keys.serpapi);
+                    safeSet('key-doc-url', appState.docMonitorUrl);
+                    safeSet('key-note-doc-url', appState.noteDocUrl);
+                    safeSet('key-note-doc-url-2', appState.noteDocUrl2);
+                    safeSet('key-drive-url', appState.driveUrl);
+                    
+                    alert("設定匯入成功！請點擊右下角「儲存」按鈕來套用設定。");
+                } catch(err) {
+                    alert("設定檔解析失敗：" + err.message);
+                }
+                e.target.value = ''; 
+            };
+            reader.readAsText(file);
+        }
+
         // --- ACTIONS ---
         function addMessage(text, sender, model, sources=[]) { appState.messages.push({id:Date.now(), text, sender, model, sources, time:getTime()}); saveMessages(); renderMessages(); }
         function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); saveMessages(); renderMessages(); }
@@ -495,30 +573,33 @@ function doPost(e) {
         function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
         function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
         
+        // Fix: Robust saveKeys to prevent null errors from removed DOM elements
         function saveKeys(){ 
-            appState.keys.gemini=document.getElementById('key-gemini').value.trim(); 
-            appState.keys.groq=document.getElementById('key-groq').value.trim();
-            appState.keys.cohere=document.getElementById('key-cohere').value.trim();
-            appState.keys.openai=document.getElementById('key-openai').value.trim(); 
-            appState.keys.grok=document.getElementById('key-grok').value.trim(); 
-            appState.keys.serpapi=document.getElementById('key-serpapi').value.trim(); 
-            appState.docMonitorUrl=document.getElementById('key-doc-url').value.trim(); 
-            appState.noteDocUrl=document.getElementById('key-note-doc-url').value.trim(); 
-            appState.noteDocUrl2=document.getElementById('key-note-doc-url-2').value.trim(); 
-            appState.driveUrl=document.getElementById('key-drive-url').value.trim(); 
+            const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
             
-            localStorage.setItem('nova_key_gemini',appState.keys.gemini); 
-            localStorage.setItem('nova_key_groq',appState.keys.groq); 
-            localStorage.setItem('nova_key_cohere',appState.keys.cohere); 
-            localStorage.setItem('nova_key_openai',appState.keys.openai); 
-            localStorage.setItem('nova_key_grok',appState.keys.grok); 
-            localStorage.setItem('nova_key_serpapi',appState.keys.serpapi); 
+            appState.keys.gemini = safeGetVal('key-gemini'); 
+            appState.keys.groq = safeGetVal('key-groq');
+            appState.keys.cohere = safeGetVal('key-cohere');
+            appState.keys.openai = safeGetVal('key-openai'); 
+            appState.keys.grok = safeGetVal('key-grok'); 
+            appState.keys.serpapi = safeGetVal('key-serpapi'); 
+            appState.docMonitorUrl = safeGetVal('key-doc-url'); 
+            appState.noteDocUrl = safeGetVal('key-note-doc-url'); 
+            appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); 
+            appState.driveUrl = safeGetVal('key-drive-url'); 
+            
+            localStorage.setItem('nova_key_gemini', appState.keys.gemini); 
+            localStorage.setItem('nova_key_groq', appState.keys.groq); 
+            localStorage.setItem('nova_key_cohere', appState.keys.cohere); 
+            localStorage.setItem('nova_key_openai', appState.keys.openai); 
+            localStorage.setItem('nova_key_grok', appState.keys.grok); 
+            localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
             localStorage.setItem('nova_doc_url', appState.docMonitorUrl); 
             localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); 
             localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); 
             localStorage.setItem('nova_drive_url', appState.driveUrl); 
             
-            appState.detectedGeminiModel=null; 
+            appState.detectedGeminiModel = null; 
             updateModelUI(); 
             startDocMonitor(); 
             closeSettings(); 
@@ -547,7 +628,6 @@ function doPost(e) {
         function toggleVoice() { 
             if (!recognition) { alert("瀏覽器不支援"); return; }
             if (appState.isListening) {
-                // Manual Stop: Turn off everything
                 appState.isContinuous = false; 
                 document.getElementById('continuous-btn').classList.remove('text-emerald-400', 'animate-pulse');
                 document.getElementById('continuous-btn').classList.add('text-slate-500');
@@ -570,10 +650,9 @@ function doPost(e) {
             if (appState.isContinuous) {
                 btn.classList.remove('text-slate-500');
                 btn.classList.add('text-emerald-400', 'bg-emerald-900/30', 'animate-pulse');
-                icon.classList.add('animate-spin-slow'); // Add visual feedback
+                icon.classList.add('animate-spin-slow'); 
                 addMessage("🔄 已開啟連續對話模式：說完話後6秒自動發送，麥克風將持續開啟。", "system");
                 
-                // If not listening, start listening automatically
                 if (!appState.isListening && recognition) {
                     initialInput = document.getElementById('user-input').value;
                     recognition.start();
@@ -583,7 +662,6 @@ function doPost(e) {
                 btn.classList.remove('text-emerald-400', 'bg-emerald-900/30', 'animate-pulse');
                 icon.classList.remove('animate-spin-slow');
                 addMessage("⏹️ 已關閉連續對話模式。", "system");
-                // Stop listening if currently active
                 if (appState.isListening && recognition) {
                     recognition.stop();
                 }
@@ -629,13 +707,8 @@ function doPost(e) {
         }
 
         // --- PHOTO LOGIC ---
-        function triggerPhotoUpload() {
-            document.getElementById('photo-input').click();
-        }
-        
-        function triggerCameraUpload() {
-            document.getElementById('camera-input').click();
-        }
+        function triggerPhotoUpload() { document.getElementById('photo-input').click(); }
+        function triggerCameraUpload() { document.getElementById('camera-input').click(); }
         
         function handlePhotoSelect(e) {
             const file = e.target.files[0];
@@ -693,7 +766,6 @@ function doPost(e) {
             const filename = `${dateStr}-Audio.webm`;
             
             if (!appState.driveUrl) {
-                // No Drive URL? Offer Download
                 const url = URL.createObjectURL(audioBlob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -704,7 +776,6 @@ function doPost(e) {
                 return;
             }
 
-            // Upload to GAS
             addMessage(`☁️ 正在上傳 ${filename} 到 Google Drive...`, 'system');
             const reader = new FileReader();
             reader.readAsDataURL(audioBlob);
@@ -845,17 +916,6 @@ function doPost(e) {
             } catch (e) { return null; }
         }
 
-        async function getYouTubeMetadata(url) {
-            try {
-                const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(oembedUrl)}`;
-                const res = await fetch(proxyUrl);
-                const data = await res.json();
-                if (!data.contents) return null;
-                return JSON.parse(data.contents);
-            } catch (e) { return null; }
-        }
-
         // --- PASTE HANDLER ---
         function handlePaste(e) {
             const items = (e.clipboardData || window.clipboardData).items;
@@ -902,7 +962,6 @@ function doPost(e) {
              document.getElementById('paste-indicator').classList.add('hidden');
         }
 
-        // --- DOC WRITER UI LOGIC ---
         function setWriteMode(mode) {
             appState.writeMode = mode;
             ['text', 'image', 'link'].forEach(m => {
@@ -927,7 +986,6 @@ function doPost(e) {
         }
 
         async function handleDocWriteBtn() {
-            // Pick active URL based on toggle
             const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
             
             if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
@@ -937,10 +995,9 @@ function doPost(e) {
             const sendBtn = document.getElementById('note-send-btn');
             
             let payload = {};
-            
             let currentMode = appState.writeMode;
-            if ((currentMode === 'image' || currentMode === 'link') && 
-                !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
+            
+            if ((currentMode === 'image' || currentMode === 'link') && !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
                 currentMode = 'text';
             }
             
@@ -963,12 +1020,7 @@ function doPost(e) {
                 sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
                 
                 try {
-                    await fetch(targetUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify(payload)
-                    });
+                    await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
                     addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system');
                     clearNoteInput();
                 } catch(e) { alert("寫入失敗，請檢查 URL"); }
@@ -979,12 +1031,9 @@ function doPost(e) {
             }
         }
 
-        // --- DOC VIEWER ---
         function openNoteDocViewer() { 
-            // Use active notebook URL
             const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
             if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`);
-            
             document.getElementById('doc-viewer-modal').classList.remove('hidden'); 
             refreshNoteDocView(); 
         }
@@ -1003,14 +1052,6 @@ function doPost(e) {
         }
 
         // --- HANDLERS & AI LOGIC ---
-        function handleSendMessageInternal(text, isHidden=false) {
-             if(!isHidden) addMessage(text, 'user');
-             fetchAIResponse(text, appState.currentModel).then(res => {
-                 if(typeof res === 'string') addMessage(res, 'ai', appState.currentModel);
-                 else addMessage(res.text, 'ai', appState.currentModel, res.sources);
-             }).catch(e => { addMessage("無法分析文件更新：" + e.message, 'system'); });
-        }
-        
         async function handleSendMessage() {
             if(appState.isThinking) return;
             const input = document.getElementById('user-input');
@@ -1023,15 +1064,13 @@ function doPost(e) {
 
             // --- Voice Recording Commands ---
             if (text.includes("開始錄音")) {
-                input.value = '';
-                initialInput = '';
+                input.value = ''; initialInput = '';
                 addMessage(text, 'user');
                 startAudioRecording();
                 return;
             }
             if (text.includes("停止錄音")) {
-                input.value = '';
-                initialInput = '';
+                input.value = ''; initialInput = '';
                 addMessage(text, 'user');
                 stopAudioRecording();
                 return;
@@ -1041,16 +1080,12 @@ function doPost(e) {
             updateSendButtonState(true);
             addMessage(text, 'user');
             
-            // --- CRITICAL FIX: Reset input & voice buffer immediately ---
             input.value = '';
             initialInput = ''; 
-            if (recognition && !appState.isContinuous) {
-                recognition.stop();
-            }
-            
+            if (recognition && !appState.isContinuous) { recognition.stop(); }
             renderThinkingState(true);
 
-            // --- REMINDER LOGIC (Updated Smart Flow) ---
+            // --- REMINDER LOGIC ---
             if (appState.pendingReminder && appState.reminderStage > 0) {
                 const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                 if (todo) {
@@ -1076,17 +1111,12 @@ function doPost(e) {
                     } else {
                         addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system');
                     }
-                    saveData();
-                    renderTodos();
+                    saveData(); renderTodos();
                 }
-                
-                appState.isThinking = false;
-                updateSendButtonState(false);
-                renderThinkingState(false);
+                appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
                 return;
             }
 
-            // Update 5: Strict Trigger for Reminder (Case insensitive, no space required)
             const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
             if (reminderMatch) {
                 const content = reminderMatch[1].trim() || "未命名事項";
@@ -1094,17 +1124,11 @@ function doPost(e) {
                 appState.todos.push(newTodo);
                 appState.pendingReminder = newTodo.id;
                 appState.reminderStage = 1; 
-                saveData();
-                renderTodos();
-                
+                saveData(); renderTodos();
                 addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？`, 'system');
-                
-                appState.isThinking = false;
-                updateSendButtonState(false);
-                renderThinkingState(false);
+                appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
                 return;
             }
-            // --- END REMINDER LOGIC ---
 
             try {
                 let systemPromptAddon = "";
@@ -1114,7 +1138,7 @@ function doPost(e) {
                 
                 if (appState.isSearchEnabled) enableSearchTool = true;
 
-                // Update 4 & 5: Strict Search Trigger & Pipeline
+                // --- SEARCH LOGIC ---
                 const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
                 
                 if (searchMatch) {
@@ -1134,7 +1158,6 @@ function doPost(e) {
                     if (!usedSerp && appState.docMonitorUrl) {
                         searchResultText = await searchViaGas(searchKeyword);
                     } else if (!usedSerp) {
-                        // If no Search tools available, fallback to basic Gemini tool if present
                         if (appState.keys.gemini) {
                              modelToUse = 'gemini';
                              enableSearchTool = true;
@@ -1144,25 +1167,18 @@ function doPost(e) {
                         }
                     }
 
-                    // If we got explicit text back from SerpApi/GAS, do the summarization pipeline
                     if (searchResultText) {
                         addMessage(searchResultText, 'system');
-                        
-                        // Select Summarization Model (Cohere -> Groq -> Current)
                         let summaryModel = appState.currentModel;
                         if (summaryModel !== 'cohere' && summaryModel !== 'groq') {
                             if (appState.keys.cohere) summaryModel = 'cohere';
                             else if (appState.keys.groq) summaryModel = 'groq';
                         }
-                        
                         modelToUse = summaryModel;
                         text = `請根據以下搜尋結果，用繁體中文為我做一份重點摘要：\n\n${searchResultText}`;
-                        injectedContext = "";
-                        systemPromptAddon = "";
-                        enableSearchTool = false;
+                        injectedContext = ""; systemPromptAddon = ""; enableSearchTool = false;
                     }
                 } else {
-                    // Normal URL scraping fallback
                     const urlMatch = text.match(/https?:\/\/[^\s]+/);
                     if (urlMatch) {
                         const url = urlMatch[0];
@@ -1186,7 +1202,7 @@ function doPost(e) {
                     }
                 }
 
-                // Update 3: API Fallback Sequence Execution
+                // --- API FALLBACK LOGIC ---
                 let finalRes;
                 let successfulModel = modelToUse;
                 const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
@@ -1220,82 +1236,6 @@ function doPost(e) {
             }
         }
 
-        // --- NEW: Natural Language Time Parser ---
-        function parseTimeNatural(str) {
-            const now = new Date();
-            let result = { complete: false, timestamp: null, missing: null };
-            
-            // 1. Check relative "X hours/mins later"
-            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
-            if (relMatch) {
-                const amount = parseInt(relMatch[1]);
-                const unit = relMatch[2];
-                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
-                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
-                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
-                return { complete: true, timestamp: now.getTime() };
-            }
-
-            // 2. Check "Tomorrow/Today"
-            let targetDate = new Date();
-            let hasDate = false;
-            if (str.includes('明天') || str.includes('tomorrow')) {
-                targetDate.setDate(targetDate.getDate() + 1);
-                hasDate = true;
-            } else if (str.includes('後天')) {
-                targetDate.setDate(targetDate.getDate() + 2);
-                hasDate = true;
-            } else if (str.match(/\d{1,2}月\d{1,2}日/)) {
-                // Simple date parse e.g. 2月15日
-                const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/);
-                targetDate.setMonth(parseInt(dMatch[1]) - 1);
-                targetDate.setDate(parseInt(dMatch[2]));
-                hasDate = true;
-            } else if (str.includes('今天') || str.includes('today')) {
-                hasDate = true;
-            }
-
-            // 3. Check Time "HH:MM" or "X點"
-            let hour = -1, minute = 0;
-            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); // 10:30
-            const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); // 10點30
-            
-            if (timeMatch) {
-                hour = parseInt(timeMatch[1]);
-                minute = parseInt(timeMatch[2]);
-            } else if (hourMatch) {
-                hour = parseInt(hourMatch[1]);
-                if (hourMatch[2]) minute = parseInt(hourMatch[2]);
-            }
-
-            // 4. Check AM/PM
-            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
-            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
-
-            if (hour !== -1) {
-                // Ambiguity check
-                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) {
-                    return { complete: false, missing: 'ampm' }; 
-                }
-                
-                if (isPM && hour < 12) hour += 12;
-                if (isAM && hour === 12) hour = 0; // 12 AM is 00:00
-
-                targetDate.setHours(hour, minute, 0, 0);
-                
-                // If no date specified, assume today (or tomorrow if time passed)
-                if (!hasDate) {
-                    if (targetDate < new Date()) {
-                        return { complete: false, missing: 'date' };
-                    }
-                }
-                
-                return { complete: true, timestamp: targetDate.getTime() };
-            }
-
-            return { complete: false, missing: 'time' };
-        }
-
         async function fetchAIResponse(userText, model, options = {}) {
             const fetchWithTimeout = async (url, options, timeout = 30000) => {
                 const controller = new AbortController();
@@ -1306,9 +1246,8 @@ function doPost(e) {
 
             try {
                 const key = appState.keys[model];
-                if(!key) throw new Error(`請至 [設定] 填入完整的 ${MODEL_CONFIG[model]?.name || model} API Key`);
+                if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
 
-                // Update 5: Strict Model Endpoints
                 if(model === 'gemini') {
                     const modelName = 'gemini-2.5-flash';
                     const payload = { 
@@ -1352,16 +1291,12 @@ function doPost(e) {
                 } else if (model === 'groq') {
                     const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: userText }] }) });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
+                    if (!res.ok) throw new Error(data.error?.message || `Groq 錯誤 (${res.status})`);
                     return data.choices?.[0]?.message?.content || "無回應";
                 } else if (model === 'cohere') {
                     const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { 
                         method: 'POST', 
-                        headers: { 
-                            'Authorization': `Bearer ${key}`, 
-                            'Content-Type': 'application/json', 
-                            'Accept': 'application/json' 
-                        }, 
+                        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
                         body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText }) 
                     });
                     const data = await res.json();
@@ -1385,7 +1320,6 @@ function doPost(e) {
             } catch(e) { throw e; }
         }
 
-        // --- ALARM / UTILS / MEDIA RECORDER ... ---
         function playAlarmSound() {
             try {
                 if (!alarmAudioCtx) {
@@ -1469,7 +1403,7 @@ function doPost(e) {
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 12 就緒！\n已整合全新下拉選單、API 自動備援與搜尋摘要流水線。', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 12 就緒！\n已整合全新下拉選單、設定檔管理與 API 自動備援機制。', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1624,4 +1558,4 @@ function doPost(e) {
         };
     </script>
 </body>
-                                        </html>
+</html>
