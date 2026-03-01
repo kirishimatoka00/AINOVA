@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 14</title>
+    <title>NOVA 15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 14</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 15</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 14</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 15</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -168,13 +168,19 @@
             <!-- SOS MODAL -->
             <div id="sos-modal" class="hidden fixed inset-0 z-[70] bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
                 <i class="ph-fill ph-warning-circle text-7xl text-red-500 mb-4 animate-pulse"></i>
-                <h2 class="text-3xl font-bold text-white mb-2">緊急救援觸發</h2>
+                <h2 id="sos-title" class="text-3xl font-bold text-white mb-2">緊急救援觸發</h2>
                 <p class="text-lg text-red-200 mb-2">將撥打當地專線: <span id="sos-number" class="font-bold text-3xl text-white tracking-widest"></span></p>
                 <p class="text-sm text-slate-400 mb-8">並發送包含座標之求救簡訊</p>
                 <div class="text-9xl font-bold text-white mb-8" id="sos-countdown">10</div>
-                <button onclick="cancelSOS()" class="w-full max-w-xs bg-slate-800 border border-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
-                    <i class="ph-bold ph-x mr-2"></i>取消 (Cancel)
-                </button>
+                
+                <div class="w-full max-w-xs space-y-3">
+                    <button onclick="setSOSDrillMode()" id="sos-drill-btn" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
+                        <i class="ph-bold ph-shield-check mr-2"></i>切換為演習模式
+                    </button>
+                    <button onclick="cancelSOS()" class="w-full bg-slate-800 border border-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
+                        <i class="ph-bold ph-x mr-2"></i>取消 (Cancel)
+                    </button>
+                </div>
             </div>
 
             <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
@@ -360,7 +366,8 @@
             lastLat: null,
             lastLon: null,
             sosTimer: null,
-            sosCount: 10
+            sosCount: 10,
+            isSOSDrill: false // 新增演習模式標記
         };
         
         const MODEL_CONFIG = {
@@ -375,7 +382,29 @@
         function saveMessages() { localStorage.setItem('nova_messages', JSON.stringify(appState.messages)); }
         function saveData() { localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); }
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
-        function formatMessage(text) { if (!text) return ''; let safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>'); safe = safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-blue-400 underline break-all">$1</a>'); return safe.replace(/\n/g, '<br>'); }
+        
+        // 【修正 1】：重寫 formatMessage 以完美支援 Markdown 連結並排除尾端括號
+        function formatMessage(text) { 
+            if (!text) return ''; 
+            // 基礎跳脫處理
+            let safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+            safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>'); 
+            
+            // 透過取代函數同時處理 Markdown 連結 [Title](Url) 與 純文字網址 https://...
+            safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s<]+?)\)|(https?:\/\/[^\s<)\]]+)/g, function(match, mdTitle, mdUrl, rawUrl) {
+                if (mdUrl) {
+                    // 若是 Markdown 格式，抓取標題與網址
+                    return `<a href="${mdUrl}" target="_blank" class="text-blue-400 underline break-all">${mdTitle}</a>`;
+                } else if (rawUrl) {
+                    // 若是純文字網址，透過 Regex 本身的 [^\s<)\]]+ 設計，完美排除結尾的括號與空白
+                    return `<a href="${rawUrl}" target="_blank" class="text-blue-400 underline break-all">${rawUrl}</a>`;
+                }
+                return match;
+            });
+            
+            return safe.replace(/\n/g, '<br>'); 
+        }
+        
         function escapeHtml(t){return t?t.replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">"):""}
 
         // --- RENDERERS ---
@@ -392,7 +421,7 @@
                     ${!isUser ? `<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${modelInfo?.bg||'bg-slate-700'}"><i class="ph-fill ${modelInfo?.icon||'ph-robot'} text-white text-sm"></i></div>` : ''}
                     <div class="msg-group relative max-w-[90%] md:max-w-[80%] rounded-2xl p-4 shadow-sm ${isUser ? 'bg-slate-800 text-white rounded-br-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'}">
                         ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-1 block ${modelInfo?.color||'text-slate-400'} opacity-80">${modelInfo?.name||'System'}</span>` : ''}
-                        <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text, msg.isHtml)}</div>
+                        <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div>
                         ${sourcesHTML}
                         <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
                         <button onclick="deleteMessage(${msg.id})" class="msg-actions absolute top-2 right-2 p-1 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/50 rounded-full"><i class="ph-bold ph-trash text-xs"></i></button>
@@ -526,7 +555,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA14_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA15_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -593,7 +622,7 @@
                     (p) => {
                         appState.lastLat = p.coords.latitude;
                         appState.lastLon = p.coords.longitude;
-                        // 改用 BigDataCloud API 較穩定且無嚴格跨域或頻率限制
+                        // 使用 BigDataCloud API 較穩定且無嚴格跨域或頻率限制
                         fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=zh-tw`)
                             .then(r=>r.json())
                             .then(d => { 
@@ -642,7 +671,7 @@
         function updateLocStatus(msg) { 
             const el = document.getElementById('location-status'); 
             if(el) el.innerText = msg; 
-            if(msg==="已更新"||msg.includes("預設")||msg.includes("手動")) { 
+            if(msg==="已更新"||msg.includes("預設")||msg.includes("手掌握")) { 
                 const {loc, temp} = appState.weather; 
                 const locName = document.getElementById('location-name'); if(locName) locName.innerText = loc; 
                 const mTemp = document.getElementById('mobile-weather-temp'); if(mTemp) mTemp.innerText = `${temp}°`; 
@@ -726,7 +755,38 @@
             return '112'; // Global Fallback
         }
 
+        function setSOSDrillMode() {
+            appState.isSOSDrill = true;
+            const drillBtn = document.getElementById('sos-drill-btn');
+            if (drillBtn) {
+                drillBtn.className = "w-full bg-emerald-600 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95";
+                drillBtn.innerHTML = '<i class="ph-bold ph-check-circle mr-2"></i>已開啟演習模式';
+                drillBtn.disabled = true;
+            }
+            
+            const titleEl = document.getElementById('sos-title');
+            if (titleEl) {
+                titleEl.innerText = "緊急救援 (演習模式)";
+                titleEl.className = "text-3xl font-bold text-yellow-400 mb-2";
+            }
+            addMessage("🛡️ 已開啟 SOS 演習模式：倒數結束後僅會輸出模擬結果，不會真正觸發撥號或發送簡訊。", 'system');
+        }
+
         function triggerEmergency(type) {
+            // Reset state
+            appState.isSOSDrill = false;
+            const drillBtn = document.getElementById('sos-drill-btn');
+            if (drillBtn) {
+                drillBtn.className = "w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95";
+                drillBtn.innerHTML = '<i class="ph-bold ph-shield-check mr-2"></i>切換為演習模式';
+                drillBtn.disabled = false;
+            }
+            const titleEl = document.getElementById('sos-title');
+            if(titleEl) {
+                titleEl.innerText = "緊急救援觸發";
+                titleEl.className = "text-3xl font-bold text-white mb-2";
+            }
+
             const country = appState.countryCode || 'TW';
             const targetNumber = getEmergencyNumber(country, type);
 
@@ -754,7 +814,7 @@
             if(appState.sosTimer) clearInterval(appState.sosTimer);
             document.getElementById('sos-modal').classList.add('hidden');
             document.getElementById('sos-modal').classList.remove('flex');
-            addMessage("🛑 已取消緊急呼叫", 'system');
+            addMessage("🛑 已取消緊急呼叫指令", 'system');
         }
 
         function executeSOS(number) {
@@ -766,6 +826,12 @@
             const locStr = (lat && lon) ? ` https://maps.google.com/?q=${lat},${lon}` : '';
             const msg = `I need help now!${locStr}`;
             
+            // 【修正 2】：如果是演習模式，在此攔截並不執行真實通話
+            if (appState.isSOSDrill) {
+                addMessage(`🛡️ 【緊急求救演習完成】\n若在真實情況下，系統將會為您呼叫 APP 撥打至 ${number} 並發送求救簡訊。\n\n📜 簡訊模擬內容：\n${msg}`, 'system');
+                return;
+            }
+
             addMessage(`🚨 正在發送求救簡訊並呼叫電話 APP 至 ${number}...\n(註：受限於手機安全機制，網頁無法自動代為按下實體撥打，請手動按下通話鍵確認)`, 'system');
             
             // Trigger SMS app
@@ -1627,7 +1693,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 14 啟動！\n✅ 已修復 GPS 定位解析精準度\n✅ 已改進 Docs 連線測試機制\n✅ 已優化 Call 直接呼叫流程 (附系統安全機制說明)', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 15 啟動！\n✅ 已修正 SerpApi 搜尋網址包含結尾括號問題\n✅ 已新增 SOS 緊急救援「演習模式」功能', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1782,4 +1848,4 @@
         };
     </script>
 </body>
-                                                                                                                                                                       </html>
+                    </html>
