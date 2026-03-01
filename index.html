@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nova 12.31 - Cohere & Groq Final</title>
+    <title>NOVA 12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,8 +55,8 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA</h1>
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Cohere & Groq Edition</p>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 12</h1>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
             <nav class="flex-1 space-y-2">
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 12</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -161,7 +161,6 @@ function doPost(e) {
                             <div><label class="block text-xs text-green-400 mb-1">SerpApi Key</label><input type="password" id="key-serpapi" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-green-500 outline-none" placeholder="Your SerpApi Key"></div>
                             <div><label class="block text-xs text-rose-400 mb-1">Groq API Key</label><input type="password" id="key-groq" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-rose-500 outline-none"></div>
                             <div><label class="block text-xs text-violet-400 mb-1">Cohere API Key</label><input type="password" id="key-cohere" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-violet-500 outline-none"></div>
-                            <div><label class="block text-xs text-orange-400 mb-1">Cerebras API Key</label><input type="password" id="key-cerebras" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-orange-500 outline-none"></div>
                             <div><label class="block text-xs text-emerald-400 mb-1">OpenAI API Key</label><input type="password" id="key-openai" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none"></div>
                             <div><label class="block text-xs text-slate-300 mb-1">Grok API Key</label><input type="password" id="key-grok" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-slate-500 outline-none"></div>
                         </div>
@@ -185,7 +184,7 @@ function doPost(e) {
             <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
                 <div class="flex-1 flex flex-col h-full min-w-0 relative">
                     <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar">
-                         <div class="flex items-center space-x-2 mr-4">
+                         <div class="flex items-center space-x-2 mr-4 shrink-0">
                             <span id="web-search-badge" class="hidden md:flex items-center space-x-1 text-[10px] bg-blue-900/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full"><i class="ph-bold ph-globe"></i><span>連網搜尋</span></span>
                             <!-- Recording Indicator -->
                             <div id="recording-status" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2">
@@ -195,23 +194,25 @@ function doPost(e) {
                             <span id="doc-monitor-badge" class="hidden items-center space-x-1 text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse"><i class="ph-bold ph-arrows-clockwise"></i><span>Docs 監控中</span></span>
                             <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
                          </div>
-                         <div class="flex space-x-1">
-                            <button onclick="setModel('gemini')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white transition-all whitespace-nowrap" data-model="gemini">Gemini</button>
-                            <button onclick="setModel('groq')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="groq">Groq</button>
-                            <button onclick="setModel('cohere')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="cohere">Cohere</button>
-                            <button onclick="setModel('cerebras')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="cerebras">Cerebras</button>
-                            <button onclick="setModel('gpt')" class="model-pill px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 transition-all whitespace-nowrap" data-model="gpt">GPT</button>
+                         
+                         <!-- Update 2: Dropdown Model Selection -->
+                         <div class="flex space-x-1 ml-auto">
+                             <select id="main-model-select" onchange="setModel(this.value)" class="bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-1 outline-none focus:border-blue-500 font-bold tracking-wide">
+                                 <option value="gemini">Gemini (2.5 Flash)</option>
+                                 <option value="grok">Grok (4.1 Fast)</option>
+                                 <option value="groq">Groq</option>
+                                 <option value="cohere">Cohere</option>
+                                 <option value="gpt">OpenAI</option>
+                             </select>
                          </div>
                     </div>
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
                     <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                         <div id="input-wrapper" class="flex items-center bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                            <!-- NEW: Continuous Mode Button -->
                             <button id="continuous-btn" onclick="toggleContinuous()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
-                            
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="切換搜尋 (Gemini Only)"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-3 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
-                            <input type="text" id="user-input" placeholder="貼上網址自動分析，或輸入「搜尋：關鍵字」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
+                            <input type="text" id="user-input" placeholder="貼上網址自動分析，或輸入「搜尋(內容)」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
                             <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
                         <div id="search-hint" class="text-[10px] text-blue-400 mt-2 text-center hidden">🌐 已開啟連網搜尋 (Gemini)</div>
@@ -338,7 +339,8 @@ function doPost(e) {
         let audioChunks = [];
 
         const appState = {
-            currentModel: 'gemini', detectedGeminiModel: null,
+            currentModel: 'gemini', 
+            detectedGeminiModel: null,
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '',
             noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', 
             noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '',
@@ -351,7 +353,6 @@ function doPost(e) {
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
             keys: { 
                 gemini: localStorage.getItem('nova_key_gemini')||'', 
-                cerebras: localStorage.getItem('nova_key_cerebras')||'', 
                 groq: localStorage.getItem('nova_key_groq')||'',
                 cohere: localStorage.getItem('nova_key_cohere')||'',
                 openai: localStorage.getItem('nova_key_openai')||'', 
@@ -366,13 +367,13 @@ function doPost(e) {
             reminderStage: 0 
         };
         
+        // Update 1: Model Config
         const MODEL_CONFIG = {
             gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' },
+            grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' },
             groq: { name: 'Groq', color: 'text-rose-400', bg: 'bg-rose-600', icon: 'ph-rocket' },
             cohere: { name: 'Cohere', color: 'text-violet-400', bg: 'bg-violet-600', icon: 'ph-cpu' },
-            cerebras: { name: 'Cerebras', color: 'text-orange-400', bg: 'bg-orange-600', icon: 'ph-rocket-launch' },
-            gpt: { name: 'ChatGPT', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' },
-            grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' }
+            gpt: { name: 'OpenAI', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' }
         };
 
         // --- UTILS ---
@@ -412,7 +413,7 @@ function doPost(e) {
         function renderThinkingState(show) { 
             const el = document.getElementById('thinking-indicator'); 
             const container = document.getElementById('chat-container');
-            if(show && !el && container) container.insertAdjacentHTML('beforeend', `<div id="thinking-indicator" class="flex justify-start items-center space-x-3 fade-in"><div class="w-8 h-8 rounded-full flex items-center justify-center ${MODEL_CONFIG[appState.currentModel].bg}"><i class="ph-fill ${MODEL_CONFIG[appState.currentModel].icon} text-white text-sm"></i></div><div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none"><div class="dot-flashing ml-2"></div></div></div>`); 
+            if(show && !el && container) container.insertAdjacentHTML('beforeend', `<div id="thinking-indicator" class="flex justify-start items-center space-x-3 fade-in"><div class="w-8 h-8 rounded-full flex items-center justify-center ${MODEL_CONFIG[appState.currentModel]?.bg || 'bg-slate-700'}"><i class="ph-fill ${MODEL_CONFIG[appState.currentModel]?.icon || 'ph-robot'} text-white text-sm"></i></div><div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none"><div class="dot-flashing ml-2"></div></div></div>`); 
             else if(!show && el) el.remove(); 
         }
 
@@ -465,10 +466,14 @@ function doPost(e) {
 
         function updateModelUI(){ 
             const conf=MODEL_CONFIG[appState.currentModel]; 
-            const statusName = document.getElementById('status-name'); if(statusName) statusName.innerText=conf.name; 
-            const statusIcon = document.getElementById('status-icon'); if(statusIcon) statusIcon.className=`ph-fill ${conf.icon} text-lg ${conf.color}`; 
-            document.querySelectorAll('.model-pill').forEach(b=>{ b.className = `model-pill px-3 py-1 rounded-lg text-[10px] font-bold ${b.dataset.model===appState.currentModel ? `${conf.bg} text-white` : 'bg-slate-800 text-slate-400'} transition-all whitespace-nowrap`; }); 
-            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-center bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='cerebras'?'orange':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
+            const statusName = document.getElementById('status-name'); if(statusName) statusName.innerText=conf?.name || 'Unknown'; 
+            const statusIcon = document.getElementById('status-icon'); if(statusIcon) statusIcon.className=`ph-fill ${conf?.icon || 'ph-cpu'} text-lg ${conf?.color || 'text-slate-400'}`; 
+            
+            const selectEl = document.getElementById('main-model-select');
+            if(selectEl) selectEl.value = appState.currentModel;
+            
+            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-center bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
+            
             const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
             if(searchBtn) {
                 if(appState.isSearchEnabled){ searchBtn.classList.add('text-blue-400','bg-blue-900/30'); searchBtn.classList.remove('text-slate-500'); if(badge)badge.classList.remove('hidden'); if(hint)hint.classList.remove('hidden'); }
@@ -489,9 +494,9 @@ function doPost(e) {
         function switchTab(id){ ['dashboard','schedule','notes'].forEach(t=>document.getElementById(`view-${t}`).classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); document.getElementById(`view-${id}`).classList.add('flex'); document.querySelectorAll('.nav-item').forEach(b=>{b.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all';}); const active=document.getElementById(`nav-${id}`); if(active)active.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all'; }
         function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
         function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+        
         function saveKeys(){ 
             appState.keys.gemini=document.getElementById('key-gemini').value.trim(); 
-            appState.keys.cerebras=document.getElementById('key-cerebras').value.trim(); 
             appState.keys.groq=document.getElementById('key-groq').value.trim();
             appState.keys.cohere=document.getElementById('key-cohere').value.trim();
             appState.keys.openai=document.getElementById('key-openai').value.trim(); 
@@ -503,7 +508,6 @@ function doPost(e) {
             appState.driveUrl=document.getElementById('key-drive-url').value.trim(); 
             
             localStorage.setItem('nova_key_gemini',appState.keys.gemini); 
-            localStorage.setItem('nova_key_cerebras',appState.keys.cerebras); 
             localStorage.setItem('nova_key_groq',appState.keys.groq); 
             localStorage.setItem('nova_key_cohere',appState.keys.cohere); 
             localStorage.setItem('nova_key_openai',appState.keys.openai); 
@@ -1039,22 +1043,18 @@ function doPost(e) {
             
             // --- CRITICAL FIX: Reset input & voice buffer immediately ---
             input.value = '';
-            initialInput = ''; // Reset base to prevent old transcript re-appearing
+            initialInput = ''; 
             if (recognition && !appState.isContinuous) {
                 recognition.stop();
             }
-            // -----------------------------------------------------------
             
             renderThinkingState(true);
 
             // --- REMINDER LOGIC (Updated Smart Flow) ---
             if (appState.pendingReminder && appState.reminderStage > 0) {
-                // We are in a follow-up stage
                 const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                 if (todo) {
                     let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text;
-                    
-                    // Attempt to parse again with combined info
                     const timeInfo = parseTimeNatural(combinedText);
                     
                     if (timeInfo.complete) {
@@ -1066,16 +1066,14 @@ function doPost(e) {
                         appState.reminderStage = 0;
                         addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system');
                     } else if (timeInfo.missing === 'date') {
-                        // Still missing date, but maybe have time
-                        todo.tempTimeStr = combinedText; // store what we have
+                        todo.tempTimeStr = combinedText; 
                         addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system');
-                        appState.reminderStage = 2; // Stay in clarifying
+                        appState.reminderStage = 2; 
                     } else if (timeInfo.missing === 'ampm') {
                         todo.tempTimeStr = combinedText;
                         addMessage(`請問是「上午」還是「下午」？`, 'system');
                         appState.reminderStage = 2;
                     } else {
-                        // Fallback if parsing failed completely
                         addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system');
                     }
                     saveData();
@@ -1088,13 +1086,14 @@ function doPost(e) {
                 return;
             }
 
-            const reminderMatch = text.match(/^(?:提醒|reminder)[\s:：]?(.*)$/i);
-            if (reminderMatch && reminderMatch[1]) {
-                const content = reminderMatch[1] || "未命名事項";
+            // Update 5: Strict Trigger for Reminder (Case insensitive, no space required)
+            const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
+            if (reminderMatch) {
+                const content = reminderMatch[1].trim() || "未命名事項";
                 const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false };
                 appState.todos.push(newTodo);
                 appState.pendingReminder = newTodo.id;
-                appState.reminderStage = 1; // Start stage 1
+                appState.reminderStage = 1; 
                 saveData();
                 renderTodos();
                 
@@ -1115,66 +1114,101 @@ function doPost(e) {
                 
                 if (appState.isSearchEnabled) enableSearchTool = true;
 
-                // --- SEARCH LOGIC FIX ---
-                // New regex to allow "搜尋[keyword]" without space
-                const searchMatch = text.match(/^(?:搜尋|查詢|搜索|查|找|search|query)[:：\s]*(.+)/i);
+                // Update 4 & 5: Strict Search Trigger & Pipeline
+                const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
                 
                 if (searchMatch) {
+                    const searchKeyword = searchMatch[1].trim() || "今日新聞";
+                    let searchResultText = "";
+                    let usedSerp = false;
+
                     if (appState.keys.serpapi) {
                         try {
-                            const searchResult = await searchViaSerpApi(searchMatch[1]);
-                            addMessage(searchResult, 'system');
-                            injectedContext = `\n\n[系統 SerpApi 搜尋結果]:\n${searchResult}\n\n[指令]: 請根據上述搜尋結果回答使用者的問題。`;
-                            enableSearchTool = false;
+                            searchResultText = await searchViaSerpApi(searchKeyword);
+                            usedSerp = true;
                         } catch (serpErr) {
                             addMessage(`⚠️ ${serpErr.message}，正在退回使用備用搜尋。`, 'system');
-                            if (appState.keys.gemini) {
-                                modelToUse = 'gemini';
-                                enableSearchTool = true;
-                                systemPromptAddon += `(系統指令: 使用者正在要求搜尋。請務必使用 Google Search 工具查找「${searchMatch[1]}」的最新資訊，並詳細回答。若您無法使用工具，請誠實告知。)`;
-                            }
                         }
                     }
-                    else if (appState.docMonitorUrl) {
-                        const searchResult = await searchViaGas(searchMatch[1]);
-                        addMessage(searchResult, 'system');
-                        injectedContext = `\n\n[系統搜尋結果]:\n${searchResult}\n\n[指令]: 請根據上述搜尋結果回答使用者的問題。`;
-                        enableSearchTool = false; 
-                    } 
-                    else if (appState.keys.gemini) {
-                        modelToUse = 'gemini';
-                        enableSearchTool = true;
-                        systemPromptAddon += `(系統指令: 使用者正在要求搜尋。請務必使用 Google Search 工具查找「${searchMatch[1]}」的最新資訊，並詳細回答。若您無法使用工具，請誠實告知。)`;
-                    }
-                }
-
-                const urlMatch = text.match(/https?:\/\/[^\s]+/);
-                if (urlMatch) {
-                    const url = urlMatch[0];
-                    if (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('twitter.com') && !url.includes('facebook.com')) {
-                        addMessage(`🔍 正在透過 Google Doc 代理抓取網頁...`, 'system');
-                        const content = await fetchUrlViaGas(url);
-                        if (content) {
-                            injectedContext = `\n\n[系統: 已透過 Google Doc 成功抓取網頁內容 (${url})，請根據以下內容回答]:\n${content}\n\n`;
-                            enableSearchTool = false; 
+                    
+                    if (!usedSerp && appState.docMonitorUrl) {
+                        searchResultText = await searchViaGas(searchKeyword);
+                    } else if (!usedSerp) {
+                        // If no Search tools available, fallback to basic Gemini tool if present
+                        if (appState.keys.gemini) {
+                             modelToUse = 'gemini';
+                             enableSearchTool = true;
+                             systemPromptAddon += `(系統指令: 使用者正在要求搜尋。請務必使用 Google Search 工具查找「${searchKeyword}」的最新資訊，並詳細回答。若您無法使用工具，請誠實告知。)`;
                         } else {
-                            systemPromptAddon += `(系統: 嘗試抓取網頁失敗，請嘗試使用您的 Search 工具搜尋該網址內容)`;
-                            if (appState.keys.gemini) { modelToUse = 'gemini'; enableSearchTool = true; }
+                             throw new Error("無法進行搜尋：未設定 SerpApi 或 Google Doc 代理 URL，且無 Gemini 金鑰備援。");
                         }
-                    } else if (url.includes('youtube') || url.includes('youtu.be')) {
-                         if (appState.keys.gemini) {
-                            modelToUse = 'gemini';
-                            enableSearchTool = true; 
-                            systemPromptAddon += `(系統: 這是一個 YouTube 連結。請使用 Search 工具搜尋該影片的標題、摘要或評論內容來回答。)`;
-                         }
+                    }
+
+                    // If we got explicit text back from SerpApi/GAS, do the summarization pipeline
+                    if (searchResultText) {
+                        addMessage(searchResultText, 'system');
+                        
+                        // Select Summarization Model (Cohere -> Groq -> Current)
+                        let summaryModel = appState.currentModel;
+                        if (summaryModel !== 'cohere' && summaryModel !== 'groq') {
+                            if (appState.keys.cohere) summaryModel = 'cohere';
+                            else if (appState.keys.groq) summaryModel = 'groq';
+                        }
+                        
+                        modelToUse = summaryModel;
+                        text = `請根據以下搜尋結果，用繁體中文為我做一份重點摘要：\n\n${searchResultText}`;
+                        injectedContext = "";
+                        systemPromptAddon = "";
+                        enableSearchTool = false;
+                    }
+                } else {
+                    // Normal URL scraping fallback
+                    const urlMatch = text.match(/https?:\/\/[^\s]+/);
+                    if (urlMatch) {
+                        const url = urlMatch[0];
+                        if (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('twitter.com') && !url.includes('facebook.com')) {
+                            addMessage(`🔍 正在透過 Google Doc 代理抓取網頁...`, 'system');
+                            const content = await fetchUrlViaGas(url);
+                            if (content) {
+                                injectedContext = `\n\n[系統: 已透過 Google Doc 成功抓取網頁內容 (${url})，請根據以下內容回答]:\n${content}\n\n`;
+                                enableSearchTool = false; 
+                            } else {
+                                systemPromptAddon += `(系統: 嘗試抓取網頁失敗，請嘗試使用您的 Search 工具搜尋該網址內容)`;
+                                if (appState.keys.gemini) { modelToUse = 'gemini'; enableSearchTool = true; }
+                            }
+                        } else if (url.includes('youtube') || url.includes('youtu.be')) {
+                             if (appState.keys.gemini) {
+                                modelToUse = 'gemini';
+                                enableSearchTool = true; 
+                                systemPromptAddon += `(系統: 這是一個 YouTube 連結。請使用 Search 工具搜尋該影片的標題、摘要或評論內容來回答。)`;
+                             }
+                        }
                     }
                 }
 
-                const prompt = `${text}\n${systemPromptAddon}\n${injectedContext}`;
-                const res = await fetchAIResponse(prompt, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "" });
+                // Update 3: API Fallback Sequence Execution
+                let finalRes;
+                let successfulModel = modelToUse;
+                const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
+
+                try {
+                    finalRes = await fetchAIResponse(promptToSent, successfulModel, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "" });
+                } catch (err1) {
+                    console.warn(err1);
+                    addMessage(`⚠️ ${MODEL_CONFIG[successfulModel]?.name || successfulModel} 發生錯誤 (${err1.message})，嘗試切換至 Gemini...`, 'system');
+                    successfulModel = 'gemini';
+                    try {
+                        finalRes = await fetchAIResponse(promptToSent, successfulModel, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "" });
+                    } catch (err2) {
+                        console.warn(err2);
+                        addMessage(`⚠️ Gemini 發生錯誤 (${err2.message})，嘗試切換至 Grok...`, 'system');
+                        successfulModel = 'grok';
+                        finalRes = await fetchAIResponse(promptToSent, successfulModel, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "" });
+                    }
+                }
                 
-                if(typeof res === 'string') addMessage(res, 'ai', modelToUse);
-                else addMessage(res.text, 'ai', modelToUse, res.sources);
+                if(typeof finalRes === 'string') addMessage(finalRes, 'ai', successfulModel);
+                else addMessage(finalRes.text, 'ai', successfulModel, finalRes.sources);
 
             } catch (error) {
                 console.error("Handler Error:", error);
@@ -1272,12 +1306,11 @@ function doPost(e) {
 
             try {
                 const key = appState.keys[model];
-                if(!key) throw new Error(`請至 [設定] 填入完整的 ${MODEL_CONFIG[model].name} API Key`);
+                if(!key) throw new Error(`請至 [設定] 填入完整的 ${MODEL_CONFIG[model]?.name || model} API Key`);
 
+                // Update 5: Strict Model Endpoints
                 if(model === 'gemini') {
-                    if(!appState.detectedGeminiModel) appState.detectedGeminiModel = await detectAvailableGeminiModel(key);
-                    const modelName = appState.detectedGeminiModel.replace('models/', '');
-                    
+                    const modelName = 'gemini-2.5-flash';
                     const payload = { 
                         contents: [{ parts: [{ text: userText }] }],
                         generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
@@ -1294,7 +1327,7 @@ function doPost(e) {
                     });
                     
                     const data = await res.json();
-                    if (!res.ok) throw new Error(`Gemini 錯誤: ${data.error?.message || res.status}`);
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
 
                     const candidate = data.candidates?.[0];
                     if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
@@ -1319,7 +1352,7 @@ function doPost(e) {
                 } else if (model === 'groq') {
                     const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: userText }] }) });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(data.error?.message || `Groq 錯誤 (${res.status})`);
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
                     return data.choices?.[0]?.message?.content || "無回應";
                 } else if (model === 'cohere') {
                     const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { 
@@ -1332,54 +1365,27 @@ function doPost(e) {
                         body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText }) 
                     });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(`Cohere 錯誤: ${data.message || res.status}`);
+                    if (!res.ok) throw new Error(`${data.message || res.status}`);
                     return data.text || "無回應";
-                } else if(model === 'cerebras') {
-                    const res = await fetchWithTimeout('https://api.cerebras.ai/v1/chat/completions', { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:"llama-3.3-70b", messages:[{role:"user", content:userText}], stream:false}) });
-                    const data = await res.json(); 
-                    if (!res.ok) throw new Error(data.error?.message || `Cerebras 錯誤 (${res.status})`);
-                    return data.choices?.[0]?.message?.content || "無回應";
-                } else {
-                    const ep = model==='gpt'?'https://api.openai.com/v1/chat/completions':'https://api.x.ai/v1/chat/completions';
-                    const mName = model==='gpt'?'gpt-4o-mini':'grok-beta';
+                } else if (model === 'grok') {
+                    const ep = 'https://api.x.ai/v1/chat/completions';
+                    const mName = 'grok-4-1-fast-reasoning';
                     const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:userText}]}) });
                     const data = await res.json(); 
-                    if (!res.ok) throw new Error(data.error?.message || `API 錯誤 (${res.status})`);
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
+                    return data.choices?.[0]?.message?.content || "無回應";
+                } else if (model === 'gpt') {
+                    const ep = 'https://api.openai.com/v1/chat/completions';
+                    const mName = 'gpt-4o-mini';
+                    const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:userText}]}) });
+                    const data = await res.json(); 
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
                     return data.choices?.[0]?.message?.content || "無回應";
                 }
             } catch(e) { throw e; }
         }
 
-        async function detectAvailableGeminiModel(apiKey) {
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-                const data = await res.json();
-                const models = data.models.filter(m => m.supportedGenerationMethods?.includes("generateContent"));
-                return (models.find(m=>m.name.includes("gemini-1.5-flash")) || models[0]).name;
-            } catch(e) { return 'gemini-1.5-flash'; }
-        }
-
-        function testDocConnection() {
-            const url = document.getElementById('key-doc-url').value.trim();
-            if(!url) return alert("請輸入 URL");
-            document.getElementById('doc-monitor-status').innerText = "測試中...";
-            fetch(url).then(r=>r.text()).then(t=>{
-                alert("連線成功！");
-                document.getElementById('doc-monitor-status').innerText = "測試成功";
-            }).catch(e=>{
-                alert("連線失敗：" + e.message);
-                document.getElementById('doc-monitor-status').innerText = "測試失敗";
-            });
-        }
-
-        function startDocMonitor() {
-            if(appState.docMonitorInterval) clearInterval(appState.docMonitorInterval);
-            if(!appState.docMonitorUrl) return;
-            document.getElementById('doc-monitor-badge').classList.remove('hidden');
-            document.getElementById('doc-monitor-badge').classList.add('flex');
-        }
-        
-        // --- NEW ALARM FUNCTIONS ---
+        // --- ALARM / UTILS / MEDIA RECORDER ... ---
         function playAlarmSound() {
             try {
                 if (!alarmAudioCtx) {
@@ -1395,7 +1401,6 @@ function doPost(e) {
                     osc.connect(gain);
                     gain.connect(alarmAudioCtx.destination);
                     
-                    // Alarm Beep
                     osc.type = 'square';
                     osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime); 
                     osc.frequency.linearRampToValueAtTime(440, alarmAudioCtx.currentTime + 0.1);
@@ -1464,14 +1469,13 @@ function doPost(e) {
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'Nova 12.31 Hybrid Fix V3 就緒！\n修復了手機端語音輸入重複與自動發送失效的問題。', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 12 就緒！\n已整合全新下拉選單、API 自動備援與搜尋摘要流水線。', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
             const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
             
             safeSet('key-gemini', appState.keys.gemini);
-            safeSet('key-cerebras', appState.keys.cerebras);
             safeSet('key-groq', appState.keys.groq);
             safeSet('key-cohere', appState.keys.cohere);
             safeSet('key-openai', appState.keys.openai);
@@ -1510,7 +1514,7 @@ function doPost(e) {
                 recognition.onend = () => {
                     appState.isListening = false;
                     updateVoiceUI();
-                    document.getElementById('user-input').placeholder = "貼上網址自動分析，或輸入「搜尋：關鍵字」...";
+                    document.getElementById('user-input').placeholder = "貼上網址自動分析，或輸入「搜尋(內容)」...";
                     
                     if(voiceTimer) {
                         clearTimeout(voiceTimer);
@@ -1620,4 +1624,4 @@ function doPost(e) {
         };
     </script>
 </body>
-</html>
+                                        </html>
