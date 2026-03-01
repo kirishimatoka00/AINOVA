@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 12</title>
+    <title>NOVA 13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 12</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 13</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 12</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 13</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -152,7 +152,7 @@ function doPost(e) {
                             </div>
 
                             <div class="flex items-center justify-between">
-                                <span id="doc-monitor-status" class="text-[10px] text-slate-500">未設定</span>
+                                <span id="doc-monitor-status" class="text-[10px] text-slate-500">未測試</span>
                                 <button onclick="testDocConnection()" class="text-[10px] bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500">測試連線</button>
                             </div>
                         </div>
@@ -192,6 +192,18 @@ function doPost(e) {
                 </div>
             </div>
 
+            <!-- SOS MODAL -->
+            <div id="sos-modal" class="hidden fixed inset-0 z-[70] bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+                <i class="ph-fill ph-warning-circle text-7xl text-red-500 mb-4 animate-pulse"></i>
+                <h2 class="text-3xl font-bold text-white mb-2">緊急救援觸發</h2>
+                <p class="text-lg text-red-200 mb-2">將撥打當地專線: <span id="sos-number" class="font-bold text-3xl text-white tracking-widest"></span></p>
+                <p class="text-sm text-slate-400 mb-8">並發送包含座標之求救簡訊</p>
+                <div class="text-9xl font-bold text-white mb-8" id="sos-countdown">10</div>
+                <button onclick="cancelSOS()" class="w-full max-w-xs bg-slate-800 border border-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
+                    <i class="ph-bold ph-x mr-2"></i>取消 (Cancel)
+                </button>
+            </div>
+
             <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
                 <div class="flex-1 flex flex-col h-full min-w-0 relative">
                     <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar">
@@ -206,11 +218,11 @@ function doPost(e) {
                             <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
                          </div>
                          
-                         <!-- Update 2: Dropdown Model Selection -->
+                         <!-- Dropdown Model Selection -->
                          <div class="flex space-x-1 ml-auto shrink-0">
                              <select id="main-model-select" onchange="setModel(this.value)" class="bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-1 outline-none focus:border-blue-500 font-bold tracking-wide">
-                                 <option value="gemini">Gemini (2.5 Flash)</option>
-                                 <option value="grok">Grok (4.1 Fast)</option>
+                                 <option value="gemini">Gemini</option>
+                                 <option value="grok">Grok</option>
                                  <option value="groq">Groq</option>
                                  <option value="cohere">Cohere</option>
                                  <option value="gpt">OpenAI</option>
@@ -223,7 +235,7 @@ function doPost(e) {
                             <button id="continuous-btn" onclick="toggleContinuous()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="切換搜尋 (Gemini Only)"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-3 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
-                            <input type="text" id="user-input" placeholder="貼上網址自動分析，或輸入「搜尋(內容)」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
+                            <input type="text" id="user-input" placeholder="對話、自動分析網址，輸入「搜尋(內容)」或「Call110」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
                             <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
                         <div id="search-hint" class="text-[10px] text-blue-400 mt-2 text-center hidden">🌐 已開啟連網搜尋 (Gemini)</div>
@@ -255,10 +267,9 @@ function doPost(e) {
             <!-- Other Views -->
             <div id="view-schedule" class="hidden flex-col h-full w-full p-6 overflow-y-auto"><div class="max-w-3xl mx-auto w-full"><header class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">行程管理</h2><button onclick="addTodoManually()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2"><i class="ph-bold ph-plus"></i><span>新增</span></button></header><div id="full-todo-list" class="space-y-3"></div></div></div>
             
-            <!-- Notes View with Write Feature (Updated) -->
+            <!-- Notes View -->
             <div id="view-notes" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-5xl mx-auto w-full">
-                    
                     <!-- Google Docs Writer Widget -->
                     <div class="bg-gradient-to-r from-blue-900/40 to-slate-900 border border-blue-500/30 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-lg">
                         <div class="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
@@ -292,15 +303,12 @@ function doPost(e) {
                                     </div>
                                     <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
                                     
-                                    <!-- GALLERY UPLOAD BTN -->
                                     <button onclick="triggerPhotoUpload()" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></button>
                                     <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
 
-                                    <!-- CAMERA UPLOAD BTN -->
                                     <button onclick="triggerCameraUpload()" class="absolute right-20 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="拍照上傳"><i class="ph-bold ph-camera text-xl"></i></button>
                                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event)">
 
-                                    <!-- NOTE VOICE BTN -->
                                     <button onclick="toggleNoteVoice()" id="note-voice-btn" class="absolute right-10 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="語音輸入"><i id="note-voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
                                 </div>
                                 <input type="text" id="doc-input-sub" placeholder="輸入連結網址 (例如: https://...)" class="hidden w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
@@ -351,7 +359,6 @@ function doPost(e) {
 
         const appState = {
             currentModel: 'gemini', 
-            detectedGeminiModel: null,
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '',
             noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', 
             noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '',
@@ -375,13 +382,17 @@ function doPost(e) {
             manualLocIndex: 0,
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null,
-            reminderStage: 0 
+            reminderStage: 0,
+            countryCode: 'TW',
+            lastLat: null,
+            lastLon: null,
+            sosTimer: null,
+            sosCount: 10
         };
         
-        // Update 1: Model Config (No Cerebras, Zeabur, OpenRouter)
         const MODEL_CONFIG = {
-            gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' },
-            grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' },
+            gemini: { name: 'Gemini (2.5 Flash)', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' },
+            grok: { name: 'Grok (4.1 Fast)', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' },
             groq: { name: 'Groq', color: 'text-rose-400', bg: 'bg-rose-600', icon: 'ph-rocket' },
             cohere: { name: 'Cohere', color: 'text-violet-400', bg: 'bg-violet-600', icon: 'ph-cpu' },
             gpt: { name: 'OpenAI', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' }
@@ -493,7 +504,51 @@ function doPost(e) {
             if(appState.currentModel!=='gemini'&&appState.isSearchEnabled){setModel('gemini');} 
         }
 
-        // --- EXPORT / IMPORT SETTINGS (NEW) ---
+        // --- ACTIONS ---
+        function addMessage(text, sender, model, sources=[]) { appState.messages.push({id:Date.now(), text, sender, model, sources, time:getTime()}); saveMessages(); renderMessages(); }
+        function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); saveMessages(); renderMessages(); }
+        function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; saveMessages(); renderMessages(); } }
+        function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveData();renderTodos();} }
+        function deleteTodo(id){ appState.todos=appState.todos.filter(x=>x.id!==id); saveData(); renderTodos(); }
+        function deleteNote(id){ appState.notes=appState.notes.filter(x=>x.id!==id); saveData(); renderNotes(); }
+        function addTodoManually(){ const t=prompt("任務"); if(t){appState.todos.push({id:Date.now(),text:t,done:false,time:'手動'});saveData();renderTodos();} }
+        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){appState.notes.push({id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString()});saveData();renderNotes();} }
+        function switchTab(id){ ['dashboard','schedule','notes'].forEach(t=>document.getElementById(`view-${t}`).classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); document.getElementById(`view-${id}`).classList.add('flex'); document.querySelectorAll('.nav-item').forEach(b=>{b.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all';}); const active=document.getElementById(`nav-${id}`); if(active)active.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all'; }
+        function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
+        function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+        
+        function saveKeys(){ 
+            const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+            
+            appState.keys.gemini = safeGetVal('key-gemini'); 
+            appState.keys.groq = safeGetVal('key-groq');
+            appState.keys.cohere = safeGetVal('key-cohere');
+            appState.keys.openai = safeGetVal('key-openai'); 
+            appState.keys.grok = safeGetVal('key-grok'); 
+            appState.keys.serpapi = safeGetVal('key-serpapi'); 
+            appState.docMonitorUrl = safeGetVal('key-doc-url'); 
+            appState.noteDocUrl = safeGetVal('key-note-doc-url'); 
+            appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); 
+            appState.driveUrl = safeGetVal('key-drive-url'); 
+            
+            localStorage.setItem('nova_key_gemini', appState.keys.gemini); 
+            localStorage.setItem('nova_key_groq', appState.keys.groq); 
+            localStorage.setItem('nova_key_cohere', appState.keys.cohere); 
+            localStorage.setItem('nova_key_openai', appState.keys.openai); 
+            localStorage.setItem('nova_key_grok', appState.keys.grok); 
+            localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
+            localStorage.setItem('nova_doc_url', appState.docMonitorUrl); 
+            localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); 
+            localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); 
+            localStorage.setItem('nova_drive_url', appState.driveUrl); 
+            
+            updateModelUI(); 
+            startDocMonitor(); 
+            closeSettings(); 
+            addMessage("設定已儲存", 'system'); 
+        }
+
+        // --- EXPORT / IMPORT SETTINGS ---
         function exportSettings() {
             const data = {
                 keys: appState.keys,
@@ -508,7 +563,7 @@ function doPost(e) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA12_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA13_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -560,58 +615,60 @@ function doPost(e) {
             reader.readAsText(file);
         }
 
-        // --- ACTIONS ---
-        function addMessage(text, sender, model, sources=[]) { appState.messages.push({id:Date.now(), text, sender, model, sources, time:getTime()}); saveMessages(); renderMessages(); }
-        function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); saveMessages(); renderMessages(); }
-        function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; saveMessages(); renderMessages(); } }
-        function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveData();renderTodos();} }
-        function deleteTodo(id){ appState.todos=appState.todos.filter(x=>x.id!==id); saveData(); renderTodos(); }
-        function deleteNote(id){ appState.notes=appState.notes.filter(x=>x.id!==id); saveData(); renderNotes(); }
-        function addTodoManually(){ const t=prompt("任務"); if(t){appState.todos.push({id:Date.now(),text:t,done:false,time:'手動'});saveData();renderTodos();} }
-        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){appState.notes.push({id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString()});saveData();renderNotes();} }
-        function switchTab(id){ ['dashboard','schedule','notes'].forEach(t=>document.getElementById(`view-${t}`).classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); document.getElementById(`view-${id}`).classList.add('flex'); document.querySelectorAll('.nav-item').forEach(b=>{b.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all';}); const active=document.getElementById(`nav-${id}`); if(active)active.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all'; }
-        function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
-        function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
-        
-        // Fix: Robust saveKeys to prevent null errors from removed DOM elements
-        function saveKeys(){ 
-            const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-            
-            appState.keys.gemini = safeGetVal('key-gemini'); 
-            appState.keys.groq = safeGetVal('key-groq');
-            appState.keys.cohere = safeGetVal('key-cohere');
-            appState.keys.openai = safeGetVal('key-openai'); 
-            appState.keys.grok = safeGetVal('key-grok'); 
-            appState.keys.serpapi = safeGetVal('key-serpapi'); 
-            appState.docMonitorUrl = safeGetVal('key-doc-url'); 
-            appState.noteDocUrl = safeGetVal('key-note-doc-url'); 
-            appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); 
-            appState.driveUrl = safeGetVal('key-drive-url'); 
-            
-            localStorage.setItem('nova_key_gemini', appState.keys.gemini); 
-            localStorage.setItem('nova_key_groq', appState.keys.groq); 
-            localStorage.setItem('nova_key_cohere', appState.keys.cohere); 
-            localStorage.setItem('nova_key_openai', appState.keys.openai); 
-            localStorage.setItem('nova_key_grok', appState.keys.grok); 
-            localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
-            localStorage.setItem('nova_doc_url', appState.docMonitorUrl); 
-            localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); 
-            localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); 
-            localStorage.setItem('nova_drive_url', appState.driveUrl); 
-            
-            appState.detectedGeminiModel = null; 
-            updateModelUI(); 
-            startDocMonitor(); 
-            closeSettings(); 
-            addMessage("設定已儲存", 'system'); 
-        }
         function setModel(m){ appState.currentModel=m; updateModelUI(); }
         function toggleMobileMenu(){document.getElementById('mobile-menu').classList.toggle('hidden');}
         function updateSendButtonState(isLoading) { const btn=document.getElementById('send-btn'),icon=document.getElementById('send-icon'); if(isLoading){btn.classList.add('cursor-not-allowed','opacity-70');icon.classList.remove('ph-paper-plane-right');icon.classList.add('ph-spinner','animate-spin');}else{btn.classList.remove('cursor-not-allowed','opacity-70');icon.classList.remove('ph-spinner','animate-spin');icon.classList.add('ph-paper-plane-right');} }
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
         function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手動)", false); }
-        async function tryGetLocation(silent=false) { if(!silent) updateLocStatus("GPS..."); if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((p) => fetchWeather(p.coords.latitude, p.coords.longitude, "GPS", silent), (e) => getIPLocation(silent), { timeout: 5000 }); } else getIPLocation(silent); }
-        async function getIPLocation(silent) { if(!silent) updateLocStatus("IP..."); try { const res = await fetch('https://ipapi.co/json/'); if(!res.ok)throw new Error(); const data=await res.json(); fetchWeather(data.latitude, data.longitude, `${data.city}(IP)`, silent); } catch(e){ try { const res2 = await fetch('https://ipwho.is/'); const data2 = await res2.json(); if(!data2.success)throw new Error(); fetchWeather(data2.latitude, data2.longitude, `${data2.city}(IP)`, silent); } catch(e2) { updateLocStatus("失敗"); if(!silent) addMessage("⚠️ 定位失敗，已切換至預設城市", "system"); const def = appState.manualLocs[0]; fetchWeather(def.lat, def.lon, def.name + " (預設)", true); } } }
+        
+        async function tryGetLocation(silent=false) { 
+            if(!silent) updateLocStatus("GPS..."); 
+            if (navigator.geolocation) { 
+                navigator.geolocation.getCurrentPosition(
+                    (p) => {
+                        appState.lastLat = p.coords.latitude;
+                        appState.lastLon = p.coords.longitude;
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}`)
+                            .then(r=>r.json())
+                            .then(d => { if(d.address && d.address.country_code) appState.countryCode = d.address.country_code.toUpperCase(); })
+                            .catch(() => {});
+                        fetchWeather(p.coords.latitude, p.coords.longitude, "GPS", silent);
+                    }, 
+                    (e) => getIPLocation(silent), 
+                    { timeout: 5000 }
+                ); 
+            } else getIPLocation(silent); 
+        }
+        
+        async function getIPLocation(silent) { 
+            if(!silent) updateLocStatus("IP..."); 
+            try { 
+                const res = await fetch('https://ipapi.co/json/'); 
+                if(!res.ok) throw new Error(); 
+                const data=await res.json(); 
+                appState.lastLat = data.latitude;
+                appState.lastLon = data.longitude;
+                if (data.country_code) appState.countryCode = data.country_code;
+                fetchWeather(data.latitude, data.longitude, `${data.city}(IP)`, silent); 
+            } catch(e){ 
+                try { 
+                    const res2 = await fetch('https://ipwho.is/'); 
+                    const data2 = await res2.json(); 
+                    if(!data2.success) throw new Error(); 
+                    appState.lastLat = data2.latitude;
+                    appState.lastLon = data2.longitude;
+                    if (data2.country_code) appState.countryCode = data2.country_code;
+                    fetchWeather(data2.latitude, data2.longitude, `${data2.city}(IP)`, silent); 
+                } catch(e2) { 
+                    updateLocStatus("失敗"); 
+                    if(!silent) addMessage("⚠️ 定位失敗，已切換至預設城市", "system"); 
+                    const def = appState.manualLocs[0]; 
+                    appState.countryCode = 'TW';
+                    fetchWeather(def.lat, def.lon, def.name + " (預設)", true); 
+                } 
+            } 
+        }
+        
         async function fetchWeather(lat, lon, locName, silent) { try { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`; const res = await fetch(url); const data = await res.json(); if(data.current) { const c = data.current; appState.weather = { temp: Math.round(c.temperature_2m), humidity: c.relative_humidity_2m, wind: c.wind_speed_10m, condition: wmoToCondition(c.weather_code), loc: locName }; renderWeather(); updateLocStatus("已更新"); if(!silent) addMessage(`✅ 天氣已更新: ${c.temperature_2m}°C`, "system"); } } catch(e) { updateLocStatus("錯誤"); } }
         function updateLocStatus(msg) { 
             const el = document.getElementById('location-status'); 
@@ -624,7 +681,7 @@ function doPost(e) {
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        // --- GLOBAL ACTIONS (Moved to top level) ---
+        // --- GLOBAL ACTIONS ---
         function toggleVoice() { 
             if (!recognition) { alert("瀏覽器不支援"); return; }
             if (appState.isListening) {
@@ -682,6 +739,73 @@ function doPost(e) {
             const btn=document.getElementById('note-voice-btn'),icon=document.getElementById('note-voice-icon'); 
             if(appState.isNoteListening){btn.classList.add('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone','ph-microphone-stage');}
             else{btn.classList.remove('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone-stage','ph-microphone');} 
+        }
+
+        // --- SOS & CALL LOGIC ---
+        function getEmergencyNumber(country, type) {
+            const rules = {
+                'TW': { '110': '110', '119': '119' },
+                'JP': { '110': '110', '119': '119' },
+                'KR': { '110': '112', '119': '119' },
+                'CN': { '110': '110', '119': '120' },
+                'US': { '110': '911', '119': '911' },
+                'CA': { '110': '911', '119': '911' },
+                'GB': { '110': '999', '119': '999' },
+                'AU': { '110': '000', '119': '000' }
+            };
+            if (rules[country] && rules[country][type]) return rules[country][type];
+            return '112'; // Global Fallback
+        }
+
+        function triggerEmergency(type) {
+            const country = appState.countryCode || 'TW';
+            const targetNumber = getEmergencyNumber(country, type);
+
+            document.getElementById('sos-number').innerText = targetNumber;
+            document.getElementById('sos-modal').classList.remove('hidden');
+            document.getElementById('sos-modal').classList.add('flex');
+            
+            appState.sosCount = 10;
+            document.getElementById('sos-countdown').innerText = appState.sosCount;
+            if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
+
+            appState.sosTimer = setInterval(() => {
+                appState.sosCount--;
+                document.getElementById('sos-countdown').innerText = appState.sosCount;
+                if(navigator.vibrate) navigator.vibrate(200);
+                
+                if(appState.sosCount <= 0) {
+                    clearInterval(appState.sosTimer);
+                    executeSOS(targetNumber);
+                }
+            }, 1000);
+        }
+
+        function cancelSOS() {
+            if(appState.sosTimer) clearInterval(appState.sosTimer);
+            document.getElementById('sos-modal').classList.add('hidden');
+            document.getElementById('sos-modal').classList.remove('flex');
+            addMessage("🛑 已取消緊急呼叫", 'system');
+        }
+
+        function executeSOS(number) {
+            document.getElementById('sos-modal').classList.add('hidden');
+            document.getElementById('sos-modal').classList.remove('flex');
+            
+            const lat = appState.lastLat || '';
+            const lon = appState.lastLon || '';
+            const locStr = (lat && lon) ? ` https://maps.google.com/?q=${lat},${lon}` : '';
+            const msg = `I need help now!${locStr}`;
+            
+            addMessage(`🚨 正在發送求救簡訊並撥打至 ${number}...`, 'system');
+            
+            // Trigger SMS app
+            window.location.href = `sms:${number}?body=${encodeURIComponent(msg)}`;
+            
+            // Try to trigger Phone dialer shortly after
+            setTimeout(() => {
+                window.location.href = `tel:${number}`;
+            }, 2000);
         }
 
         // --- NOTEBOOK 2 LOGIC ---
@@ -799,7 +923,7 @@ function doPost(e) {
             };
         }
 
-        // --- WEB SCRAPER ---
+        // --- WEB SCRAPER & SEARCH ---
         async function fetchUrlViaGas(url) {
             if (!appState.docMonitorUrl) return null;
             try {
@@ -835,7 +959,7 @@ function doPost(e) {
             for (const proxy of proxies) {
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout per proxy
                     const res = await fetch(proxy, { signal: controller.signal });
                     clearTimeout(timeoutId);
 
@@ -878,7 +1002,6 @@ function doPost(e) {
         
         async function searchViaGas(query) {
              if (!appState.docMonitorUrl) return null;
-             
              try {
                 addMessage(`🔍 正在透過 Google News/Wiki 搜尋：${query}...`, 'system');
                 const res = await fetch(appState.docMonitorUrl, {
@@ -962,6 +1085,7 @@ function doPost(e) {
              document.getElementById('paste-indicator').classList.add('hidden');
         }
 
+        // --- DOC WRITER UI LOGIC ---
         function setWriteMode(mode) {
             appState.writeMode = mode;
             ['text', 'image', 'link'].forEach(m => {
@@ -995,9 +1119,10 @@ function doPost(e) {
             const sendBtn = document.getElementById('note-send-btn');
             
             let payload = {};
-            let currentMode = appState.writeMode;
             
-            if ((currentMode === 'image' || currentMode === 'link') && !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
+            let currentMode = appState.writeMode;
+            if ((currentMode === 'image' || currentMode === 'link') && 
+                !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
                 currentMode = 'text';
             }
             
@@ -1020,7 +1145,12 @@ function doPost(e) {
                 sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
                 
                 try {
-                    await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                    await fetch(targetUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
                     addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system');
                     clearNoteInput();
                 } catch(e) { alert("寫入失敗，請檢查 URL"); }
@@ -1031,9 +1161,11 @@ function doPost(e) {
             }
         }
 
+        // --- DOC VIEWER ---
         function openNoteDocViewer() { 
             const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
             if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`);
+            
             document.getElementById('doc-viewer-modal').classList.remove('hidden'); 
             refreshNoteDocView(); 
         }
@@ -1051,7 +1183,22 @@ function doPost(e) {
             } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
         }
 
-        // --- HANDLERS & AI LOGIC ---
+        // --- TEST CONNECTION ---
+        function testDocConnection() {
+            const url = document.getElementById('key-doc-url').value.trim();
+            if(!url) return alert("請輸入系統代理 Google Doc URL");
+            document.getElementById('doc-monitor-status').innerText = "測試中...";
+            
+            fetch(url, { mode: 'no-cors' }).then(()=>{
+                alert("測試請求已送出！\n\n受限於安全政策，無法讀取回傳內容，但網路請求已成功傳出。若您的 Apps Script 設置正確，即代表連線成功。");
+                document.getElementById('doc-monitor-status').innerText = "測試送出";
+            }).catch(e=>{
+                alert("連線失敗：" + e.message);
+                document.getElementById('doc-monitor-status').innerText = "測試失敗";
+            });
+        }
+
+        // --- AI LOGIC ---
         async function handleSendMessage() {
             if(appState.isThinking) return;
             const input = document.getElementById('user-input');
@@ -1062,7 +1209,7 @@ function doPost(e) {
             }
             if(!text) return;
 
-            // --- Voice Recording Commands ---
+            // 1. Voice Recording Commands
             if (text.includes("開始錄音")) {
                 input.value = ''; initialInput = '';
                 addMessage(text, 'user');
@@ -1076,16 +1223,39 @@ function doPost(e) {
                 return;
             }
 
+            // 2. Emergency Call Command (Call110 / Call119)
+            const emergencyMatch = text.match(/^call\s*(110|119)$/i);
+            if (emergencyMatch) {
+                input.value = ''; initialInput = '';
+                if (recognition && !appState.isContinuous) recognition.stop();
+                triggerEmergency(emergencyMatch[1]);
+                return;
+            }
+
+            // 3. Normal Call Command
+            const callMatch = text.match(/^call\s*(\+?\d+)$/i);
+            if (callMatch) {
+                input.value = ''; initialInput = '';
+                if (recognition && !appState.isContinuous) recognition.stop();
+                const number = callMatch[1];
+                addMessage(`📞 正在撥號：${number}`, 'system');
+                window.location.href = `tel:${number}`;
+                return;
+            }
+
             appState.isThinking = true;
             updateSendButtonState(true);
             addMessage(text, 'user');
             
             input.value = '';
             initialInput = ''; 
-            if (recognition && !appState.isContinuous) { recognition.stop(); }
+            if (recognition && !appState.isContinuous) {
+                recognition.stop();
+            }
+            
             renderThinkingState(true);
 
-            // --- REMINDER LOGIC ---
+            // 4. Reminder Follow-up Logic
             if (appState.pendingReminder && appState.reminderStage > 0) {
                 const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                 if (todo) {
@@ -1111,12 +1281,17 @@ function doPost(e) {
                     } else {
                         addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system');
                     }
-                    saveData(); renderTodos();
+                    saveData();
+                    renderTodos();
                 }
-                appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
+                
+                appState.isThinking = false;
+                updateSendButtonState(false);
+                renderThinkingState(false);
                 return;
             }
 
+            // 5. Reminder Trigger
             const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
             if (reminderMatch) {
                 const content = reminderMatch[1].trim() || "未命名事項";
@@ -1124,9 +1299,14 @@ function doPost(e) {
                 appState.todos.push(newTodo);
                 appState.pendingReminder = newTodo.id;
                 appState.reminderStage = 1; 
-                saveData(); renderTodos();
+                saveData();
+                renderTodos();
+                
                 addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？`, 'system');
-                appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
+                
+                appState.isThinking = false;
+                updateSendButtonState(false);
+                renderThinkingState(false);
                 return;
             }
 
@@ -1138,7 +1318,7 @@ function doPost(e) {
                 
                 if (appState.isSearchEnabled) enableSearchTool = true;
 
-                // --- SEARCH LOGIC ---
+                // 6. Search Pipeline Logic
                 const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
                 
                 if (searchMatch) {
@@ -1202,7 +1382,7 @@ function doPost(e) {
                     }
                 }
 
-                // --- API FALLBACK LOGIC ---
+                // 7. API Fallback Sequence Execution
                 let finalRes;
                 let successfulModel = modelToUse;
                 const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
@@ -1236,6 +1416,75 @@ function doPost(e) {
             }
         }
 
+        // --- Natural Language Time Parser ---
+        function parseTimeNatural(str) {
+            const now = new Date();
+            let result = { complete: false, timestamp: null, missing: null };
+            
+            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
+            if (relMatch) {
+                const amount = parseInt(relMatch[1]);
+                const unit = relMatch[2];
+                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
+                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
+                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
+                return { complete: true, timestamp: now.getTime() };
+            }
+
+            let targetDate = new Date();
+            let hasDate = false;
+            if (str.includes('明天') || str.includes('tomorrow')) {
+                targetDate.setDate(targetDate.getDate() + 1);
+                hasDate = true;
+            } else if (str.includes('後天')) {
+                targetDate.setDate(targetDate.getDate() + 2);
+                hasDate = true;
+            } else if (str.match(/\d{1,2}月\d{1,2}日/)) {
+                const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/);
+                targetDate.setMonth(parseInt(dMatch[1]) - 1);
+                targetDate.setDate(parseInt(dMatch[2]));
+                hasDate = true;
+            } else if (str.includes('今天') || str.includes('today')) {
+                hasDate = true;
+            }
+
+            let hour = -1, minute = 0;
+            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); 
+            const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
+            
+            if (timeMatch) {
+                hour = parseInt(timeMatch[1]);
+                minute = parseInt(timeMatch[2]);
+            } else if (hourMatch) {
+                hour = parseInt(hourMatch[1]);
+                if (hourMatch[2]) minute = parseInt(hourMatch[2]);
+            }
+
+            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
+            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
+
+            if (hour !== -1) {
+                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) {
+                    return { complete: false, missing: 'ampm' }; 
+                }
+                
+                if (isPM && hour < 12) hour += 12;
+                if (isAM && hour === 12) hour = 0; 
+
+                targetDate.setHours(hour, minute, 0, 0);
+                
+                if (!hasDate) {
+                    if (targetDate < new Date()) {
+                        return { complete: false, missing: 'date' };
+                    }
+                }
+                
+                return { complete: true, timestamp: targetDate.getTime() };
+            }
+
+            return { complete: false, missing: 'time' };
+        }
+
         async function fetchAIResponse(userText, model, options = {}) {
             const fetchWithTimeout = async (url, options, timeout = 30000) => {
                 const controller = new AbortController();
@@ -1266,7 +1515,7 @@ function doPost(e) {
                     });
                     
                     const data = await res.json();
-                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
+                    if (!res.ok) throw new Error(`Gemini 錯誤: ${data.error?.message || res.status}`);
 
                     const candidate = data.candidates?.[0];
                     if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
@@ -1296,11 +1545,15 @@ function doPost(e) {
                 } else if (model === 'cohere') {
                     const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { 
                         method: 'POST', 
-                        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, 
+                        headers: { 
+                            'Authorization': `Bearer ${key}`, 
+                            'Content-Type': 'application/json', 
+                            'Accept': 'application/json' 
+                        }, 
                         body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText }) 
                     });
                     const data = await res.json();
-                    if (!res.ok) throw new Error(`${data.message || res.status}`);
+                    if (!res.ok) throw new Error(`Cohere 錯誤: ${data.message || res.status}`);
                     return data.text || "無回應";
                 } else if (model === 'grok') {
                     const ep = 'https://api.x.ai/v1/chat/completions';
@@ -1320,90 +1573,10 @@ function doPost(e) {
             } catch(e) { throw e; }
         }
 
-        function playAlarmSound() {
-            try {
-                if (!alarmAudioCtx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) alarmAudioCtx = new AudioContext();
-                }
-                if (alarmAudioCtx && alarmAudioCtx.state === 'suspended') {
-                    alarmAudioCtx.resume();
-                }
-                if (alarmAudioCtx) {
-                    const osc = alarmAudioCtx.createOscillator();
-                    const gain = alarmAudioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(alarmAudioCtx.destination);
-                    
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime); 
-                    osc.frequency.linearRampToValueAtTime(440, alarmAudioCtx.currentTime + 0.1);
-                    osc.frequency.linearRampToValueAtTime(880, alarmAudioCtx.currentTime + 0.2);
-                    
-                    gain.gain.setValueAtTime(0.2, alarmAudioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, alarmAudioCtx.currentTime + 0.5);
-                    
-                    osc.start();
-                    osc.stop(alarmAudioCtx.currentTime + 0.5);
-                }
-            } catch(e) { console.error("Audio play failed", e); }
-        }
-
-        function triggerAlarm(text) {
-            const modal = document.getElementById('alarm-modal');
-            const textEl = document.getElementById('alarm-text');
-            if(modal && textEl) {
-                textEl.innerText = text;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                
-                if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
-                playAlarmSound();
-
-                if(alarmInterval) clearInterval(alarmInterval);
-                alarmInterval = setInterval(() => {
-                    if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
-                    playAlarmSound();
-                }, 2000); 
-            }
-        }
-
-        function stopAlarm() {
-            const modal = document.getElementById('alarm-modal');
-            if(modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-            if(alarmInterval) {
-                clearInterval(alarmInterval);
-                alarmInterval = null;
-            }
-            if(navigator.vibrate) navigator.vibrate(0);
-        }
-        
-        function checkReminders() {
-            const now = Date.now();
-            let changed = false;
-            appState.todos.forEach(todo => {
-                if (todo.alertTime && !todo.alerted && !todo.done) {
-                    if (now >= todo.alertTime) {
-                        todo.alerted = true;
-                        changed = true;
-                        addMessage(`⏰ 提醒時間到：${todo.text}`, 'system');
-                        triggerAlarm(todo.text); 
-                    }
-                }
-            });
-            if (changed) {
-                saveData();
-                renderTodos();
-            }
-        }
-
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 12 就緒！\n已整合全新下拉選單、設定檔管理與 API 自動備援機制。', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 13 就緒！\n已整合緊急呼叫 (Call110/Call119)、一般撥號 (Call)、以及設定檔匯出/匯入等全新功能。', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1448,7 +1621,7 @@ function doPost(e) {
                 recognition.onend = () => {
                     appState.isListening = false;
                     updateVoiceUI();
-                    document.getElementById('user-input').placeholder = "貼上網址自動分析，或輸入「搜尋(內容)」...";
+                    document.getElementById('user-input').placeholder = "對話、自動分析網址，輸入「搜尋(內容)」或「Call110」...";
                     
                     if(voiceTimer) {
                         clearTimeout(voiceTimer);
@@ -1558,4 +1731,4 @@ function doPost(e) {
         };
     </script>
 </body>
-</html>
+    </html>
