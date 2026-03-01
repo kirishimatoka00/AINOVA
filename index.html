@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 15</title>
+    <title>NOVA 16</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 15</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 16</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 15</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 16</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -214,7 +214,7 @@
                             <button id="continuous-btn" onclick="toggleContinuous()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="切換搜尋 (Gemini Only)"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-3 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
-                            <input type="text" id="user-input" placeholder="對話、輸入「搜尋(內容)」或「Call110」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
+                            <input type="text" id="user-input" placeholder="對話、輸入「搜尋(內容)」或「撥打(號碼)」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
                             <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
                         <div id="search-hint" class="text-[10px] text-blue-400 mt-2 text-center hidden">🌐 已開啟連網搜尋 (Gemini)</div>
@@ -367,7 +367,7 @@
             lastLon: null,
             sosTimer: null,
             sosCount: 10,
-            isSOSDrill: false // 新增演習模式標記
+            isSOSDrill: false 
         };
         
         const MODEL_CONFIG = {
@@ -383,20 +383,15 @@
         function saveData() { localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); }
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
-        // 【修正 1】：重寫 formatMessage 以完美支援 Markdown 連結並排除尾端括號
         function formatMessage(text) { 
             if (!text) return ''; 
-            // 基礎跳脫處理
             let safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
             safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>'); 
             
-            // 透過取代函數同時處理 Markdown 連結 [Title](Url) 與 純文字網址 https://...
             safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s<]+?)\)|(https?:\/\/[^\s<)\]]+)/g, function(match, mdTitle, mdUrl, rawUrl) {
                 if (mdUrl) {
-                    // 若是 Markdown 格式，抓取標題與網址
                     return `<a href="${mdUrl}" target="_blank" class="text-blue-400 underline break-all">${mdTitle}</a>`;
                 } else if (rawUrl) {
-                    // 若是純文字網址，透過 Regex 本身的 [^\s<)\]]+ 設計，完美排除結尾的括號與空白
                     return `<a href="${rawUrl}" target="_blank" class="text-blue-400 underline break-all">${rawUrl}</a>`;
                 }
                 return match;
@@ -555,7 +550,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA15_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA16_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -671,7 +666,7 @@
         function updateLocStatus(msg) { 
             const el = document.getElementById('location-status'); 
             if(el) el.innerText = msg; 
-            if(msg==="已更新"||msg.includes("預設")||msg.includes("手掌握")) { 
+            if(msg==="已更新"||msg.includes("預設")||msg.includes("手動")) { 
                 const {loc, temp} = appState.weather; 
                 const locName = document.getElementById('location-name'); if(locName) locName.innerText = loc; 
                 const mTemp = document.getElementById('mobile-weather-temp'); if(mTemp) mTemp.innerText = `${temp}°`; 
@@ -737,6 +732,21 @@
             const btn=document.getElementById('note-voice-btn'),icon=document.getElementById('note-voice-icon'); 
             if(appState.isNoteListening){btn.classList.add('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone','ph-microphone-stage');}
             else{btn.classList.remove('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone-stage','ph-microphone');} 
+        }
+
+        // --- NATIVE BRIDGE HELPER ---
+        function executeNativeCall(number) {
+            // Android Native Bridge Detection
+            if (window.Android && typeof window.Android.makeCall === 'function') {
+                window.Android.makeCall(number);
+                return true;
+            }
+            // iOS WKWebView Bridge Detection
+            else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.makeCall) {
+                window.webkit.messageHandlers.makeCall.postMessage(number);
+                return true;
+            }
+            return false;
         }
 
         // --- SOS & CALL LOGIC ---
@@ -826,20 +836,24 @@
             const locStr = (lat && lon) ? ` https://maps.google.com/?q=${lat},${lon}` : '';
             const msg = `I need help now!${locStr}`;
             
-            // 【修正 2】：如果是演習模式，在此攔截並不執行真實通話
             if (appState.isSOSDrill) {
                 addMessage(`🛡️ 【緊急求救演習完成】\n若在真實情況下，系統將會為您呼叫 APP 撥打至 ${number} 並發送求救簡訊。\n\n📜 簡訊模擬內容：\n${msg}`, 'system');
                 return;
             }
 
-            addMessage(`🚨 正在發送求救簡訊並呼叫電話 APP 至 ${number}...\n(註：受限於手機安全機制，網頁無法自動代為按下實體撥打，請手動按下通話鍵確認)`, 'system');
+            addMessage(`🚨 正在發送求救簡訊並呼叫電話 APP 至 ${number}...`, 'system');
             
             // Trigger SMS app
             window.open(`sms:${number}?body=${encodeURIComponent(msg)}`, '_self');
             
-            // Try to trigger Phone dialer shortly after
+            // Try Native Bridge Call, fallback to tel:
             setTimeout(() => {
-                window.open(`tel:${number}`, '_self');
+                if(!executeNativeCall(number)){
+                    addMessage(`(註：未偵測到原生 APP Bridge，已自動降級為網頁呼叫。受限於手機安全機制，請於畫面手動按下通話鍵確認)`, 'system');
+                    window.open(`tel:${number}`, '_self');
+                } else {
+                    addMessage(`(✅ 已透過原生 Bridge 發送直接撥號指令)`, 'system');
+                }
             }, 2000);
         }
 
@@ -1276,8 +1290,8 @@
                 return;
             }
 
-            // 2. Emergency Call Command (Call110 / Call119)
-            const emergencyMatch = text.match(/^call\s*(110|119)$/i);
+            // 2. Emergency Call Command (Call110 / Call119 / 撥打110)
+            const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
             if (emergencyMatch) {
                 input.value = ''; initialInput = '';
                 if (recognition && !appState.isContinuous) recognition.stop();
@@ -1285,18 +1299,21 @@
                 return;
             }
 
-            // 3. FIXED: Normal Call Command
-            const callMatch = text.match(/^call\s*(\+?\d+)$/i);
+            // 3. Normal Call Command (支援 call 號碼 / 撥打 號碼) + NATIVE BRIDGE
+            const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
             if (callMatch) {
                 input.value = ''; initialInput = '';
                 if (recognition && !appState.isContinuous) recognition.stop();
                 const number = callMatch[1];
                 
-                // Explain OS limitation to the user explicitly
-                addMessage(`📞 已為您將號碼填入電話 APP：${number}\n\n(註：基於 iOS 與 Android 的系統安全限制防範惡意撥號，網頁程式無法代為「自動按下」撥出鍵。請於跳出的畫面中手動點擊通話)`, 'system');
-                
-                // Using window.open with _self triggers the native app handler better than href
-                window.open(`tel:${number}`, '_self');
+                // 優先使用 Native Bridge 直接撥打
+                if (executeNativeCall(number)) {
+                    addMessage(`📞 已透過原生 Bridge 為您直接撥出號碼：${number}`, 'system');
+                } else {
+                    // 若無 Bridge，降級為傳統 tel: 呼叫
+                    addMessage(`📞 已為您將號碼填入電話 APP：${number}\n\n(註：目前處於純網頁環境，基於安全機制無法直接撥打。若您已封裝為 APP，請實作 Android/iOS Bridge 以啟用自動撥號)`, 'system');
+                    window.open(`tel:${number}`, '_self');
+                }
                 return;
             }
 
@@ -1693,7 +1710,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 15 啟動！\n✅ 已修正 SerpApi 搜尋網址包含結尾括號問題\n✅ 已新增 SOS 緊急救援「演習模式」功能', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 16 啟動！\n✅ 新增支援指令：「撥打 09xx」或「call 09xx」\n✅ 加入 Native Bridge 自動降級機制 (支援原生 APP 無縫撥號)', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1738,7 +1755,7 @@
                 recognition.onend = () => {
                     appState.isListening = false;
                     updateVoiceUI();
-                    document.getElementById('user-input').placeholder = "對話、輸入「搜尋(內容)」或「Call110」...";
+                    document.getElementById('user-input').placeholder = "對話、輸入「搜尋(內容)」或「撥打(號碼)」...";
                     
                     if(voiceTimer) {
                         clearTimeout(voiceTimer);
@@ -1848,4 +1865,4 @@
         };
     </script>
 </body>
-                    </html>
+                </html>
