@@ -1630,11 +1630,29 @@
                     if (!res.ok) throw new Error(`Cohere 錯誤: ${data.message || res.status}`);
                     return data.text || "無回應";
                 } else if (model === 'grok') {
-                    const ep = 'https://api.x.ai/v1/chat/completions';
+                    const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
+                    const apiUrl = 'https://api.x.ai/v1/chat/completions';
+                    const fullUrl = `${myProxy}?url=${encodeURIComponent(apiUrl)}`;
                     const mName = 'grok-4-1-fast-reasoning';
-                    const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:userText}]}) });
+                    
+                    const res = await fetchWithTimeout(fullUrl, { 
+                        method: 'POST', 
+                        headers: {
+                            'Authorization': `Bearer ${key}`,
+                            'Content-Type': 'application/json'
+                        }, 
+                        body: JSON.stringify({
+                            model: mName, 
+                            messages: [{role: "user", content: userText}],
+                            temperature: 0.7
+                        }) 
+                    });
+                    
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error(`Worker 錯誤: ${errText}`);
+                    }
                     const data = await res.json(); 
-                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
                     return data.choices?.[0]?.message?.content || "無回應";
                 } else if (model === 'gpt') {
                     const ep = 'https://api.openai.com/v1/chat/completions';
@@ -1710,7 +1728,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 16 啟動！\n✅ 新增支援指令：「撥打 09xx」或「call 09xx」\n✅ 加入 Native Bridge 自動降級機制 (支援原生 APP 無縫撥號)', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 16.1 啟動！\n✅ 新增支援指令：「撥打 09xx」或「call 09xx」\n✅ 加入 Native Bridge 自動降級機制 (支援原生 APP 無縫撥號)\n✅ 已切換 Grok API 專屬 Worker Proxy 代理', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1865,4 +1883,4 @@
         };
     </script>
 </body>
-                </html>
+</html>
