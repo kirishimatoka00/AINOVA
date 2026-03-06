@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 21</title>
+    <title>NOVA 21.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 21</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 21.1</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 21</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 21.1</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -239,15 +239,20 @@
                             <button onclick="clearChatImage()" class="absolute -top-2 -right-2 bg-slate-800 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
 
-                        <div id="input-wrapper" class="flex items-center bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                            <button onclick="triggerChatImageUpload()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="上傳圖片分析"><i class="ph-bold ph-image text-xl"></i></button>
-                            <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleChatImageSelect(event)">
+                        <!-- 修正：改用 items-end 與 Textarea 以支援 LINE 風格多行延展 -->
+                        <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
+                            <button onclick="triggerChatImageUpload()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="上傳圖片分析"><i class="ph-bold ph-image text-xl"></i></button>
 
-                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
-                            <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
-                            <button id="voice-btn" onclick="toggleVoice()" class="p-3 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
-                            <input type="text" id="user-input" placeholder="對話、輸入「搜尋(內容)」或「撥打(號碼)」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
-                            <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
+                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
+                            
+                            <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
+                            
+                            <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
+                            
+                            <!-- LINE 風格：使用 Textarea 自動調整高度 -->
+                            <textarea id="user-input" rows="1" placeholder="對話、搜尋、撥打..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-2.5 my-0.5 leading-relaxed scrollbar-none" style="min-height: 44px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
+                            
+                            <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-2 px-3 mb-1 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
                         <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden">🌐 已開啟連網搜尋 (支援 Gemini / Grok 等模型)</div>
                     </div>
@@ -535,7 +540,7 @@
                 }
             }
             
-            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-center bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
+            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
             
             const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
             if(searchBtn) {
@@ -591,6 +596,37 @@
             addMessage("✅ 設定已儲存", 'system'); 
         }
 
+        // --- TEST CONNECTION ---
+        function testDocConnection() {
+            const url = document.getElementById('key-doc-url').value.trim();
+            const statusEl = document.getElementById('doc-monitor-status');
+            
+            if(!url) return alert("請輸入系統代理 Google Doc URL");
+            
+            statusEl.innerText = "測試中...";
+            statusEl.className = "text-[10px] text-blue-400 font-bold animate-pulse";
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ type: 'test_connection' })
+            }).then(res => res.text()).then(text => {
+                alert("測試成功！伺服器已回應連線。");
+                statusEl.innerText = "連線成功";
+                statusEl.className = "text-[10px] text-green-400 font-bold";
+            }).catch(e => {
+                fetch(url, { mode: 'no-cors' }).then(() => {
+                    alert("測試請求已送出！\n\n受限於瀏覽器安全政策，無法讀取回傳內容，但網路請求已成功傳出至該 URL。若您的 Apps Script 設置正確，即代表連線成功。");
+                    statusEl.innerText = "連線成功 (無CORS回傳)";
+                    statusEl.className = "text-[10px] text-yellow-400 font-bold";
+                }).catch(err => {
+                    alert("連線失敗：" + err.message);
+                    statusEl.innerText = "測試失敗";
+                    statusEl.className = "text-[10px] text-red-400 font-bold";
+                });
+            });
+        }
+
         // --- EXPORT / IMPORT SETTINGS ---
         function exportSettings() {
             const data = {
@@ -606,7 +642,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA21_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA21.1_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -665,7 +701,19 @@
         function updateSendButtonState(isLoading) { const btn=document.getElementById('send-btn'),icon=document.getElementById('send-icon'); if(isLoading){btn.classList.add('cursor-not-allowed','opacity-70');icon.classList.remove('ph-paper-plane-right');icon.classList.add('ph-spinner','animate-spin');}else{btn.classList.remove('cursor-not-allowed','opacity-70');icon.classList.remove('ph-spinner','animate-spin');icon.classList.add('ph-paper-plane-right');} }
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
         function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手動)", false); }
-        function handleEnter(e) { if(e.key==='Enter') handleSendMessage(); }
+        
+        function handleEnter(e) { 
+            // 讓 Shift+Enter 可以正常換行，純 Enter 則發送訊息
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault();
+                handleSendMessage(); 
+            }
+        }
+
+        function autoResizeInput(el) {
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight) + 'px';
+        }
         
         // --- CHAT IMAGE UPLOAD ---
         function triggerChatImageUpload() {
@@ -863,28 +911,18 @@
                     (p) => {
                         appState.lastLat = p.coords.latitude;
                         appState.lastLon = p.coords.longitude;
-                        // 1. 優先嘗試 Nominatim (OpenStreetMap) 解析
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}&zoom=10&addressdetails=1&accept-language=zh-TW`)
+                        // 使用 BigDataCloud API 較穩定且無嚴格跨域或頻率限制 (NOVA 16 原版)
+                        fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=zh-tw`)
                             .then(r=>r.json())
                             .then(d => { 
-                                if(d.address && d.address.country_code) appState.countryCode = d.address.country_code.toUpperCase(); 
-                                const city = d.address?.city || d.address?.town || d.address?.county || d.address?.state || "目前位置";
+                                if(d.countryCode) appState.countryCode = d.countryCode.toUpperCase(); 
+                                const city = d.city || d.locality || d.principalSubdivision || "目前位置";
                                 fetchWeather(p.coords.latitude, p.coords.longitude, city, silent);
                             })
-                            .catch(() => { 
-                                // 2. 若失敗，降級備援到 BigDataCloud
-                                fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=zh-tw`)
-                                .then(r=>r.json())
-                                .then(d => {
-                                    if(d.countryCode) appState.countryCode = d.countryCode.toUpperCase();
-                                    const city = d.city || d.locality || d.principalSubdivision || "目前位置";
-                                    fetchWeather(p.coords.latitude, p.coords.longitude, city, silent);
-                                })
-                                .catch(() => { fetchWeather(p.coords.latitude, p.coords.longitude, "GPS定位", silent); });
-                            });
+                            .catch(() => { fetchWeather(p.coords.latitude, p.coords.longitude, "GPS定位", silent); });
                     }, 
                     (e) => getIPLocation(silent), 
-                    { timeout: 10000, enableHighAccuracy: true } 
+                    { timeout: 5000, enableHighAccuracy: true } 
                 ); 
             } else getIPLocation(silent); 
         }
@@ -892,22 +930,21 @@
         async function getIPLocation(silent) { 
             if(!silent) updateLocStatus("IP定位中..."); 
             try { 
-                // 1. 優先嘗試穩定性高的 ipinfo
-                const res = await fetch('https://ipinfo.io/json'); 
+                // NOVA 16 穩定的備援架構
+                const res = await fetch('https://ipapi.co/json/'); 
                 if(!res.ok) throw new Error(); 
                 const data=await res.json(); 
-                const [lat, lon] = data.loc.split(',');
-                appState.lastLat = parseFloat(lat);
-                appState.lastLon = parseFloat(lon);
-                if (data.country) appState.countryCode = data.country;
-                fetchWeather(lat, lon, `${data.city}(IP)`, silent); 
+                appState.lastLat = data.latitude;
+                appState.lastLon = data.longitude;
+                if (data.country_code) appState.countryCode = data.country_code;
+                fetchWeather(data.latitude, data.longitude, `${data.city}(IP)`, silent); 
             } catch(e){ 
                 try { 
-                    // 2. 備援使用 geojs
-                    const res2 = await fetch('https://get.geojs.io/v1/ip/geo.json'); 
+                    const res2 = await fetch('https://ipwho.is/'); 
                     const data2 = await res2.json(); 
-                    appState.lastLat = parseFloat(data2.latitude);
-                    appState.lastLon = parseFloat(data2.longitude);
+                    if(!data2.success) throw new Error(); 
+                    appState.lastLat = data2.latitude;
+                    appState.lastLon = data2.longitude;
                     if (data2.country_code) appState.countryCode = data2.country_code;
                     fetchWeather(data2.latitude, data2.longitude, `${data2.city}(IP)`, silent); 
                 } catch(e2) { 
@@ -1187,17 +1224,17 @@
             if(!text && !hasChatImage) return;
 
             // 1. Voice Commands
-            if (text.includes("開始錄音")) { input.value = ''; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
-            if (text.includes("停止錄音")) { input.value = ''; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
+            if (text.includes("開始錄音")) { input.value = ''; input.style.height = 'auto'; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
+            if (text.includes("停止錄音")) { input.value = ''; input.style.height = 'auto'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
             // 2. Emergency Call
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
-            if (emergencyMatch) { input.value = ''; initialInput = ''; if(recognition) recognition.stop(); triggerEmergency(emergencyMatch[1]); return; }
+            if (emergencyMatch) { input.value = ''; input.style.height = 'auto'; initialInput = ''; if(recognition) recognition.stop(); triggerEmergency(emergencyMatch[1]); return; }
 
             // 3. Normal Call
             const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
             if (callMatch) {
-                input.value = ''; initialInput = ''; if(recognition) recognition.stop();
+                input.value = ''; input.style.height = 'auto'; initialInput = ''; if(recognition) recognition.stop();
                 if (executeNativeCall(callMatch[1])) { addMessage(`📞 透過原生 Bridge 撥出：${callMatch[1]}`, 'system'); } 
                 else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
                 return;
@@ -1214,6 +1251,7 @@
             addMessage(text || "請分析這張圖片", 'user', null, [], imgDataToPass ? imgDataToPass.base64 : null);
             
             input.value = '';
+            input.style.height = 'auto'; // Reset textarea height
             initialInput = ''; 
             clearChatImage(); // Clear preview after sending
             
@@ -1545,7 +1583,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 21 啟動！\n✅ 已優化 GPS 定位雙重備援機制 (Nominatim + GeoJS)\n✅ 圖片轉文字分析已變更為 Grok 優先，Gemini 備用\n✅ 解除限制：Grok 等模型現已支援連網搜尋 (代理爬蟲注入)', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 21.1 啟動！\n✅ 修復測試連線功能與還原穩定版 GPS 定位機制\n✅ 對話框升級為 LINE 樣式：自動多行延展、Shift+Enter 換行對齊優化', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1594,7 +1632,10 @@
                     if (transcript.length > 0 && transcript.length % 2 === 0) {
                          const mid = transcript.length / 2; if (transcript.substring(0, mid) === transcript.substring(mid)) transcript = transcript.substring(0, mid);
                     }
-                    const input = document.getElementById('user-input'); input.value = initialInput + (initialInput && transcript ? " " : "") + transcript;
+                    const input = document.getElementById('user-input'); 
+                    input.value = initialInput + (initialInput && transcript ? " " : "") + transcript;
+                    autoResizeInput(input);
+                    
                     if (voiceTimer) clearTimeout(voiceTimer);
                     voiceTimer = setTimeout(() => { handleSendMessage(); voiceTimer = null; recognition.stop(); }, 6000);
                 };
