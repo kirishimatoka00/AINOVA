@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 20</title>
+    <title>NOVA 21</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 20</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 21</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 20</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 21</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -244,12 +244,12 @@
                             <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleChatImageSelect(event)">
 
                             <button id="continuous-btn" onclick="toggleContinuous()" class="p-3 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
-                            <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="切換搜尋 (Gemini Only)"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
+                            <button id="search-toggle-btn" onclick="toggleSearch()" class="p-3 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 mr-1" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-3 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
                             <input type="text" id="user-input" placeholder="對話、輸入「搜尋(內容)」或「撥打(號碼)」..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none h-full" onkeydown="handleEnter(event)">
                             <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
-                        <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden">🌐 已開啟連網搜尋 (Gemini)</div>
+                        <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden">🌐 已開啟連網搜尋 (支援 Gemini / Grok 等模型)</div>
                     </div>
                 </div>
                 
@@ -542,7 +542,6 @@
                 if(appState.isSearchEnabled){ searchBtn.classList.add('text-blue-400','bg-blue-900/30'); searchBtn.classList.remove('text-slate-500'); if(badge)badge.classList.remove('hidden'); if(hint)hint.classList.remove('hidden'); }
                 else{ searchBtn.classList.remove('text-blue-400','bg-blue-900/30'); searchBtn.classList.add('text-slate-500'); if(badge)badge.classList.add('hidden'); if(hint)hint.classList.add('hidden'); }
             }
-            if(appState.currentModel!=='gemini'&&appState.isSearchEnabled){setModel('gemini');} 
         }
 
         // --- ACTIONS ---
@@ -607,7 +606,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA20_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA21_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -700,7 +699,7 @@
             document.getElementById('chat-image-preview').src = '';
         }
 
-        // --- FIXED GPS LOCATION ---
+        // --- ENHANCED GPS LOCATION ---
         async function tryGetLocation(silent=false) { 
             if(!silent) updateLocStatus("GPS定位中..."); 
             if (navigator.geolocation) { 
@@ -708,17 +707,28 @@
                     (p) => {
                         appState.lastLat = p.coords.latitude;
                         appState.lastLon = p.coords.longitude;
-                        fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=zh-tw`)
+                        // 1. 優先嘗試 Nominatim (OpenStreetMap) 解析
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}&zoom=10&addressdetails=1&accept-language=zh-TW`)
                             .then(r=>r.json())
                             .then(d => { 
-                                if(d.countryCode) appState.countryCode = d.countryCode.toUpperCase(); 
-                                const city = d.city || d.locality || d.principalSubdivision || "目前位置";
+                                if(d.address && d.address.country_code) appState.countryCode = d.address.country_code.toUpperCase(); 
+                                const city = d.address?.city || d.address?.town || d.address?.county || d.address?.state || "目前位置";
                                 fetchWeather(p.coords.latitude, p.coords.longitude, city, silent);
                             })
-                            .catch(() => { fetchWeather(p.coords.latitude, p.coords.longitude, "GPS定位", silent); });
+                            .catch(() => { 
+                                // 2. 若失敗，降級備援到 BigDataCloud
+                                fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=zh-tw`)
+                                .then(r=>r.json())
+                                .then(d => {
+                                    if(d.countryCode) appState.countryCode = d.countryCode.toUpperCase();
+                                    const city = d.city || d.locality || d.principalSubdivision || "目前位置";
+                                    fetchWeather(p.coords.latitude, p.coords.longitude, city, silent);
+                                })
+                                .catch(() => { fetchWeather(p.coords.latitude, p.coords.longitude, "GPS定位", silent); });
+                            });
                     }, 
                     (e) => getIPLocation(silent), 
-                    { timeout: 5000, enableHighAccuracy: true } 
+                    { timeout: 10000, enableHighAccuracy: true } 
                 ); 
             } else getIPLocation(silent); 
         }
@@ -726,20 +736,22 @@
         async function getIPLocation(silent) { 
             if(!silent) updateLocStatus("IP定位中..."); 
             try { 
-                const res = await fetch('https://ipapi.co/json/'); 
+                // 1. 優先嘗試穩定性高的 ipinfo
+                const res = await fetch('https://ipinfo.io/json'); 
                 if(!res.ok) throw new Error(); 
                 const data=await res.json(); 
-                appState.lastLat = data.latitude;
-                appState.lastLon = data.longitude;
-                if (data.country_code) appState.countryCode = data.country_code;
-                fetchWeather(data.latitude, data.longitude, `${data.city}(IP)`, silent); 
+                const [lat, lon] = data.loc.split(',');
+                appState.lastLat = parseFloat(lat);
+                appState.lastLon = parseFloat(lon);
+                if (data.country) appState.countryCode = data.country;
+                fetchWeather(lat, lon, `${data.city}(IP)`, silent); 
             } catch(e){ 
                 try { 
-                    const res2 = await fetch('https://ipwho.is/'); 
+                    // 2. 備援使用 geojs
+                    const res2 = await fetch('https://get.geojs.io/v1/ip/geo.json'); 
                     const data2 = await res2.json(); 
-                    if(!data2.success) throw new Error(); 
-                    appState.lastLat = data2.latitude;
-                    appState.lastLon = data2.longitude;
+                    appState.lastLat = parseFloat(data2.latitude);
+                    appState.lastLon = parseFloat(data2.longitude);
                     if (data2.country_code) appState.countryCode = data2.country_code;
                     fetchWeather(data2.latitude, data2.longitude, `${data2.city}(IP)`, silent); 
                 } catch(e2) { 
@@ -1009,7 +1021,6 @@
         
         async function searchViaSerpApi(query) {
             if (!appState.keys.serpapi) return null;
-            addMessage(`🔍 正在透過 SerpApi (Google) 搜尋：${query}...`, 'system');
             const targetUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${appState.keys.serpapi}&engine=google&gl=tw&hl=zh-tw`;
             const proxies = [`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`];
             let serpData = null, lastErrorMsg = "";
@@ -1089,12 +1100,33 @@
 
             // 4. Reminders
             if (appState.pendingReminder && appState.reminderStage > 0) {
-                 // ... [Existing Reminder Logic] ...
+                 const todo = appState.todos.find(t => t.id === appState.pendingReminder);
+                 if (todo) {
+                     let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text;
+                     const timeInfo = parseTimeNatural(combinedText);
+                     if (timeInfo.complete) {
+                         todo.time = new Date(timeInfo.timestamp).toLocaleString();
+                         todo.alertTime = timeInfo.timestamp;
+                         todo.alerted = false;
+                         delete todo.tempTimeStr;
+                         appState.pendingReminder = null; appState.reminderStage = 0;
+                         addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system');
+                     } else if (timeInfo.missing === 'date') {
+                         todo.tempTimeStr = combinedText; addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system'); appState.reminderStage = 2; 
+                     } else if (timeInfo.missing === 'ampm') {
+                         todo.tempTimeStr = combinedText; addMessage(`請問是「上午」還是「下午」？`, 'system'); appState.reminderStage = 2;
+                     } else { addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system'); }
+                     saveData(); renderTodos();
+                 }
                  appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false); return;
             }
             const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
             if (reminderMatch) {
-                // ... [Existing Reminder Trigger Logic] ...
+                const content = reminderMatch[1].trim() || "未命名事項";
+                const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false };
+                appState.todos.push(newTodo); appState.pendingReminder = newTodo.id; appState.reminderStage = 1; 
+                saveData(); renderTodos();
+                addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？`, 'system');
                 appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false); return;
             }
 
@@ -1104,34 +1136,39 @@
                 let modelToUse = appState.currentModel;
                 let enableSearchTool = appState.isSearchEnabled;
 
-                // --- 圖片上傳切換邏輯 (Force Gemini for Vision) ---
+                // --- 圖片上傳優先邏輯 (Grok 優先 > Gemini 備援) ---
                 if (imgDataToPass) {
-                    if (!appState.keys.gemini) {
-                        throw new Error("若要分析圖片，請至設定輸入 Gemini API Key (目前預設視覺模型)。");
+                    let visionModel = null;
+                    if (appState.keys.grok) visionModel = 'grok';
+                    else if (appState.keys.gemini) visionModel = 'gemini';
+
+                    if (!visionModel) {
+                        throw new Error("若要分析圖片，請至設定輸入 Grok 或 Gemini API Key。");
                     }
-                    if (modelToUse !== 'gemini') {
-                        addMessage("📸 偵測到圖片上傳，已自動切換至具備強大視覺能力的 Gemini 模型進行分析。", "system");
-                        modelToUse = 'gemini';
+                    if (modelToUse !== visionModel) {
+                        addMessage(`📸 偵測到圖片上傳，已優先指派給 ${MODEL_CONFIG[visionModel].name} 進行分析。`, "system");
+                        modelToUse = visionModel;
                     }
                     if (!text) text = "請詳細分析這張圖片的內容";
                 } else {
-                    // 6. Search Pipeline Logic (Only if NO image is passed)
+                    // --- 指令式直接搜尋 (搜尋 XXX) ---
                     const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
                     if (searchMatch) {
                         const searchKeyword = searchMatch[1].trim() || "今日新聞";
+                        addMessage(`🔍 正在搜尋：${searchKeyword}...`, 'system');
                         let searchResultText = "";
                         if (appState.keys.serpapi) {
                             try { searchResultText = await searchViaSerpApi(searchKeyword); } catch (e) { addMessage(`⚠️ ${e.message}`, 'system'); }
                         }
                         if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(searchKeyword);
-                        else if (!searchResultText && appState.keys.gemini) { modelToUse = 'gemini'; enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
+                        else if (!searchResultText && appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
 
                         if (searchResultText) {
-                            addMessage(searchResultText, 'system');
-                            modelToUse = (appState.currentModel !== 'cohere' && appState.currentModel !== 'groq') ? (appState.keys.cohere ? 'cohere' : (appState.keys.groq ? 'groq' : appState.currentModel)) : appState.currentModel;
-                            text = `請根據搜尋結果摘要：\n\n${searchResultText}`;
+                            text = `請根據以下搜尋結果摘要回答：\n\n${searchResultText}`;
+                            injectedContext = ""; systemPromptAddon = ""; enableSearchTool = false;
                         }
                     } else {
+                        // --- 網址抓取 ---
                         const urlMatch = text.match(/https?:\/\/[^\s]+/);
                         if (urlMatch) {
                             const url = urlMatch[0];
@@ -1139,7 +1176,23 @@
                                 addMessage(`🔍 抓取網頁中...`, 'system');
                                 const content = await fetchUrlViaGas(url);
                                 if (content) injectedContext = `\n\n[網頁內容]:\n${content}\n\n`;
-                            } else if (appState.keys.gemini) { modelToUse = 'gemini'; enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
+                            } else if (appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
+                        }
+                    }
+
+                    // --- 代理連網搜尋引擎 (讓 Grok/其他模型支援搜尋按鈕) ---
+                    if (enableSearchTool && modelToUse !== 'gemini' && !searchMatch) {
+                        addMessage(`🌐 (代理連網) 正在透過網路搜尋相關資訊...`, 'system');
+                        let searchResultText = "";
+                        if (appState.keys.serpapi) {
+                            try { searchResultText = await searchViaSerpApi(text); } catch (e) { console.warn(e); }
+                        }
+                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(text);
+
+                        if (searchResultText) {
+                            injectedContext += `\n\n[系統自動連網搜尋結果，請參考此最新資訊來回答使用者的問題]:\n${searchResultText}\n\n`;
+                        } else {
+                            addMessage(`⚠️ 代理搜尋失敗，將以原始知識庫回答。`, 'system');
                         }
                     }
                 }
@@ -1152,11 +1205,11 @@
                     finalRes = await fetchAIResponse(promptToSent, modelToUse, { 
                         enableSearch: enableSearchTool, 
                         disableSearch: !enableSearchTool && injectedContext !== "",
-                        image: imgDataToPass // Pass image data to fetcher
+                        image: imgDataToPass 
                     });
                 } catch (err1) {
                     console.warn(err1);
-                    if (imgDataToPass) throw new Error("視覺模型分析失敗: " + err1.message); // Don't fallback for vision if gemini fails
+                    if (imgDataToPass) throw new Error("視覺模型分析失敗: " + err1.message); 
                     addMessage(`⚠️ ${MODEL_CONFIG[modelToUse]?.name || modelToUse} 錯誤 (${err1.message})，切換至 Gemini...`, 'system');
                     modelToUse = 'gemini';
                     finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "" });
@@ -1175,6 +1228,49 @@
             }
         }
 
+        // --- Natural Language Time Parser ---
+        function parseTimeNatural(str) {
+            const now = new Date();
+            let result = { complete: false, timestamp: null, missing: null };
+            
+            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
+            if (relMatch) {
+                const amount = parseInt(relMatch[1]);
+                const unit = relMatch[2];
+                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
+                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
+                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
+                return { complete: true, timestamp: now.getTime() };
+            }
+
+            let targetDate = new Date();
+            let hasDate = false;
+            if (str.includes('明天') || str.includes('tomorrow')) { targetDate.setDate(targetDate.getDate() + 1); hasDate = true; } 
+            else if (str.includes('後天')) { targetDate.setDate(targetDate.getDate() + 2); hasDate = true; } 
+            else if (str.match(/\d{1,2}月\d{1,2}日/)) { const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/); targetDate.setMonth(parseInt(dMatch[1]) - 1); targetDate.setDate(parseInt(dMatch[2])); hasDate = true; } 
+            else if (str.includes('今天') || str.includes('today')) { hasDate = true; }
+
+            let hour = -1, minute = 0;
+            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); 
+            const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
+            
+            if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } 
+            else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
+
+            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
+            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
+
+            if (hour !== -1) {
+                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) return { complete: false, missing: 'ampm' }; 
+                if (isPM && hour < 12) hour += 12;
+                if (isAM && hour === 12) hour = 0; 
+                targetDate.setHours(hour, minute, 0, 0);
+                if (!hasDate) { if (targetDate < new Date()) return { complete: false, missing: 'date' }; }
+                return { complete: true, timestamp: targetDate.getTime() };
+            }
+            return { complete: false, missing: 'time' };
+        }
+
         async function fetchAIResponse(userText, model, options = {}) {
             const fetchWithTimeout = async (url, fetchOpts, timeout = 30000) => {
                 const controller = new AbortController();
@@ -1189,28 +1285,15 @@
 
                 if(model === 'gemini') {
                     const modelName = 'gemini-2.5-flash';
-                    
                     const partsArray = [{ text: userText }];
                     
-                    // 處理圖片附加
                     if (options.image && options.image.base64) {
                         const base64Data = options.image.base64.split(',')[1];
-                        partsArray.push({
-                            inlineData: {
-                                mimeType: options.image.mime,
-                                data: base64Data
-                            }
-                        });
+                        partsArray.push({ inlineData: { mimeType: options.image.mime, data: base64Data } });
                     }
                     
-                    const payload = { 
-                        contents: [{ parts: partsArray }],
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-                    };
-
-                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.image) {
-                        payload.tools = [{ google_search: {} }];
-                    }
+                    const payload = { contents: [{ parts: partsArray }], generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } };
+                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.image) { payload.tools = [{ google_search: {} }]; }
 
                     const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { 
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) 
@@ -1223,15 +1306,11 @@
                     if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
 
                     let outputText = "";
-                    if (candidate.content && candidate.content.parts) {
-                        outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join("");
-                    }
+                    if (candidate.content && candidate.content.parts) { outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join(""); }
 
                     let sources = [];
                     if (candidate.groundingMetadata?.groundingAttributions) {
-                        candidate.groundingMetadata.groundingAttributions.forEach(attr => {
-                            if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri });
-                        });
+                        candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); });
                     }
 
                     if (!outputText && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。";
@@ -1254,51 +1333,44 @@
                     return data.text || "無回應";
                 } else if (model === 'grok') {
                     const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
-                    const mName = appState.grokModel || 'grok-4-1-fast-reasoning';
+                    let mName = appState.grokModel || 'grok-4-1-fast-reasoning';
                     
+                    // 防呆：如果是圖像辨識 (分析圖片)，絕對不能用 imagine 繪圖模型，強制幫切換成文字分析模型
+                    if (options.image && mName.includes('imagine')) {
+                        mName = 'grok-4-1-fast-reasoning';
+                    }
+
                     let apiUrl, payload;
                     
-                    // 根據是否為生成模型 (Image/Video) 切換對應的 Endpoint 與 Payload 格式
                     if (mName.includes('imagine')) {
                         apiUrl = 'https://api.x.ai/v1/images/generations';
-                        payload = {
-                            model: mName,
-                            prompt: userText
-                        };
+                        payload = { model: mName, prompt: userText };
                     } else {
                         apiUrl = 'https://api.x.ai/v1/chat/completions';
-                        payload = { 
-                            model: mName, 
-                            messages: [{role: "user", content: userText}], 
-                            temperature: 0.7 
-                        };
+                        let msgContent = userText;
+                        // 處理 Grok 視覺圖片傳入
+                        if (options.image && options.image.base64) {
+                            const base64Data = options.image.base64.split(',')[1];
+                            msgContent = [
+                                { type: "text", text: userText },
+                                { type: "image_url", image_url: { url: `data:${options.image.mime};base64,${base64Data}` } }
+                            ];
+                        }
+                        payload = { model: mName, messages: [{role: "user", content: msgContent}], temperature: 0.7 };
                     }
 
                     const fullUrl = `${myProxy}?url=${encodeURIComponent(apiUrl)}`;
+                    const res = await fetchWithTimeout(fullUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     
-                    const res = await fetchWithTimeout(fullUrl, { 
-                        method: 'POST', 
-                        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify(payload) 
-                    });
-                    
-                    if (!res.ok) { 
-                        const errText = await res.text(); 
-                        throw new Error(`Worker 錯誤: ${errText}`); 
-                    }
-                    
+                    if (!res.ok) { const errText = await res.text(); throw new Error(`Worker 錯誤: ${errText}`); }
                     const data = await res.json(); 
                     
-                    // 針對生成模型的特別解析
+                    // 解析繪圖模型
                     if (mName.includes('imagine')) {
                         if (data.data && data.data[0]) {
-                            if (data.data[0].url) {
-                                return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
-                            } else if (data.data[0].b64_json) {
-                                return `✨ 生成成功！\n<img src="data:image/png;base64,${data.data[0].b64_json}" class="rounded-lg shadow-md mt-2"/>`;
-                            }
+                            if (data.data[0].url) return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
+                            else if (data.data[0].b64_json) return `✨ 生成成功！\n<img src="data:image/png;base64,${data.data[0].b64_json}" class="rounded-lg shadow-md mt-2"/>`;
                         }
-                        // 假如沒有照預期抓到圖片網址，顯示原始回應以便除錯
                         return `生成任務已處理，回傳內容：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
                     }
 
@@ -1314,10 +1386,44 @@
             } catch(e) { throw e; }
         }
 
+        // --- ALARM LOGIC ---
+        function checkReminders() {
+            const now = Date.now();
+            appState.todos.forEach(todo => {
+                if (todo.alertTime && !todo.alerted && !todo.done) {
+                    if (now >= todo.alertTime) { todo.alerted = true; saveData(); triggerAlarm(todo.text); }
+                }
+            });
+        }
+
+        function triggerAlarm(text) {
+            document.getElementById('alarm-text').innerText = text;
+            document.getElementById('alarm-modal').classList.remove('hidden'); document.getElementById('alarm-modal').classList.add('flex');
+            
+            if (!alarmAudioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) alarmAudioCtx = new AudioContext(); }
+            if (alarmAudioCtx) {
+                if (alarmAudioCtx.state === 'suspended') alarmAudioCtx.resume();
+                const playBeep = () => {
+                    const osc = alarmAudioCtx.createOscillator(); const gain = alarmAudioCtx.createGain();
+                    osc.type = 'square'; osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(440, alarmAudioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, alarmAudioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, alarmAudioCtx.currentTime + 0.5);
+                    osc.connect(gain); gain.connect(alarmAudioCtx.destination); osc.start(); osc.stop(alarmAudioCtx.currentTime + 0.5);
+                };
+                playBeep(); alarmInterval = setInterval(playBeep, 1000);
+            }
+            if (navigator.vibrate) navigator.vibrate([300, 200, 300, 200, 300]);
+        }
+
+        function stopAlarm() {
+            document.getElementById('alarm-modal').classList.add('hidden'); document.getElementById('alarm-modal').classList.remove('flex');
+            if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+            if (navigator.vibrate) navigator.vibrate(0);
+        }
+
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 20 啟動！\n✅ 已修正 Grok 圖像與影片生成模型的 API 路徑，自動切換至相容的生圖格式\n✅ 助理對話區支援上傳圖片供強大視覺模型進行智慧分析', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 21 啟動！\n✅ 已優化 GPS 定位雙重備援機制 (Nominatim + GeoJS)\n✅ 圖片轉文字分析已變更為 Grok 優先，Gemini 備用\n✅ 解除限制：Grok 等模型現已支援連網搜尋 (代理爬蟲注入)', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1356,7 +1462,6 @@
             });
             
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
-                // [語音辨識初始化... 略] 保持原有邏輯
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
                 recognition = new SR(); recognition.lang = 'zh-TW'; recognition.continuous = true; recognition.interimResults = true; 
                 let voiceTimer = null; let finalTranscript = ''; 
