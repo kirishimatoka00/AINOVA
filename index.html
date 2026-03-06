@@ -699,6 +699,162 @@
             document.getElementById('chat-image-preview').src = '';
         }
 
+        // --- PASTE HANDLER & DOC WRITER LOGIC (RESTORED) ---
+        function handlePaste(e) {
+            const items = (e.clipboardData || window.clipboardData).items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image") !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        appState.pastedImageBase64 = event.target.result;
+                        const indicator = document.getElementById('paste-indicator');
+                        if(indicator) indicator.classList.remove('hidden');
+                        const docInput = document.getElementById('doc-input-main');
+                        if(docInput) docInput.value = "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]";
+                    };
+                    reader.readAsDataURL(blob);
+                    e.preventDefault(); 
+                    return;
+                }
+            }
+        }
+        
+        function handleNoteKeydown(e) {
+            if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+            
+            if (appState.pastedImageBase64) {
+                 const docInput = document.getElementById('doc-input-main');
+                 if (docInput && (docInput.value === "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]" || docInput.value === "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]")) {
+                     appState.pastedImageBase64 = null;
+                     const indicator = document.getElementById('paste-indicator');
+                     if(indicator) indicator.classList.add('hidden');
+                     docInput.value = "";
+                 }
+            }
+            if (e.ctrlKey && e.key === 'Enter') {
+                handleDocWriteBtn();
+            }
+        }
+        
+        function clearNoteInput() {
+             const docInputMain = document.getElementById('doc-input-main');
+             const docInputSub = document.getElementById('doc-input-sub');
+             if(docInputMain) docInputMain.value = '';
+             if(docInputSub) docInputSub.value = '';
+             appState.pastedImageBase64 = null;
+             const indicator = document.getElementById('paste-indicator');
+             if(indicator) indicator.classList.add('hidden');
+        }
+
+        function setWriteMode(mode) {
+            appState.writeMode = mode;
+            ['text', 'image', 'link'].forEach(m => {
+                const btn = document.getElementById(`btn-mode-${m}`);
+                if(!btn) return;
+                if(m === mode) btn.className = 'text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all';
+                else btn.className = 'text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all';
+            });
+            const mainInput = document.getElementById('doc-input-main');
+            const subInput = document.getElementById('doc-input-sub');
+            if(!mainInput || !subInput) return;
+            
+            if(mode === 'text') {
+                mainInput.placeholder = "輸入文字內容，或直接 Ctrl+V 貼上圖片...";
+                subInput.classList.add('hidden');
+            } else if (mode === 'image') {
+                mainInput.placeholder = "輸入圖片網址 (https://...)";
+                subInput.classList.add('hidden');
+            } else if (mode === 'link') {
+                mainInput.placeholder = "輸入連結顯示文字";
+                subInput.placeholder = "輸入連結網址 (https://...)";
+                subInput.classList.remove('hidden');
+            }
+        }
+
+        async function handleDocWriteBtn() {
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
+            
+            if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
+            
+            const mainInput = document.getElementById('doc-input-main');
+            const subInput = document.getElementById('doc-input-sub');
+            if(!mainInput) return;
+            
+            const mainVal = mainInput.value.trim();
+            const subVal = subInput ? subInput.value.trim() : '';
+            const sendBtn = document.getElementById('note-send-btn');
+            
+            let payload = {};
+            let currentMode = appState.writeMode || 'text';
+            
+            if ((currentMode === 'image' || currentMode === 'link') && 
+                !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
+                currentMode = 'text';
+            }
+            
+            if (appState.pastedImageBase64 && (mainVal.includes("[已偵測到"))) {
+                payload = { type: 'image_base64', content: appState.pastedImageBase64 };
+            } else {
+                if(!mainVal && currentMode !== 'image_base64') return; 
+                
+                if(currentMode === 'text') payload = { type: 'text', content: mainVal };
+                else if (currentMode === 'image') payload = { type: 'image', content: mainVal };
+                else if (currentMode === 'link') {
+                    if(!subVal) return alert("請輸入連結網址");
+                    payload = { type: 'link', text: mainVal, content: subVal };
+                }
+            }
+            
+            if(sendBtn) {
+                const originalText = sendBtn.innerHTML;
+                sendBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> ⏳ 寫入中...';
+                sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                
+                try {
+                    await fetch(targetUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(payload)
+                    });
+                    addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system');
+                    clearNoteInput();
+                } catch(e) { alert("寫入失敗，請檢查 URL"); }
+                finally {
+                    sendBtn.innerHTML = originalText;
+                    sendBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        function openNoteDocViewer() { 
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
+            if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`);
+            
+            document.getElementById('doc-viewer-modal').classList.remove('hidden'); 
+            refreshNoteDocView(); 
+        }
+        
+        function closeDocViewer() { 
+            document.getElementById('doc-viewer-modal').classList.add('hidden'); 
+        }
+        
+        async function refreshNoteDocView() {
+            const area = document.getElementById('doc-content-area');
+            if(!area) return;
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
+            
+            area.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 gap-2"><div class="dot-flashing bg-slate-400"></div> 讀取中...</div>';
+            try {
+                const res = await fetch(targetUrl);
+                const text = await res.text();
+                area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>';
+            } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
+        }
+
         // --- ENHANCED GPS LOCATION ---
         async function tryGetLocation(silent=false) { 
             if(!silent) updateLocStatus("GPS定位中..."); 
@@ -926,40 +1082,6 @@
                 if(!executeNativeCall(number)){ window.open(`tel:${number}`, '_self'); } 
                 else { addMessage(`(✅ 已透過原生 Bridge 發送撥號指令)`, 'system'); }
             }, 2000);
-        }
-
-        // --- NOTEBOOK 2 LOGIC ---
-        function setActiveNotebook(num) {
-            appState.activeNotebook = num;
-            const btn1 = document.getElementById('btn-nb-1');
-            const btn2 = document.getElementById('btn-nb-2');
-            const label = document.getElementById('active-notebook-label');
-            
-            if(num === 1) {
-                btn1.classList.add('bg-emerald-600', 'text-white'); btn1.classList.remove('text-slate-400', 'hover:text-white');
-                btn2.classList.remove('bg-teal-600', 'text-white'); btn2.classList.add('text-slate-400', 'hover:text-white');
-                label.innerText = '* 目前寫入目標：筆記本 A (URL 1)';
-            } else {
-                btn2.classList.add('bg-teal-600', 'text-white'); btn2.classList.remove('text-slate-400', 'hover:text-white');
-                btn1.classList.remove('bg-emerald-600', 'text-white'); btn1.classList.add('text-slate-400', 'hover:text-white');
-                label.innerText = '* 目前寫入目標：筆記本 B (URL 2)';
-            }
-        }
-
-        // --- PHOTO LOGIC (NOTEBOOK) ---
-        function triggerPhotoUpload() { document.getElementById('photo-input').click(); }
-        function triggerCameraUpload() { document.getElementById('camera-input').click(); }
-        
-        function handlePhotoSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                appState.pastedImageBase64 = evt.target.result;
-                document.getElementById('paste-indicator').classList.remove('hidden');
-                document.getElementById('doc-input-main').value = "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]";
-            };
-            reader.readAsDataURL(file);
         }
 
         // --- AUDIO RECORDING ---
