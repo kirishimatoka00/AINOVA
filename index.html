@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 26</title>
+    <title>NOVA 27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 26</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 27</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header (定位按鈕往右靠) -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 26</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 27</span></div>
                 
                 <!-- 群組置於右側 -->
                 <div class="flex items-center space-x-3 ml-auto pl-2">
@@ -325,7 +325,6 @@
                                     </div>
                                     <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
                                     
-                                    <!-- 改用 label 綁定 input，解決點擊無效的問題 -->
                                     <label for="photo-input" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors cursor-pointer" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></label>
                                     <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
 
@@ -650,7 +649,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA26_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA27_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -816,7 +815,6 @@
              if(indicator) indicator.classList.add('hidden');
         }
 
-        // --- 修復筆記本B切換按鈕視覺問題 ---
         function setActiveNotebook(num) {
             appState.activeNotebook = num;
             const btn1 = document.getElementById('btn-nb-1');
@@ -875,7 +873,6 @@
             let payload = {};
             let currentMode = appState.writeMode || 'text';
             
-            // 修正 Link 模式邏輯：只有 Image 模式才強制檢查網址開頭
             if (currentMode === 'image' && !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
                 currentMode = 'text';
             }
@@ -948,7 +945,6 @@
                     (p) => {
                         appState.lastLat = p.coords.latitude;
                         appState.lastLon = p.coords.longitude;
-                        // 使用 BigDataCloud API 較穩定且無嚴格跨域或頻率限制
                         fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=zh-tw`)
                             .then(r=>r.json())
                             .then(d => { 
@@ -1176,7 +1172,6 @@
         function stopAudioRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                // 停止麥克風硬體佔用
                 if(mediaRecorder.stream) {
                     mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 }
@@ -1258,7 +1253,8 @@
             // Check for attached chat image
             const hasChatImage = appState.chatImageBase64 !== null;
             
-            if (text.length > 4 && text.length % 2 === 0) {
+            // 基礎的輸入框清理，修正疊字 Bug：確保不會因為截斷問題而導致單字消失
+            if (text.length >= 4 && text.length % 2 === 0) {
                  const mid = text.length / 2;
                  if (text.substring(0, mid) === text.substring(mid)) { text = text.substring(0, mid); }
             }
@@ -1268,17 +1264,16 @@
 
             // 1. Voice Commands
             if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
-            // 修正：支援「停止錄音」與「結束錄音」
             if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
             // 2. Emergency Call
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
-            if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.stop(); triggerEmergency(emergencyMatch[1]); return; }
+            if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); triggerEmergency(emergencyMatch[1]); return; }
 
             // 3. Normal Call
             const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
             if (callMatch) {
-                input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.stop();
+                input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort();
                 if (executeNativeCall(callMatch[1])) { addMessage(`📞 透過原生 Bridge 撥出：${callMatch[1]}`, 'system'); } 
                 else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
                 return;
@@ -1299,7 +1294,11 @@
             initialInput = ''; 
             clearChatImage(); // Clear preview after sending
             
-            if (recognition && !appState.isContinuous) recognition.stop();
+            // 核心修正：發送訊息時強制使用 abort 終止舊語音辨識連線，徹底清除 e.results 緩衝！
+            if (recognition) {
+                try { recognition.abort(); } catch(e) {}
+            }
+            
             renderThinkingState(true);
 
             // 4. Reminders
@@ -1538,7 +1537,7 @@
                 } else if (model === 'grok') {
                     const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
                     let mName = appState.grokModel || 'grok-4-1-fast-reasoning';
-
+                    
                     let apiUrl, payload;
                     
                     if (mName.includes('imagine')) {
@@ -1548,7 +1547,6 @@
                         apiUrl = 'https://api.x.ai/v1/chat/completions';
                         let msgContent = userText;
                         
-                        // 處理 Grok 視覺圖片傳入 API 格式
                         if (options.image && options.image.base64) {
                             const base64Data = options.image.base64.split(',')[1];
                             msgContent = [
@@ -1632,7 +1630,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 26 啟動！\n✅ 錄音功能強化：支援輸入「結束錄音」指令\n✅ UI 優化：錄音時點擊上方的紅色「🔴 錄音中...」提示即可快速停止\n✅ 底層優化：錄音結束後徹底釋放硬體麥克風，不卡系統資源', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 27 啟動！\n✅ 徹底解決語音輸入「文字重複鬼打牆」的問題 (強制清空緩衝區 + 疊句壓縮)\n✅ 錄音功能強化：支援指令「結束錄音」與一鍵點擊停止', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1674,32 +1672,79 @@
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
                 recognition = new SR(); recognition.lang = 'zh-TW'; recognition.continuous = true; recognition.interimResults = true; 
                 let voiceTimer = null; let finalTranscript = ''; 
-                recognition.onstart = () => { appState.isListening = true; updateVoiceUI(); initialInput = document.getElementById('user-input').value; };
-                recognition.onend = () => { appState.isListening = false; updateVoiceUI(); if(voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; if(document.getElementById('user-input').value.trim() !== initialInput.trim()) handleSendMessage(); } if (appState.isContinuous) recognition.start(); };
+                
+                recognition.onstart = () => { 
+                    appState.isListening = true; 
+                    updateVoiceUI(); 
+                    initialInput = document.getElementById('user-input').value; 
+                };
+                
+                recognition.onend = () => { 
+                    appState.isListening = false; 
+                    updateVoiceUI(); 
+                    if(voiceTimer) { 
+                        clearTimeout(voiceTimer); 
+                        voiceTimer = null; 
+                    } 
+                    if (appState.isContinuous) {
+                        // 稍微延遲避免瀏覽器阻擋快速重啟
+                        setTimeout(() => { try { recognition.start(); } catch(e){} }, 100);
+                    } 
+                };
+                
                 recognition.onresult = (e) => {
-                    let transcript = ""; for (let i = 0; i < e.results.length; ++i) transcript += e.results[i][0].transcript;
-                    if (transcript.length > 0 && transcript.length % 2 === 0) {
-                         const mid = transcript.length / 2; if (transcript.substring(0, mid) === transcript.substring(mid)) transcript = transcript.substring(0, mid);
+                    let currentTranscript = ""; 
+                    for (let i = 0; i < e.results.length; ++i) {
+                        let text = e.results[i][0].transcript;
+                        // 修正：強化的 Android 疊詞防護機制 (長度需 >= 4 才觸發壓縮)
+                        if (text.length >= 4 && text.length % 2 === 0) {
+                            const mid = text.length / 2; 
+                            if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid);
+                        }
+                        currentTranscript += text;
                     }
+                    
                     const input = document.getElementById('user-input'); 
-                    input.value = initialInput + (initialInput && transcript ? " " : "") + transcript;
+                    input.value = (initialInput ? initialInput + " " : "") + currentTranscript.trim();
                     autoResizeInput(input);
                     
                     if (voiceTimer) clearTimeout(voiceTimer);
-                    voiceTimer = setTimeout(() => { handleSendMessage(); voiceTimer = null; recognition.stop(); }, 6000);
+                    voiceTimer = setTimeout(() => { 
+                        handleSendMessage(); 
+                    }, 6000);
                 };
                 
                 noteRecognition = new SR(); noteRecognition.lang = 'zh-TW'; noteRecognition.continuous = true; noteRecognition.interimResults = true;
                 let noteVoiceTimer = null; let noteFinalTranscript = '';
-                noteRecognition.onstart = () => { appState.isNoteListening = true; updateNoteVoiceUI(); initialInput = document.getElementById('doc-input-main').value; };
-                noteRecognition.onend = () => { appState.isNoteListening = false; updateNoteVoiceUI(); if(noteVoiceTimer) clearTimeout(noteVoiceTimer); };
+                
+                noteRecognition.onstart = () => { 
+                    appState.isNoteListening = true; 
+                    updateNoteVoiceUI(); 
+                    initialInput = document.getElementById('doc-input-main').value; 
+                };
+                
+                noteRecognition.onend = () => { 
+                    appState.isNoteListening = false; 
+                    updateNoteVoiceUI(); 
+                    if(noteVoiceTimer) clearTimeout(noteVoiceTimer); 
+                };
+                
                 noteRecognition.onresult = (e) => {
-                    let transcript = ""; for (let i = 0; i < e.results.length; ++i) transcript += e.results[i][0].transcript;
-                    if (transcript.length > 0 && transcript.length % 2 === 0) {
-                        const mid = transcript.length / 2; if (transcript.substring(0, mid) === transcript.substring(mid)) transcript = transcript.substring(0, mid);
+                    let currentTranscript = ""; 
+                    for (let i = 0; i < e.results.length; ++i) {
+                        let text = e.results[i][0].transcript;
+                        if (text.length >= 4 && text.length % 2 === 0) {
+                            const mid = text.length / 2; 
+                            if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid);
+                        }
+                        currentTranscript += text;
                     }
-                    const el = document.getElementById('doc-input-main'); const separator = (initialInput && transcript) ? "\n" : ""; el.value = initialInput + separator + transcript;
-                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { noteRecognition.stop(); }, 6000);
+                    const el = document.getElementById('doc-input-main'); 
+                    const separator = (initialInput && currentTranscript) ? "\n" : ""; 
+                    el.value = initialInput + separator + currentTranscript.trim();
+                    
+                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); 
+                    noteVoiceTimer = setTimeout(() => { noteRecognition.stop(); }, 6000);
                 };
             }
 
@@ -1708,4 +1753,4 @@
         };
     </script>
 </body>
-                                     </html>
+    </html>
