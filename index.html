@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 25</title>
+    <title>NOVA 26</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 25</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 26</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -74,9 +74,9 @@
         </aside>
 
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
-            <!-- Mobile Header (重新排版：把定位按鈕往右靠，避開中間的鏡頭開孔) -->
+            <!-- Mobile Header (定位按鈕往右靠) -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 25</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 26</span></div>
                 
                 <!-- 群組置於右側 -->
                 <div class="flex items-center space-x-3 ml-auto pl-2">
@@ -190,11 +190,13 @@
                     <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar">
                          <div class="flex items-center space-x-2 mr-4 shrink-0">
                             <span id="web-search-badge" class="hidden md:flex items-center space-x-1 text-[10px] bg-blue-900/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full"><i class="ph-bold ph-globe"></i><span>連網搜尋</span></span>
-                            <!-- Recording Indicator -->
-                            <div id="recording-status" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2">
+                            
+                            <!-- Recording Indicator (新增 onclick="stopAudioRecording()") -->
+                            <div id="recording-status" onclick="stopAudioRecording()" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2 cursor-pointer hover:bg-red-800/50 transition-colors" title="點擊停止錄音">
                                 <div class="w-2 h-2 bg-red-500 rounded-full recording-dot"></div>
-                                <span class="text-xs text-red-200 font-bold">錄音中...</span>
+                                <span class="text-xs text-red-200 font-bold">錄音中... (點擊停止)</span>
                             </div>
+
                             <span id="doc-monitor-badge" class="hidden items-center space-x-1 text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse"><i class="ph-bold ph-arrows-clockwise"></i><span>Docs 監控中</span></span>
                             <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
                          </div>
@@ -323,6 +325,7 @@
                                     </div>
                                     <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
                                     
+                                    <!-- 改用 label 綁定 input，解決點擊無效的問題 -->
                                     <label for="photo-input" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors cursor-pointer" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></label>
                                     <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
 
@@ -647,7 +650,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA25_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA26_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -1166,16 +1169,23 @@
                 mediaRecorder.start();
                 document.getElementById('recording-status').classList.remove('hidden');
                 document.getElementById('recording-status').classList.add('flex');
-                addMessage("🎙️ 開始錄音...", 'system');
-            } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查權限", 'system'); }
+                addMessage("🎙️ 開始錄音... (可輸入「結束錄音」或點擊上方紅燈停止)", 'system');
+            } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
         }
 
         function stopAudioRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
+                // 停止麥克風硬體佔用
+                if(mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
                 document.getElementById('recording-status').classList.add('hidden');
                 document.getElementById('recording-status').classList.remove('flex');
                 addMessage("⏹️ 錄音結束，處理中...", 'system');
+            } else {
+                document.getElementById('recording-status').classList.add('hidden');
+                document.getElementById('recording-status').classList.remove('flex');
             }
         }
 
@@ -1258,7 +1268,8 @@
 
             // 1. Voice Commands
             if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
-            if (text.includes("停止錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
+            // 修正：支援「停止錄音」與「結束錄音」
+            if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
             // 2. Emergency Call
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
@@ -1329,7 +1340,7 @@
                 let modelToUse = appState.currentModel;
                 let enableSearchTool = appState.isSearchEnabled;
                 
-                // === GPS Context Injection (新增：動態寫入使用者當前位置，讓 AI 可回答「我在哪裡」) ===
+                // === GPS Context Injection ===
                 if (appState.weather && appState.weather.loc && appState.weather.loc !== '未定位') {
                     systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，座標: ${appState.lastLat}, ${appState.lastLon}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
                 }
@@ -1554,7 +1565,6 @@
                     if (!res.ok) { const errText = await res.text(); throw new Error(`Worker 錯誤: ${errText}`); }
                     const data = await res.json(); 
                     
-                    // 解析繪圖模型
                     if (mName.includes('imagine')) {
                         if (data.data && data.data[0]) {
                             if (data.data[0].url) return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
@@ -1622,7 +1632,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 25 啟動！\n✅ 已注入隱藏的地理系統提示，可直接詢問 AI「我在哪裡」\n✅ 手機版頂部位置圖示已向右偏移，避免遮擋前鏡頭 (瀏海/動態島)', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 26 啟動！\n✅ 錄音功能強化：支援輸入「結束錄音」指令\n✅ UI 優化：錄音時點擊上方的紅色「🔴 錄音中...」提示即可快速停止\n✅ 底層優化：錄音結束後徹底釋放硬體麥克風，不卡系統資源', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1698,4 +1708,4 @@
         };
     </script>
 </body>
-                                    </html>
+                                     </html>
