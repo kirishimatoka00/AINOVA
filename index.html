@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 23</title>
+    <title>NOVA 24</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 23</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 24</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -76,7 +76,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 23</span></div>
+                <div class="flex items-center space-x-2"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 24</span></div>
                 <div class="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                     <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white">更新</span>
                 </div>
@@ -142,7 +142,6 @@
                     <div class="mt-4 pt-2 flex justify-between items-center shrink-0">
                         <div class="flex space-x-2">
                             <button onclick="exportSettings()" class="flex items-center gap-1 text-xs text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-download-simple"></i> 匯出設定</button>
-                            <!-- 改用 label 綁定 input，解決點擊無效的問題 -->
                             <label for="import-settings-input" class="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-2 rounded-lg hover:bg-emerald-800/50 transition-colors cursor-pointer"><i class="ph-bold ph-upload-simple"></i> 匯入設定</label>
                             <input type="file" id="import-settings-input" accept=".json" class="hidden" onchange="importSettings(event)">
                         </div>
@@ -242,7 +241,6 @@
 
                         <!-- LINE 風格輸入框 -->
                         <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                            <!-- 改用 label 綁定 input，解決點擊無效的問題 -->
                             <label for="chat-image-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳圖片分析">
                                 <i class="ph-bold ph-image text-xl"></i>
                             </label>
@@ -323,7 +321,6 @@
                                     </div>
                                     <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
                                     
-                                    <!-- 改用 label 綁定 input，解決點擊無效的問題 -->
                                     <label for="photo-input" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors cursor-pointer" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></label>
                                     <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
 
@@ -545,7 +542,8 @@
                 }
             }
             
-            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
+            const wrap = document.getElementById('input-wrapper'); 
+            if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
             
             const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
             if(searchBtn) {
@@ -647,7 +645,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `NOVA23_Settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `NOVA24_Settings_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -734,10 +732,6 @@
         }
         
         // --- CHAT IMAGE UPLOAD ---
-        function triggerChatImageUpload() {
-            document.getElementById('chat-image-input').click();
-        }
-
         function handleChatImageSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -761,8 +755,10 @@
         function clearChatImage() {
             appState.chatImageBase64 = null;
             appState.chatImageMime = null;
-            document.getElementById('chat-image-preview-container').classList.add('hidden');
-            document.getElementById('chat-image-preview').src = '';
+            const previewContainer = document.getElementById('chat-image-preview-container');
+            if (previewContainer) previewContainer.classList.add('hidden');
+            const previewImg = document.getElementById('chat-image-preview');
+            if (previewImg) previewImg.src = '';
         }
 
         // --- PASTE HANDLER & DOC WRITER LOGIC ---
@@ -815,6 +811,24 @@
              if(indicator) indicator.classList.add('hidden');
         }
 
+        // --- 修復筆記本B切換按鈕視覺問題 ---
+        function setActiveNotebook(num) {
+            appState.activeNotebook = num;
+            const btn1 = document.getElementById('btn-nb-1');
+            const btn2 = document.getElementById('btn-nb-2');
+            const label = document.getElementById('active-notebook-label');
+            
+            if(num === 1) {
+                btn1.classList.add('bg-emerald-600', 'text-white'); btn1.classList.remove('text-slate-400', 'hover:text-white', 'bg-blue-600');
+                btn2.classList.remove('bg-blue-600', 'bg-emerald-600', 'text-white'); btn2.classList.add('text-slate-400', 'hover:text-white');
+                label.innerText = '* 目前寫入目標：筆記本 A (URL 1)';
+            } else {
+                btn2.classList.add('bg-blue-600', 'text-white'); btn2.classList.remove('text-slate-400', 'hover:text-white', 'bg-emerald-600');
+                btn1.classList.remove('bg-emerald-600', 'bg-blue-600', 'text-white'); btn1.classList.add('text-slate-400', 'hover:text-white');
+                label.innerText = '* 目前寫入目標：筆記本 B (URL 2)';
+            }
+        }
+
         function setWriteMode(mode) {
             appState.writeMode = mode;
             ['text', 'image', 'link'].forEach(m => {
@@ -856,8 +870,8 @@
             let payload = {};
             let currentMode = appState.writeMode || 'text';
             
-            if ((currentMode === 'image' || currentMode === 'link') && 
-                !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
+            // 修正 Link 模式邏輯：只有 Image 模式才強制檢查網址開頭
+            if (currentMode === 'image' && !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) {
                 currentMode = 'text';
             }
             
@@ -1313,7 +1327,7 @@
                 let modelToUse = appState.currentModel;
                 let enableSearchTool = appState.isSearchEnabled;
 
-                // --- 圖片上傳邏輯 (尊重使用者當前選擇的模型) ---
+                // --- 圖片上傳邏輯 ---
                 if (imgDataToPass) {
                     if (!text) text = "請詳細分析這張圖片的內容";
                 } else {
@@ -1346,7 +1360,7 @@
                         }
                     }
 
-                    // --- 代理連網搜尋引擎 (讓 Grok/其他模型支援搜尋按鈕) ---
+                    // --- 代理連網搜尋引擎 ---
                     if (enableSearchTool && modelToUse !== 'gemini' && !searchMatch) {
                         addMessage(`🌐 (代理連網) 正在透過網路搜尋相關資訊...`, 'system');
                         let searchResultText = "";
@@ -1375,9 +1389,9 @@
                     });
                 } catch (err1) {
                     console.warn(err1);
-                    // 備援機制：如果使用者選用的模型不支援圖片分析，自動提示並轉交給 Gemini 處理
+                    // 如果有帶圖片且第一順位分析失敗，則自動無縫切換到 Gemini 備援處理
                     if (imgDataToPass && modelToUse !== 'gemini' && appState.keys.gemini) {
-                         addMessage(`⚠️ 您當前選擇的 ${MODEL_CONFIG[modelToUse]?.name || modelToUse} 模型可能不支援視覺分析或發生錯誤 (${err1.message})，自動交接給 Gemini 接手分析...`, 'system');
+                         addMessage(`⚠️ ${MODEL_CONFIG[modelToUse]?.name || modelToUse} 視覺分析失敗 (${err1.message})，自動交接給 Gemini 接手分析...`, 'system');
                          modelToUse = 'gemini';
                          finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", image: imgDataToPass });
                     } else {
@@ -1506,7 +1520,7 @@
                 } else if (model === 'grok') {
                     const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
                     let mName = appState.grokModel || 'grok-4-1-fast-reasoning';
-
+                    
                     let apiUrl, payload;
                     
                     if (mName.includes('imagine')) {
@@ -1516,7 +1530,7 @@
                         apiUrl = 'https://api.x.ai/v1/chat/completions';
                         let msgContent = userText;
                         
-                        // 處理 Grok 視覺圖片傳入 API 格式 (相容 OpenAI 規格)
+                        // 處理 Grok 視覺圖片傳入 API 格式
                         if (options.image && options.image.base64) {
                             const base64Data = options.image.base64.split(',')[1];
                             msgContent = [
@@ -1533,7 +1547,6 @@
                     if (!res.ok) { const errText = await res.text(); throw new Error(`Worker 錯誤: ${errText}`); }
                     const data = await res.json(); 
                     
-                    // 解析繪圖模型
                     if (mName.includes('imagine')) {
                         if (data.data && data.data[0]) {
                             if (data.data[0].url) return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
@@ -1548,7 +1561,6 @@
                     const mName = 'gpt-4o-mini';
                     let msgContent = userText;
                     
-                    // 擴充：賦予 OpenAI (gpt-4o-mini) 支援圖片分析能力
                     if (options.image && options.image.base64) {
                         const base64Data = options.image.base64.split(',')[1];
                         msgContent = [
@@ -1602,7 +1614,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 23 啟動！\n✅ 取消圖片強制分配模型，完全尊重使用者當下選擇的 AI 模型進行分析\n✅ 保留原生 Label 綁定與完整無截斷架構', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 24 啟動！\n✅ 已修復「無法切換至筆記本B」的問題 (修正樣式快取)\n✅ 已修復「筆記本超連結寫入」失效的問題\n✅ 保留原生 Label 綁定與 LINE 樣式多行輸入框', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1678,4 +1690,4 @@
         };
     </script>
 </body>
-</html>
+                                        </html>
