@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 32</title>
+    <title>NOVA 33</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 32</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 32</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -235,9 +235,10 @@
                     </div>
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
                     
-                    <!-- Chat Input Area (支援萬用附件上傳) -->
+                    <!-- Chat Input Area -->
                     <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col gap-2">
                         
+                        <!-- File/Image Preview Container -->
                         <div id="chat-file-preview-container" class="hidden relative inline-flex items-center bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-md self-start">
                             <img id="chat-image-preview" src="" class="h-12 w-auto rounded hidden mr-2">
                             <div id="chat-file-icon-wrapper" class="hidden flex items-center justify-center bg-blue-900/50 w-12 h-12 rounded mr-2">
@@ -249,12 +250,12 @@
 
                         <!-- LINE 風格輸入框 -->
                         <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                            <label for="chat-file-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳圖片或文件">
+                            <label for="chat-file-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳檔案或圖片">
                                 <i class="ph-bold ph-paperclip text-xl"></i>
                             </label>
                             <input type="file" id="chat-file-input" accept="*/*" class="hidden" onchange="handleChatFileSelect(event)">
 
-                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="連續語音對話"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
+                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
                             
@@ -441,39 +442,29 @@
             gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' }, grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' }, groq: { name: 'Groq', color: 'text-rose-400', bg: 'bg-rose-600', icon: 'ph-rocket' }, cohere: { name: 'Cohere', color: 'text-violet-400', bg: 'bg-violet-600', icon: 'ph-cpu' }, gpt: { name: 'OpenAI', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' }
         };
 
-        // ========== FIXED: LocalStorage Quota Exceeded Error Handler ==========
+        // --- 防爆 LocalStorage 儲存 ---
         function saveMessages() { 
             try {
-                localStorage.setItem('nova_messages', JSON.stringify(appState.messages)); 
-            } catch (e) {
-                console.warn('LocalStorage quota exceeded. Optimizing base64 file data...');
-                // 如果儲存空間滿了（通常是因為 Base64 圖片過大），我們將歷史訊息中的大檔案清除
-                const optimizedMessages = appState.messages.map(msg => {
-                    if (msg.file && msg.file.data && msg.file.data.length > 50000) {
-                        return { ...msg, file: { ...msg.file, data: null } };
+                // 為了避免巨大 Base64 檔案塞爆 5MB 限制導致當機，儲存時進行「卸載資料」處理
+                const lightweightMessages = appState.messages.map(msg => {
+                    if (msg.file && msg.file.data) {
+                        // 若不是圖片，或者圖片過大 (大約 > 500KB)，則在本地端抹除它的 base64 以保證瀏覽器存活
+                        if (msg.file.category !== 'image' || msg.file.data.length > 500000) {
+                            return { ...msg, file: { ...msg.file, data: null } };
+                        }
                     }
                     return msg;
                 });
-                appState.messages = optimizedMessages;
+                localStorage.setItem('nova_messages', JSON.stringify(lightweightMessages)); 
+            } catch(e) {
+                console.warn("Storage quota exceeded. Saving fallback...");
                 try {
-                    localStorage.setItem('nova_messages', JSON.stringify(appState.messages));
-                } catch (e2) {
-                    console.error('Storage still full after optimization');
-                }
+                    const fallback = appState.messages.map(msg => ({ ...msg, file: msg.file ? { ...msg.file, data: null } : null }));
+                    localStorage.setItem('nova_messages', JSON.stringify(fallback));
+                } catch (e2) {}
             }
         }
-        
-        function saveData() { 
-            try {
-                localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); 
-                localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); 
-                localStorage.setItem('nova_audio_records', JSON.stringify(appState.audioRecords)); 
-            } catch (e) {
-                console.warn("LocalStorage full for notes/todos");
-                alert("⚠️ 儲存空間已滿，請考慮清理不必要的筆記、圖片或錄音！");
-            }
-        }
-        
+        function saveData() { localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); localStorage.setItem('nova_audio_records', JSON.stringify(appState.audioRecords)); }
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         function formatMessage(text) { 
             if (!text) return ''; 
@@ -495,15 +486,11 @@
                 
                 let mediaHTML = '';
                 if (msg.file) {
-                    if (msg.file.category === 'image') {
-                        // FIXED: 處理圖片被優化掉的情況，顯示友善提示
-                        if (msg.file.data) {
-                            mediaHTML = `<img src="${msg.file.data}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">`;
-                        } else {
-                            mediaHTML = `<div class="flex items-center gap-2 bg-slate-950/50 p-2 rounded border border-slate-700/50 mb-2 max-w-xs overflow-hidden"><i class="ph-fill ph-image text-slate-500 text-xl shrink-0"></i><span class="text-xs text-slate-400 truncate">${escapeHtml(msg.file.name)} (節省空間不顯示)</span></div>`;
-                        }
-                    } else if (msg.file.category === 'media' || msg.file.category === 'text') {
-                        mediaHTML = `<div class="flex items-center gap-2 bg-slate-950/50 p-2 rounded border border-slate-700/50 mb-2 max-w-xs overflow-hidden"><i class="ph-fill ph-file text-blue-400 text-xl shrink-0"></i><span class="text-xs text-slate-300 truncate">${escapeHtml(msg.file.name)}</span></div>`;
+                    if (msg.file.category === 'image' && msg.file.data) {
+                        mediaHTML = `<img src="${msg.file.data}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">`;
+                    } else {
+                        let iconType = msg.file.category === 'image' ? 'ph-image' : 'ph-file';
+                        mediaHTML = `<div class="flex items-center gap-2 bg-slate-950/50 p-2 rounded border border-slate-700/50 mb-2 max-w-xs overflow-hidden"><i class="ph-fill ${iconType} text-blue-400 text-xl shrink-0"></i><span class="text-xs text-slate-300 truncate">${escapeHtml(msg.file.name)}</span></div>`;
                     }
                 }
 
@@ -611,6 +598,7 @@
             updateModelUI(); closeSettings(); addMessage("✅ 設定已儲存", 'system'); 
         }
 
+        // --- TEST CONNECTION ---
         function testDocConnection() {
             const url = document.getElementById('key-doc-url').value.trim(); const statusEl = document.getElementById('doc-monitor-status');
             if(!url) return alert("請輸入系統代理 Google Doc URL");
@@ -626,7 +614,7 @@
         function exportSettings() {
             const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl } };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `NOVA32_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = `NOVA33_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
         }
         function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
         function importSettings(e) {
@@ -673,6 +661,8 @@
             const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf' || !!file.name.match(/\.(pdf|mp3|wav|mp4|webm)$/i);
             let category = isImage ? 'image' : (isText ? 'text' : (isMedia ? 'media' : 'unknown'));
             if (category === 'unknown') category = 'media'; 
+            
+            if (isText && file.size > 2 * 1024 * 1024) alert("提醒：純文字檔案較大，可能超出 AI 分析上限，建議擷取重點上傳。");
 
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -1010,7 +1000,7 @@
             return resultText;
         }
 
-        // --- AI LOGIC (FIXED) ---
+        // --- AI LOGIC ---
         async function handleSendMessage() {
             if(appState.isThinking) return;
             const input = document.getElementById('user-input'); let text = input.value.trim(); const hasChatFile = appState.chatFile !== null;
@@ -1021,28 +1011,23 @@
             if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
-            if (emergencyMatch) { 
-                input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); 
-                if (typeof triggerEmergency === 'function') { triggerEmergency(emergencyMatch[1]); } else { window.open(`tel:${emergencyMatch[1]}`, '_self'); }
-                return; 
-            }
+            if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); triggerEmergency(emergencyMatch[1]); return; }
             const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
             if (callMatch) {
                 input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort();
-                try {
-                    if (typeof executeNativeCall === 'function' && executeNativeCall(callMatch[1])) { addMessage(`📞 透過原生 Bridge 撥出：${callMatch[1]}`, 'system'); } 
-                    else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
-                } catch(e) { window.open(`tel:${callMatch[1]}`, '_self'); }
+                if (executeNativeCall(callMatch[1])) { addMessage(`📞 透過原生 Bridge 撥出：${callMatch[1]}`, 'system'); } 
+                else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
                 return;
             }
 
             appState.isThinking = true; updateSendButtonState(true);
-            const fileDataToPass = hasChatFile ? { ...appState.chatFile } : null;
             
-            // FIXED: 將發送流程完全使用 Try-Catch-Finally 保護，避免出現錯誤時卡死送出按鈕
             try {
+                const fileDataToPass = hasChatFile ? { ...appState.chatFile } : null;
                 let displayMessage = text;
                 if (!text && fileDataToPass) { displayMessage = `請分析這份檔案: ${fileDataToPass.name}`; }
+                
+                // Now safely inside try/catch so QuotaExceededError won't cause infinite spin
                 addMessage(displayMessage, 'user', null, [], fileDataToPass);
                 
                 input.value = ''; input.style.height = '44px'; initialInput = ''; clearChatFile(); 
@@ -1091,7 +1076,7 @@
                     if (searchMatch) {
                         const searchKeyword = searchMatch[1].trim() || "今日新聞"; addMessage(`🔍 正在搜尋：${searchKeyword}...`, 'system'); let searchResultText = "";
                         if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(searchKeyword); } catch (e) { addMessage(`⚠️ ${e.message}`, 'system'); } }
-                        if (!searchResultText && appState.docMonitorUrl) { try { searchResultText = await fetchUrlViaGas(searchKeyword); } catch(e){} }
+                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(searchKeyword);
                         else if (!searchResultText && appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
 
                         if (searchResultText) { text = `請根據以下搜尋結果摘要回答：\n\n${searchResultText}`; injectedContext = ""; systemPromptAddon = ""; enableSearchTool = false; }
@@ -1108,34 +1093,27 @@
                     if (enableSearchTool && modelToUse !== 'gemini' && !searchMatch) {
                         addMessage(`🌐 (代理連網) 正在透過網路搜尋相關資訊...`, 'system'); let searchResultText = "";
                         if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(text); } catch (e) { console.warn(e); } }
-                        if (!searchResultText && appState.docMonitorUrl) { try { searchResultText = await fetchUrlViaGas(text); } catch(e){} }
+                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(text);
 
                         if (searchResultText) { injectedContext += `\n\n[系統自動連網搜尋結果，請參考此最新資訊來回答使用者的問題]:\n${searchResultText}\n\n`; } 
                         else { addMessage(`⚠️ 代理搜尋失敗，將以原始知識庫回答。`, 'system'); }
                     }
                 }
 
-                let finalRes; const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
-
-                try {
-                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { 
-                        enableSearch: enableSearchTool, 
-                        disableSearch: !enableSearchTool && injectedContext !== "",
-                        file: fileDataToPass 
-                    });
-                } catch (err1) {
-                    console.warn(err1);
-                    throw new Error(`${MODEL_CONFIG[modelToUse]?.name || modelToUse} 發生錯誤: ${err1.message}`);
-                }
+                const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
+                let finalRes = await fetchAIResponse(promptToSent, modelToUse, { 
+                    enableSearch: enableSearchTool, 
+                    disableSearch: !enableSearchTool && injectedContext !== "",
+                    file: fileDataToPass 
+                });
                 
                 if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse);
                 else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources);
 
             } catch (error) {
                 console.error("Handler Error:", error);
-                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(請確認當前模型是否支援您上傳的檔案格式，或嘗試更換其他模型。)\n`, 'system');
+                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援分析您上傳的檔案格式，請嘗試更換其他模型。)\n`, 'system');
             } finally {
-                // 確保無論發生什麼錯誤，都會解除發送按鈕的鎖定與重置輸入狀態
                 appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
             }
         }
@@ -1193,7 +1171,11 @@
                     const payload = { contents: [{ parts: partsArray }], generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } };
                     if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) { payload.tools = [{ google_search: {} }]; }
                     const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    const data = await res.json(); if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
+                    
+                    const resText = await res.text();
+                    let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 格式異常: ${resText.substring(0, 50)}`); }
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
+
                     const candidate = data.candidates?.[0]; if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
                     let outputText = ""; if (candidate.content && candidate.content.parts) { outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join(""); }
                     let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
@@ -1202,10 +1184,12 @@
                     
                 } else if (model === 'groq') {
                     const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: userText }] }) });
-                    const data = await res.json(); if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
+                    const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
                 } else if (model === 'cohere') {
                     const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText }) });
-                    const data = await res.json(); if (!res.ok) throw new Error(`${data.message || res.status}`); return data.text || "無回應";
+                    const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
+                    if (!res.ok) throw new Error(`${data.message || res.status}`); return data.text || "無回應";
                 } else if (model === 'grok') {
                     const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
                     let mName = appState.grokModel || 'grok-4-1-fast-reasoning'; 
@@ -1223,8 +1207,11 @@
                     }
                     const fullUrl = `${myProxy}?url=${encodeURIComponent(apiUrl)}`;
                     const res = await fetchWithTimeout(fullUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!res.ok) { const errText = await res.text(); throw new Error(`${errText}`); }
-                    const data = await res.json(); 
+                    const resText = await res.text();
+                    
+                    if (!res.ok) throw new Error(`${resText}`);
+                    const data = JSON.parse(resText);
+                    
                     if (mName.includes('imagine')) {
                         if (data.data && data.data[0]) {
                             if (data.data[0].url) return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
@@ -1239,7 +1226,8 @@
                         const base64Data = options.file.data.split(',')[1]; msgContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
                     }
                     const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:msgContent}]}) });
-                    const data = await res.json(); if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
+                    const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
                 }
             } catch(e) { throw e; }
         }
@@ -1247,7 +1235,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 32 啟動！\n✅ 取消強制分配模型的霸道邏輯：上傳圖片與檔案時，系統將完全尊重您當下所選擇的模型 (如果模型不支援則會給予友善報錯，讓您保有絕對控制權)', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 33 啟動！\n✅ 深度修復檔案上傳卡死 (無限轉圈) 的瀏覽器崩潰 Bug\n✅ 當您上傳特定模型不支援的檔案格式時，現在會立刻安全中斷並給出友善中文提示，由您全權控制！\n✅ 優化文字檔分析：將在後台無縫轉換為純文本，不再有格式阻礙', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1301,9 +1289,8 @@
                     if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { noteRecognition.stop(); }, 6000);
                 };
             }
-            tryGetLocation(true); updateModelUI(); 
-            // setInterval(checkReminders, 10000); // Note: checkReminders implementation skipped for brevity, keeping original structure untouched
+            tryGetLocation(true); updateModelUI(); setInterval(checkReminders, 10000);
         };
     </script>
 </body>
-                                        </html>
+</html>
