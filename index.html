@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 29</title>
+    <title>NOVA 30</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 29</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 30</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -75,7 +75,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 29</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 30</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -100,17 +100,19 @@
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-bold text-white">設定</h3><button onclick="closeSettings()"><i class="ph ph-x text-2xl text-slate-400"></i></button></div>
                     <div class="space-y-4 overflow-y-auto flex-1 pr-2">
-                        <!-- Docs Monitor Section -->
                         <div class="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 p-4 rounded-xl border border-blue-500/50 shadow-inner space-y-4">
-                            <div><label class="block text-xs text-blue-300 mb-2 font-bold flex items-center gap-2"><i class="ph-fill ph-robot"></i> 系統代理 Google Doc (搜尋/爬蟲)</label><input type="text" id="key-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs focus:border-blue-500 outline-none mb-2" placeholder="Apps Script URL (for Agent)"></div>
+                            <div><label class="block text-xs text-blue-300 mb-2 font-bold flex items-center gap-2"><i class="ph-fill ph-robot"></i> 系統代理 Google Doc (搜尋/爬蟲)</label><input type="text" id="key-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs focus:border-blue-500 outline-none mb-2" placeholder="Apps Script URL"></div>
                             <div class="grid grid-cols-1 gap-2">
-                                <div><label class="block text-xs text-emerald-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 A URL</label><input type="text" id="key-note-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none" placeholder="Apps Script URL (Notebook A)"></div>
-                                <div><label class="block text-xs text-teal-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 B URL</label><input type="text" id="key-note-doc-url-2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-teal-500 outline-none" placeholder="Apps Script URL (Notebook B)"></div>
+                                <div><label class="block text-xs text-emerald-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 A URL</label><input type="text" id="key-note-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none" placeholder="Apps Script URL"></div>
+                                <div><label class="block text-xs text-teal-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 B URL</label><input type="text" id="key-note-doc-url-2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-teal-500 outline-none" placeholder="Apps Script URL"></div>
                             </div>
-                            <div class="border-t border-white/10 pt-2"><label class="block text-xs text-red-300 mb-1 font-bold"><i class="ph-fill ph-upload"></i> Google Drive 上傳 URL (錄音用)</label><input type="text" id="key-drive-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500 outline-none" placeholder="Apps Script URL (Drive Upload)"></div>
+                            <div class="border-t border-white/10 pt-2">
+                                <label class="block text-xs text-red-300 mb-1 font-bold"><i class="ph-fill ph-upload"></i> Google Drive 上傳 URL</label>
+                                <input type="text" id="key-drive-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500 outline-none" placeholder="Apps Script URL">
+                                <p class="text-[9px] text-slate-500 mt-1">* 若要取得真實連結，GAS 需設定 Access-Control-Allow-Origin: *</p>
+                            </div>
                             <div class="flex items-center justify-between mt-2">
-                                <span id="doc-monitor-status" class="text-[10px] text-slate-500">未測試</span>
-                                <button onclick="testDocConnection()" class="text-[10px] bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500 transition-colors">測試連線</button>
+                                <span id="doc-monitor-status" class="text-[10px] text-slate-500">未測試</span><button onclick="testDocConnection()" class="text-[10px] bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500 transition-colors">測試連線</button>
                             </div>
                         </div>
                         <div class="space-y-3 pt-2 pb-4 border-b border-slate-800">
@@ -124,8 +126,8 @@
                     </div>
                     <div class="mt-4 pt-2 flex justify-between items-center shrink-0">
                         <div class="flex space-x-2">
-                            <button onclick="exportSettings()" class="flex items-center gap-1 text-xs text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-download-simple"></i> 匯出設定</button>
-                            <label for="import-settings-input" class="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-2 rounded-lg hover:bg-emerald-800/50 transition-colors cursor-pointer"><i class="ph-bold ph-upload-simple"></i> 匯入設定</label>
+                            <button onclick="exportSettings()" class="flex items-center gap-1 text-xs text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-download-simple"></i> 匯出</button>
+                            <label for="import-settings-input" class="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-2 rounded-lg hover:bg-emerald-800/50 transition-colors cursor-pointer"><i class="ph-bold ph-upload-simple"></i> 匯入</label>
                             <input type="file" id="import-settings-input" accept=".json" class="hidden" onchange="importSettings(event)">
                         </div>
                         <div class="flex space-x-3">
@@ -165,7 +167,7 @@
                          <div class="flex items-center space-x-2 mr-4 shrink-0">
                             <span id="web-search-badge" class="hidden md:flex items-center space-x-1 text-[10px] bg-blue-900/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full"><i class="ph-bold ph-globe"></i><span>連網搜尋</span></span>
                             <div id="recording-status" onclick="stopAudioRecording()" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2 cursor-pointer hover:bg-red-800/50 transition-colors" title="點擊停止錄音">
-                                <div class="w-2 h-2 bg-red-500 rounded-full recording-dot"></div><span class="text-xs text-red-200 font-bold">錄音中... (點擊停止)</span>
+                                <div class="w-2 h-2 bg-red-500 rounded-full recording-dot"></div><span class="text-xs text-red-200 font-bold">錄音中... (停止)</span>
                             </div>
                             <span id="doc-monitor-badge" class="hidden items-center space-x-1 text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse"><i class="ph-bold ph-arrows-clockwise"></i><span>Docs 監控中</span></span>
                             <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
@@ -201,21 +203,31 @@
                     </div>
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
                     
+                    <!-- Chat Input Area (支援萬用附件上傳) -->
                     <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col gap-2">
-                        <div id="chat-image-preview-container" class="hidden relative inline-block self-start">
-                            <img id="chat-image-preview" src="" class="h-16 w-auto rounded-lg border border-slate-700 shadow-md">
-                            <button onclick="clearChatImage()" class="absolute -top-2 -right-2 bg-slate-800 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
+                        
+                        <div id="chat-file-preview-container" class="hidden relative inline-flex items-center bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-md self-start">
+                            <img id="chat-image-preview" src="" class="h-12 w-auto rounded hidden mr-2">
+                            <i id="chat-file-icon" class="ph-fill ph-file text-2xl text-blue-400 hidden mr-2"></i>
+                            <span id="chat-file-name" class="text-xs text-slate-300 max-w-[150px] truncate">filename</span>
+                            <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
+
                         <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                            <label for="chat-image-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳圖片分析"><i class="ph-bold ph-image text-xl"></i></label>
-                            <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleChatImageSelect(event)">
-                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="連續語音對話 (6秒自動發送)"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
+                            <label for="chat-file-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳圖片或文件">
+                                <i class="ph-bold ph-paperclip text-xl"></i>
+                            </label>
+                            <input type="file" id="chat-file-input" accept="*/*" class="hidden" onchange="handleChatFileSelect(event)">
+
+                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="連續語音對話"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
+                            
                             <textarea id="user-input" rows="1" placeholder="對話、搜尋、撥打..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-2.5 my-0.5 leading-relaxed scrollbar-none" style="min-height: 44px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
+                            
                             <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-2 px-3 mb-1 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
-                        <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden">🌐 已開啟連網搜尋 (支援 Gemini / Grok 等模型)</div>
+                        <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden">🌐 已開啟連網搜尋 (支援各模型)</div>
                     </div>
                 </div>
                 
@@ -377,7 +389,8 @@
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
 
         const appState = {
-            currentModel: 'gemini', grokModel: 'grok-4-1-fast-reasoning', chatImageBase64: null, chatImageMime: null,
+            currentModel: 'gemini', grokModel: 'grok-4-1-fast-reasoning', 
+            chatFile: null, // Unified file handler { category: 'text'|'image'|'media', data: base64, mime: string, name: string }
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
             messages: JSON.parse(localStorage.getItem('nova_messages') || '[]'), todos: JSON.parse(localStorage.getItem('nova_todos') || '[]'), notes: JSON.parse(localStorage.getItem('nova_notes') || '[]'), audioRecords: JSON.parse(localStorage.getItem('nova_audio_records') || '[]'),
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
@@ -412,12 +425,22 @@
             container.innerHTML = appState.messages.map(msg => { 
                 const isUser = msg.sender === 'user'; const modelInfo = isUser ? null : MODEL_CONFIG[msg.model]; 
                 let sourcesHTML = msg.sources?.length ? `<div class="mt-3 pt-3 border-t border-slate-700/50"><p class="text-[10px] text-slate-400 mb-1 font-bold">來源：</p><div class="flex flex-wrap gap-2">${msg.sources.map((s,i)=>`<a href="${s.uri}" target="_blank" class="text-[10px] bg-slate-950/50 text-blue-400 px-2 py-1 rounded border border-slate-700/50 block truncate max-w-[150px]">${i+1}. ${s.title}</a>`).join('')}</div></div>` : ''; 
-                let imageHTML = msg.image ? `<img src="${msg.image}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">` : '';
+                
+                // Generic file rendering support
+                let mediaHTML = '';
+                if (msg.file) {
+                    if (msg.file.category === 'image') {
+                        mediaHTML = `<img src="${msg.file.data}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">`;
+                    } else if (msg.file.category === 'media' || msg.file.category === 'text') {
+                        mediaHTML = `<div class="flex items-center gap-2 bg-slate-950/50 p-2 rounded border border-slate-700/50 mb-2 max-w-xs overflow-hidden"><i class="ph-fill ph-file text-blue-400 text-xl shrink-0"></i><span class="text-xs text-slate-300 truncate">${msg.file.name}</span></div>`;
+                    }
+                }
+
                 return `<div class="group flex ${isUser ? 'justify-end' : 'justify-start items-start space-x-3'} fade-in relative mb-4">
                     ${!isUser ? `<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${modelInfo?.bg||'bg-slate-700'}"><i class="ph-fill ${modelInfo?.icon||'ph-robot'} text-white text-sm"></i></div>` : ''}
                     <div class="msg-group relative max-w-[90%] md:max-w-[80%] rounded-2xl p-4 shadow-sm ${isUser ? 'bg-slate-800 text-white rounded-br-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'}">
                         ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-1 block ${modelInfo?.color||'text-slate-400'} opacity-80">${modelInfo?.name||'System'}</span>` : ''}
-                        ${imageHTML} <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div> ${sourcesHTML}
+                        ${mediaHTML} <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div> ${sourcesHTML}
                         <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
                         <button onclick="deleteMessage(${msg.id})" class="msg-actions absolute top-2 right-2 p-1 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/50 rounded-full"><i class="ph-bold ph-trash text-xs"></i></button>
                     </div></div>`; 
@@ -473,7 +496,7 @@
             const statusIcon = document.getElementById('status-icon'); if(statusIcon) statusIcon.className=`ph-fill ${conf?.icon || 'ph-cpu'} text-lg ${conf?.color || 'text-slate-400'}`; 
             const selectEl = document.getElementById('main-model-select'); if(selectEl) selectEl.value = appState.currentModel;
             const grokSelect = document.getElementById('grok-sub-model-select');
-            if(grokSelect) { if (appState.currentModel === 'grok') { grokSelect.classList.remove('hidden'); grokSelect.value = appState.grokModel; } else grokSelect.classList.add('hidden'); }
+            if(grokSelect) { if (appState.currentModel === 'grok') { grokSelect.classList.remove('hidden'); grokSelect.value = appState.grokModel; } else { grokSelect.classList.add('hidden'); } }
             const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
             const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
             if(searchBtn) {
@@ -483,7 +506,7 @@
         }
 
         // --- GLOBAL ACTIONS ---
-        function addMessage(text, sender, model, sources=[], image=null) { appState.messages.push({id:Date.now(), text, sender, model, sources, image, time:getTime()}); saveMessages(); renderMessages(); }
+        function addMessage(text, sender, model, sources=[], file=null) { appState.messages.push({id:Date.now(), text, sender, model, sources, file, time:getTime()}); saveMessages(); renderMessages(); }
         function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); saveMessages(); renderMessages(); }
         function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; saveMessages(); renderMessages(); } }
         function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveData();renderTodos();} }
@@ -530,7 +553,7 @@
         function exportSettings() {
             const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl } };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `NOVA29_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = `NOVA30_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
         }
         function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
         function importSettings(e) {
@@ -565,32 +588,89 @@
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
         function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; if(el.value === '') el.style.height = '44px'; }
         
-        // --- CHAT IMAGE UPLOAD ---
-        function triggerChatImageUpload() { document.getElementById('chat-image-input').click(); }
+        // --- MULTI-FORMAT FILE UPLOAD (NEW) ---
+        function triggerChatImageUpload() { document.getElementById('chat-file-input').click(); }
+        
         function handleChatImageSelect(e) {
             const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                appState.chatImageBase64 = evt.target.result; appState.chatImageMime = file.type;
-                const previewContainer = document.getElementById('chat-image-preview-container'); const previewImg = document.getElementById('chat-image-preview');
-                previewImg.src = evt.target.result; previewContainer.classList.remove('hidden'); document.getElementById('user-input').focus();
-            };
-            reader.readAsDataURL(file); e.target.value = ''; 
-        }
-        function clearChatImage() {
-            appState.chatImageBase64 = null; appState.chatImageMime = null;
-            const previewContainer = document.getElementById('chat-image-preview-container'); if (previewContainer) previewContainer.classList.add('hidden');
-            const previewImg = document.getElementById('chat-image-preview'); if (previewImg) previewImg.src = '';
+            
+            // 安全限制 (15MB)
+            if(file.size > 15 * 1024 * 1024) return alert("檔案過大，為確保連線穩定，請上傳小於 15MB 的檔案。");
+
+            const isText = file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.csv') || file.name.endsWith('.md') || file.name.endsWith('.json');
+            const isImage = file.type.startsWith('image/');
+            const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf';
+
+            if (isText) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    appState.chatFile = { category: 'text', data: evt.target.result, mime: file.type, name: file.name };
+                    showFilePreview(file.name, false);
+                };
+                reader.readAsText(file);
+            } else {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    let category = isImage ? 'image' : (isMedia ? 'media' : 'unknown');
+                    appState.chatFile = { category: category, data: evt.target.result, mime: file.type, name: file.name };
+                    showFilePreview(file.name, isImage, evt.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = ''; 
         }
 
-        // --- PASTE HANDLER & DOC WRITER LOGIC ---
+        function showFilePreview(name, isImage, dataUrl) {
+            const container = document.getElementById('chat-image-preview-container');
+            const imgEl = document.getElementById('chat-image-preview');
+            const iconEl = document.getElementById('chat-file-icon');
+            const nameEl = document.getElementById('chat-file-name');
+
+            container.classList.remove('hidden');
+            nameEl.innerText = name;
+
+            if (isImage && dataUrl) {
+                imgEl.src = dataUrl;
+                imgEl.classList.remove('hidden');
+                iconEl.classList.add('hidden');
+            } else {
+                imgEl.classList.add('hidden');
+                iconEl.classList.remove('hidden');
+            }
+            document.getElementById('user-input').focus();
+        }
+
+        function clearChatFile() {
+            appState.chatFile = null;
+            document.getElementById('chat-image-preview-container').classList.add('hidden');
+            document.getElementById('chat-image-preview').src = '';
+        }
+
+        // --- PASTE HANDLER ---
         function handlePaste(e) {
+            // For chat input, hook into the new universal file logic if an image is pasted
+            if (e.target.id === 'user-input') {
+                const items = (e.clipboardData || window.clipboardData).items; if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf("image") !== -1) {
+                        const blob = items[i].getAsFile(); const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            appState.chatFile = { category: 'image', data: evt.target.result, mime: blob.type, name: 'pasted_image.png' };
+                            showFilePreview('剪貼簿圖片', true, evt.target.result);
+                        };
+                        reader.readAsDataURL(blob); e.preventDefault(); return;
+                    }
+                }
+                return;
+            }
+
+            // Notebook specific paste logic (unchanged)
             const items = (e.clipboardData || window.clipboardData).items; if (!items) return;
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf("image") !== -1) {
                     const blob = items[i].getAsFile(); const reader = new FileReader();
-                    reader.onload = function(event) {
-                        appState.pastedImageBase64 = event.target.result;
+                    reader.onload = function(evt) {
+                        appState.pastedImageBase64 = evt.target.result;
                         const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.remove('hidden');
                         const docInput = document.getElementById('doc-input-main'); if(docInput) docInput.value = "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]";
                     };
@@ -616,6 +696,7 @@
              const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden');
         }
 
+        // Notebook logic...
         function setActiveNotebook(num) {
             appState.activeNotebook = num;
             const btn1 = document.getElementById('btn-nb-1'); const btn2 = document.getElementById('btn-nb-2'); const label = document.getElementById('active-notebook-label');
@@ -736,114 +817,182 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        // --- GLOBAL ACTIONS & EDIT MODALS ---
-        function openTodoEdit(id) {
-            const t = appState.todos.find(x => x.id === id); if(!t) return;
-            document.getElementById('edit-todo-id').value = t.id; document.getElementById('edit-todo-text').value = t.text; document.getElementById('edit-todo-time').value = t.time !== '手動' ? t.time : '';
-            document.getElementById('todo-edit-modal').classList.remove('hidden');
-        }
-        function closeTodoEdit() { document.getElementById('todo-edit-modal').classList.add('hidden'); }
-        function saveTodoEdit() {
-            const id = parseInt(document.getElementById('edit-todo-id').value); const t = appState.todos.find(x => x.id === id); if(!t) return;
-            const newText = document.getElementById('edit-todo-text').value.trim(); const newTimeStr = document.getElementById('edit-todo-time').value.trim();
-            if(newText) t.text = newText;
-            if (newTimeStr && newTimeStr !== t.time) {
-                const timeInfo = parseTimeNatural(newTimeStr);
-                if (timeInfo.complete) { t.time = new Date(timeInfo.timestamp).toLocaleString(); t.alertTime = timeInfo.timestamp; t.alerted = false; } 
-                else { t.time = newTimeStr; t.alerted = true; }
+        function toggleVoice() { 
+            if (!recognition) { alert("瀏覽器不支援"); return; }
+            if (appState.isListening) {
+                appState.isContinuous = false; 
+                document.getElementById('continuous-btn').classList.remove('text-emerald-400', 'animate-pulse');
+                document.getElementById('continuous-btn').classList.add('text-slate-500');
+                document.getElementById('continuous-icon').classList.remove('animate-spin-slow'); 
+                recognition.stop(); if(voiceTimer) clearTimeout(voiceTimer);
+            } else {
+                const input = document.getElementById('user-input'); initialInput = input.value; recognition.start();
             }
-            saveData(); renderTodos(); closeTodoEdit();
         }
-        function toggleTodoAlarm(id) { const t = appState.todos.find(x => x.id === id); if(t) { t.alertEnabled = t.alertEnabled === false ? true : false; saveData(); renderTodos(); } }
-
-        function openNoteEdit(id) {
-            const n = appState.notes.find(x => x.id === id); if(!n) return;
-            document.getElementById('edit-note-id').value = n.id; document.getElementById('edit-note-title').value = n.title; document.getElementById('edit-note-content').value = n.content;
-            appState.editNoteImageBase64 = n.image || null;
-            const previewContainer = document.getElementById('edit-note-img-preview-container'); const previewImg = document.getElementById('edit-note-img-preview');
-            if(n.image) { previewImg.src = n.image; previewContainer.classList.remove('hidden'); } else { previewContainer.classList.add('hidden'); previewImg.src = ''; }
-            document.getElementById('note-edit-modal').classList.remove('hidden');
+        function toggleContinuous() {
+            appState.isContinuous = !appState.isContinuous;
+            const btn = document.getElementById('continuous-btn'); const icon = document.getElementById('continuous-icon');
+            if (appState.isContinuous) {
+                btn.classList.remove('text-slate-500'); btn.classList.add('text-emerald-400', 'bg-emerald-900/30', 'animate-pulse'); icon.classList.add('animate-spin-slow'); 
+                addMessage("🔄 已開啟連續對話模式：說完話後6秒自動發送，麥克風將持續開啟。", "system");
+                if (!appState.isListening && recognition) { initialInput = document.getElementById('user-input').value; recognition.start(); }
+            } else {
+                btn.classList.add('text-slate-500'); btn.classList.remove('text-emerald-400', 'bg-emerald-900/30', 'animate-pulse'); icon.classList.remove('animate-spin-slow');
+                addMessage("⏹️ 已關閉連續對話模式。", "system"); if (appState.isListening && recognition) recognition.stop();
+            }
         }
-        function closeNoteEdit() { document.getElementById('note-edit-modal').classList.add('hidden'); }
-        function handleNoteEditImage(e) {
-            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = function(evt) { appState.editNoteImageBase64 = evt.target.result; document.getElementById('edit-note-img-preview').src = evt.target.result; document.getElementById('edit-note-img-preview-container').classList.remove('hidden'); };
-            reader.readAsDataURL(file); e.target.value = '';
-        }
-        function removeNoteEditImage() { appState.editNoteImageBase64 = null; document.getElementById('edit-note-img-preview-container').classList.add('hidden'); document.getElementById('edit-note-img-preview').src = ''; }
-        function saveNoteEdit() {
-            const id = parseInt(document.getElementById('edit-note-id').value); const n = appState.notes.find(x => x.id === id); if(!n) return;
-            n.title = document.getElementById('edit-note-title').value.trim() || '未命名'; n.content = document.getElementById('edit-note-content').value; n.image = appState.editNoteImageBase64;
-            saveData(); renderNotes(); closeNoteEdit();
-        }
-        function exportNoteWord(id) {
-            const n = appState.notes.find(x=>x.id===id); if(!n) return;
-            let imgTag = n.image ? `<br><br><img src="${n.image}" style="max-width: 100%;">` : '';
-            let htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${n.title}</title></head><body><h1>${n.title}</h1><p style="color:gray; font-size:12px;">建立日期: ${n.date}</p><div style="margin-top:20px; font-family: sans-serif; white-space: pre-wrap;">${n.content.replace(/\n/g, '<br>')}</div>${imgTag}</body></html>`;
-            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' }); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.doc`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        function updateVoiceUI() { 
+            const btn=document.getElementById('voice-btn'),icon=document.getElementById('voice-icon'); 
+            if(appState.isListening){btn.classList.add('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone','ph-microphone-stage');}
+            else{btn.classList.remove('text-red-500','animate-pulse-fast');icon.classList.replace('ph-microphone-stage','ph-microphone');} 
         }
 
-        // --- AUDIO RECORDING & VOICE NOTES ---
-        function startVoiceNote() { appState.recordingContext = 'note'; switchTab('dashboard'); appState.currentAudioTranscript = ""; startAudioRecording(); }
+        // --- NEW: VOICE NOTES & ENHANCED AUDIO RECORDING ---
+        function startVoiceNote() {
+            appState.recordingContext = 'note';
+            switchTab('dashboard');
+            appState.currentAudioTranscript = ""; // Reset buffer
+            startAudioRecording();
+        }
+
         async function startAudioRecording() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = uploadAudioRecording; mediaRecorder.start();
-                document.getElementById('recording-status').classList.remove('hidden'); document.getElementById('recording-status').classList.add('flex');
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                appState.currentAudioTranscript = ""; // Reset buffer
+                
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = uploadAudioRecording;
+                mediaRecorder.start();
+                
+                document.getElementById('recording-status').classList.remove('hidden');
+                document.getElementById('recording-status').classList.add('flex');
+                
                 let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (可輸入「結束錄音」或點擊上方紅燈停止)";
                 addMessage(titleMsg, 'system');
-                if (recognition && !appState.isListening) { initialInput = document.getElementById('user-input').value; recognition.start(); }
+                
+                // 開啟語音辨識抓取逐字稿 (確保不觸發自動發送)
+                if (recognition && !appState.isListening) {
+                    initialInput = document.getElementById('user-input').value;
+                    recognition.start();
+                }
+
             } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
         }
+
         function stopAudioRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop(); if(mediaRecorder.stream) { mediaRecorder.stream.getTracks().forEach(track => track.stop()); }
+                mediaRecorder.stop();
+                if(mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+                // Stop speech recognition forcefully
                 if (recognition) { try { recognition.abort(); } catch(e){} }
-                document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex');
+
+                document.getElementById('recording-status').classList.add('hidden');
+                document.getElementById('recording-status').classList.remove('flex');
                 addMessage("⏹️ 錄音結束，正在處理並上傳檔案...", 'system');
-            } else { document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex'); }
+            } else {
+                document.getElementById('recording-status').classList.add('hidden');
+                document.getElementById('recording-status').classList.remove('flex');
+            }
         }
+
         async function uploadAudioRecording() {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const dateObj = new Date(); const dateStr = dateObj.toISOString().split('T')[0]; const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, ''); const recordId = Date.now();
-            const filename = `NOVA_Audio_${dateStr}_${timeStr}.webm`; const displayDate = dateObj.toLocaleString();
-            let finalDriveUrl = null;
+            const dateObj = new Date();
+            const dateStr = dateObj.toISOString().split('T')[0];
+            const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
+            const recordId = Date.now();
+            const filename = `NOVA_Audio_${dateStr}_${timeStr}.webm`;
+            const displayDate = dateObj.toLocaleString();
+            
+            let finalDriveUrl = "此為跨域代理，請至您的 Google Drive 確認檔案";
 
             if (!appState.driveUrl) {
-                const url = URL.createObjectURL(audioBlob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-                addMessage(`⚠️ 未設定 Drive URL，音檔已自動下載。`, 'system'); finalDriveUrl = url; 
+                const url = URL.createObjectURL(audioBlob); const a = document.createElement('a');
+                a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+                addMessage(`⚠️ 未設定 Drive 上傳 URL，已下載檔案: ${filename}`, 'system');
+                finalDriveUrl = url; 
             } else {
-                addMessage(`☁️ 正在上傳音檔到 Google Drive...`, 'system');
+                addMessage(`☁️ 正在上傳 ${filename} 到 Google Drive...`, 'system');
+                
+                // Base64 conversion
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                const base64data = await new Promise((resolve) => {
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                });
+
                 try {
-                    const reader = new FileReader(); reader.readAsDataURL(audioBlob);
-                    const base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
-                    const res = await fetch(appState.driveUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
-                    addMessage(`✅ 音檔已成功發送至雲端排程。`, 'system'); finalDriveUrl = "此為跨域代理，請至您的 Google Drive 確認檔案";
-                } catch (e) { addMessage(`❌ 上傳失敗: ${e.message}`, 'system'); }
+                    // Try CORS request first to get the URL
+                    const res = await fetch(appState.driveUrl, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) 
+                    });
+                    
+                    if (res.ok) {
+                        const resText = await res.text();
+                        try {
+                            const resJson = JSON.parse(resText);
+                            finalDriveUrl = resJson.url || resJson.link || resText;
+                        } catch(e) {
+                            finalDriveUrl = resText; // If plain text url returned
+                        }
+                        addMessage(`✅ 錄音已上傳成功`, 'system');
+                    } else { throw new Error('Response HTTP ' + res.status); }
+                } catch (e) { 
+                    // Fallback to NO-CORS
+                    try {
+                        addMessage(`⚠️ 無法直接取得真實連結 (需在 Apps Script 啟用 CORS)。改以背景排程上傳...`, 'system');
+                        await fetch(appState.driveUrl, { 
+                            method: 'POST', mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) 
+                        });
+                        finalDriveUrl = "https://drive.google.com/"; // Generic fallback link
+                    } catch(err) {
+                        addMessage(`❌ 上傳失敗: ${err.message}`, 'system');
+                    }
+                }
             }
 
             const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
+            
             if (appState.recordingContext === 'note') {
-                appState.notes.unshift({ id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[錄音逐字稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: finalDriveUrl, transcript: capturedTranscript, image: null });
-                addMessage(`📝 語音筆記已儲存至「筆記/文件」分頁。`, 'system'); saveData(); renderNotes();
+                appState.notes.unshift({
+                    id: recordId, title: `語音筆記 ${timeStr}`,
+                    content: capturedTranscript ? `[錄音逐字稿]\n${capturedTranscript}` : '[無語音內容]',
+                    date: displayDate, type: 'audio', driveUrl: finalDriveUrl, transcript: capturedTranscript, image: null
+                });
+                addMessage(`📝 語音筆記已儲存至「筆記/文件」分頁。`, 'system');
+                saveData(); renderNotes();
             } else {
-                appState.audioRecords.unshift({ id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: finalDriveUrl, transcript: capturedTranscript });
-                addMessage(`📼 錄音已歸檔至左側「錄音紀錄」分頁。`, 'system'); saveData(); renderAudioRecords();
+                appState.audioRecords.unshift({
+                    id: recordId, title: `錄音紀錄 ${timeStr}`,
+                    date: displayDate, filename: filename, driveUrl: finalDriveUrl, transcript: capturedTranscript
+                });
+                addMessage(`📼 錄音已歸檔至左側「錄音紀錄」分頁。`, 'system');
+                saveData(); renderAudioRecords();
             }
+
             appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
 
+        // --- NEW: AI SUMMARIZE AUDIO/NOTE ---
         async function summarizeAudioRecord(id) {
             const r = appState.audioRecords.find(x => x.id === id); if (!r) return;
             if (!r.transcript || r.transcript.trim().length < 5) { alert("此錄音紀錄無足夠的逐字稿內容可供分析。"); return; }
             switchTab('dashboard'); document.getElementById('user-input').value = `請幫我把這段錄音紀錄整理成重點摘要或會議紀錄：\n\n${r.transcript}`; handleSendMessage(); 
         }
+
         async function summarizeVoiceNote(id) {
             const n = appState.notes.find(x => x.id === id); if (!n) return;
             if (!n.transcript || n.transcript.trim().length < 5) { alert("此語音筆記無逐字稿可供分析。"); return; }
+
             addMessage(`🔄 正在後台分析語音筆記「${n.title}」的內容...`, 'system');
             const prompt = `請將以下語音逐字稿整理成結構化的重點摘要或會議紀錄。直接輸出整理好的結果：\n\n${n.transcript}`; const modelToUse = appState.currentModel;
             try {
@@ -854,59 +1003,56 @@
             } catch (err) { addMessage(`❌ 分析失敗：${err.message}`, 'system'); }
         }
 
-        // --- WEB SCRAPER & SEARCH ---
-        async function fetchUrlViaGas(url) {
-            if (!appState.docMonitorUrl) return null;
-            try { const res = await fetch(appState.docMonitorUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'scrape_and_log', url: url }) }); const text = await res.text(); return (text && !text.startsWith("Error")) ? text : null; } catch (e) { return null; }
-        }
-        async function searchViaSerpApi(query) {
-            if (!appState.keys.serpapi) return null;
-            const targetUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${appState.keys.serpapi}&engine=google&gl=tw&hl=zh-tw`;
-            const proxies = [`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`];
-            let serpData = null, lastErrorMsg = "";
-            for (const proxy of proxies) {
-                try { const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); const res = await fetch(proxy, { signal: controller.signal }); clearTimeout(timeoutId); if (!res.ok) { lastErrorMsg = `HTTP ${res.status}`; continue; } const data = await res.json(); if (data.error) throw new Error(data.error); serpData = data; break; } 
-                catch (err) { lastErrorMsg = err.name === 'AbortError' ? '連線逾時' : err.message; if (err.message.toLowerCase().includes("invalid api key")) throw new Error("SerpApi 金鑰無效"); }
-            }
-            if (!serpData) throw new Error(`SerpApi 連線皆失敗 (${lastErrorMsg})`);
-            let resultText = "【SerpApi 搜尋結果】\n";
-            if (serpData.organic_results?.length > 0) { serpData.organic_results.slice(0, 5).forEach((item, i) => resultText += `${i + 1}. [${item.title}](${item.link})\n   ${item.snippet || ''}\n`); } 
-            else resultText += "未找到相關結果。";
-            return resultText;
-        }
-
-        // --- AI LOGIC ---
+        // --- AI LOGIC (Enhanced for Files) ---
         async function handleSendMessage() {
             if(appState.isThinking) return;
-            const input = document.getElementById('user-input'); let text = input.value.trim(); const hasChatImage = appState.chatImageBase64 !== null;
-            if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-            if(!text && !hasChatImage) return;
+            const input = document.getElementById('user-input');
+            let text = input.value.trim();
+            const hasChatFile = appState.chatFile !== null;
+            
+            if (text.length >= 4 && text.length % 2 === 0) {
+                 const mid = text.length / 2;
+                 if (text.substring(0, mid) === text.substring(mid)) { text = text.substring(0, mid); }
+            }
+            
+            if(!text && !hasChatFile) return;
 
+            // Voice Commands Check
             if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
             if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
             if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); triggerEmergency(emergencyMatch[1]); return; }
+
             const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
             if (callMatch) {
                 input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort();
-                if (executeNativeCall(callMatch[1])) { addMessage(`📞 透過原生 Bridge 撥出：${callMatch[1]}`, 'system'); } else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
+                if (executeNativeCall(callMatch[1])) { addMessage(`📞 透過原生 Bridge 撥出：${callMatch[1]}`, 'system'); } 
+                else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
                 return;
             }
 
             appState.isThinking = true; updateSendButtonState(true);
-            const imgDataToPass = hasChatImage ? { base64: appState.chatImageBase64, mime: appState.chatImageMime } : null;
-            addMessage(text || "請分析這張圖片", 'user', null, [], imgDataToPass ? imgDataToPass.base64 : null);
-            input.value = ''; input.style.height = '44px'; initialInput = ''; clearChatImage(); 
+            
+            // Capture file data for sending
+            const fileDataToPass = hasChatFile ? { ...appState.chatFile } : null;
+            
+            addMessage(text || `請分析這份檔案: ${fileDataToPass.name}`, 'user', null, [], fileDataToPass);
+            
+            input.value = ''; input.style.height = '44px'; initialInput = ''; clearChatFile(); 
             if (recognition) { try { recognition.abort(); } catch(e){} }
             renderThinkingState(true);
 
+            // Reminders
             if (appState.pendingReminder && appState.reminderStage > 0) {
                  const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                  if (todo) {
-                     let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text; const timeInfo = parseTimeNatural(combinedText);
-                     if (timeInfo.complete) { todo.time = new Date(timeInfo.timestamp).toLocaleString(); todo.alertTime = timeInfo.timestamp; todo.alerted = false; delete todo.tempTimeStr; appState.pendingReminder = null; appState.reminderStage = 0; addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system'); } 
-                     else if (timeInfo.missing === 'date') { todo.tempTimeStr = combinedText; addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system'); appState.reminderStage = 2; } 
+                     let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text;
+                     const timeInfo = parseTimeNatural(combinedText);
+                     if (timeInfo.complete) {
+                         todo.time = new Date(timeInfo.timestamp).toLocaleString(); todo.alertTime = timeInfo.timestamp; todo.alerted = false; delete todo.tempTimeStr;
+                         appState.pendingReminder = null; appState.reminderStage = 0; addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system');
+                     } else if (timeInfo.missing === 'date') { todo.tempTimeStr = combinedText; addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system'); appState.reminderStage = 2; } 
                      else if (timeInfo.missing === 'ampm') { todo.tempTimeStr = combinedText; addMessage(`請問是「上午」還是「下午」？`, 'system'); appState.reminderStage = 2; } 
                      else { addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system'); }
                      saveData(); renderTodos();
@@ -924,51 +1070,98 @@
 
             try {
                 let systemPromptAddon = ""; let injectedContext = ""; let modelToUse = appState.currentModel; let enableSearchTool = appState.isSearchEnabled;
-                if (appState.weather && appState.weather.loc && appState.weather.loc !== '未定位') { systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，座標: ${appState.lastLat}, ${appState.lastLon}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`; }
+                
+                if (appState.weather && appState.weather.loc && appState.weather.loc !== '未定位') {
+                    systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，座標: ${appState.lastLat}, ${appState.lastLon}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
+                }
 
-                if (imgDataToPass) {
-                    let visionModel = null;
-                    if (appState.keys.grok) visionModel = 'grok'; else if (appState.keys.gemini) visionModel = 'gemini'; else if (appState.keys.openai) visionModel = 'gpt'; 
-                    if (!visionModel) throw new Error("若要分析圖片，請至設定輸入 Grok、Gemini 或 OpenAI API Key。");
-                    if (modelToUse !== visionModel && modelToUse !== 'gpt') { addMessage(`📸 偵測到圖片上傳，已優先指派給 ${MODEL_CONFIG[visionModel].name} 的視覺模型進行分析。`, "system"); modelToUse = visionModel; }
-                    if (!text) text = "請詳細分析這張圖片的內容";
-                } else {
+                // --- 檔案上傳智能分發邏輯 ---
+                if (fileDataToPass) {
+                    if (fileDataToPass.category === 'text') {
+                        // 純文字檔案：直接把內容塞入提示詞中，所有模型都能支援！
+                        injectedContext += `\n\n[附檔內容 - ${fileDataToPass.name}]:\n${fileDataToPass.data}\n\n`;
+                        if (!text) text = `請分析這份名為 ${fileDataToPass.name} 的檔案內容。`;
+                    } 
+                    else if (fileDataToPass.category === 'image') {
+                        // 圖片：走原本的視覺備援機制 (優先 Grok -> Gemini -> GPT)
+                        let visionModel = null;
+                        if (appState.keys.grok) visionModel = 'grok'; else if (appState.keys.gemini) visionModel = 'gemini'; else if (appState.keys.openai) visionModel = 'gpt'; 
+                        if (!visionModel) throw new Error("若要分析圖片，請至設定輸入 Grok、Gemini 或 OpenAI API Key。");
+                        if (modelToUse !== visionModel && modelToUse !== 'gpt') {
+                            addMessage(`📸 偵測到圖片上傳，已優先指派給 ${MODEL_CONFIG[visionModel].name} 的視覺模型進行分析。`, "system");
+                            modelToUse = visionModel;
+                        }
+                        if (!text) text = "請詳細分析這張圖片的內容";
+                    }
+                    else if (fileDataToPass.category === 'media') {
+                        // 音訊/影片/PDF: 只有 Gemini (1.5 Pro/Flash) 有最強的原生讀取支援
+                        if (!appState.keys.gemini) throw new Error(`您上傳了 ${fileDataToPass.name}。音訊、影片或 PDF 格式目前系統限定交由 Gemini 解析，請先至設定填寫 Gemini API Key。`);
+                        if (modelToUse !== 'gemini') {
+                            addMessage(`📁 偵測到進階多媒體或文檔 (${fileDataToPass.name})，系統已強制切換至支援度最高的 Gemini 模型為您解析。`, "system");
+                            modelToUse = 'gemini';
+                        }
+                        if (!text) text = `請詳細分析這份名為 ${fileDataToPass.name} 的檔案內容`;
+                    }
+                } 
+                else {
                     const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
                     if (searchMatch) {
                         const searchKeyword = searchMatch[1].trim() || "今日新聞"; addMessage(`🔍 正在搜尋：${searchKeyword}...`, 'system'); let searchResultText = "";
                         if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(searchKeyword); } catch (e) { addMessage(`⚠️ ${e.message}`, 'system'); } }
-                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(searchKeyword); else if (!searchResultText && appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
+                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(searchKeyword);
+                        else if (!searchResultText && appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
+
                         if (searchResultText) { text = `請根據以下搜尋結果摘要回答：\n\n${searchResultText}`; injectedContext = ""; systemPromptAddon = ""; enableSearchTool = false; }
                     } else {
                         const urlMatch = text.match(/https?:\/\/[^\s]+/);
                         if (urlMatch) {
                             const url = urlMatch[0];
-                            if (!url.includes('youtube') && !url.includes('twitter')) { addMessage(`🔍 抓取網頁中...`, 'system'); const content = await fetchUrlViaGas(url); if (content) injectedContext = `\n\n[網頁內容]:\n${content}\n\n`; } else if (appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
+                            if (!url.includes('youtube') && !url.includes('twitter')) {
+                                addMessage(`🔍 抓取網頁中...`, 'system'); const content = await fetchUrlViaGas(url); if (content) injectedContext = `\n\n[網頁內容]:\n${content}\n\n`;
+                            } else if (appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
                         }
                     }
+
                     if (enableSearchTool && modelToUse !== 'gemini' && !searchMatch) {
                         addMessage(`🌐 (代理連網) 正在透過網路搜尋相關資訊...`, 'system'); let searchResultText = "";
                         if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(text); } catch (e) { console.warn(e); } }
                         if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(text);
-                        if (searchResultText) { injectedContext += `\n\n[系統自動連網搜尋結果，請參考此最新資訊來回答使用者的問題]:\n${searchResultText}\n\n`; } else { addMessage(`⚠️ 代理搜尋失敗，將以原始知識庫回答。`, 'system'); }
+
+                        if (searchResultText) { injectedContext += `\n\n[系統自動連網搜尋結果，請參考此最新資訊來回答使用者的問題]:\n${searchResultText}\n\n`; } 
+                        else { addMessage(`⚠️ 代理搜尋失敗，將以原始知識庫回答。`, 'system'); }
                     }
                 }
 
                 let finalRes; const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
+
                 try {
-                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", image: imgDataToPass });
+                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { 
+                        enableSearch: enableSearchTool, 
+                        disableSearch: !enableSearchTool && injectedContext !== "",
+                        file: fileDataToPass 
+                    });
                 } catch (err1) {
                     console.warn(err1);
-                    if (imgDataToPass && modelToUse !== 'gemini' && appState.keys.gemini) {
-                         addMessage(`⚠️ 您當前選擇的 ${MODEL_CONFIG[modelToUse]?.name || modelToUse} 模型可能不支援視覺分析或發生錯誤 (${err1.message})，自動交接給 Gemini 接手分析...`, 'system');
-                         modelToUse = 'gemini'; finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", image: imgDataToPass });
+                    if (fileDataToPass && modelToUse !== 'gemini' && appState.keys.gemini) {
+                         addMessage(`⚠️ 您當前選擇的 ${MODEL_CONFIG[modelToUse]?.name || modelToUse} 模型可能不支援此種檔案或發生錯誤 (${err1.message})，自動交接給 Gemini 接手分析...`, 'system');
+                         modelToUse = 'gemini';
+                         finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", file: fileDataToPass });
                     } else {
                         addMessage(`⚠️ ${MODEL_CONFIG[modelToUse]?.name || modelToUse} 錯誤 (${err1.message})，切換至 Gemini...`, 'system');
-                        modelToUse = 'gemini'; finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", image: imgDataToPass });
+                        modelToUse = 'gemini';
+                        finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", file: fileDataToPass });
                     }
                 }
-                if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse); else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources);
-            } catch (error) { console.error("Handler Error:", error); addMessage(`[系統錯誤] ${error.message || '未知錯誤'}`, 'system'); } finally { appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false); }
+                
+                if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse);
+                else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources);
+
+            } catch (error) {
+                console.error("Handler Error:", error);
+                addMessage(`[系統錯誤] ${error.message || '未知錯誤'}`, 'system');
+            } finally {
+                appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
+            }
         }
 
         // --- Natural Language Time Parser ---
@@ -987,12 +1180,15 @@
             else if (str.includes('後天')) { targetDate.setDate(targetDate.getDate() + 2); hasDate = true; } 
             else if (str.match(/\d{1,2}月\d{1,2}日/)) { const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/); targetDate.setMonth(parseInt(dMatch[1]) - 1); targetDate.setDate(parseInt(dMatch[2])); hasDate = true; } 
             else if (str.includes('今天') || str.includes('today')) { hasDate = true; }
+
             let hour = -1, minute = 0;
             const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
             if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } 
             else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
+
             let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
             let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
+
             if (hour !== -1) {
                 if (hour < 12 && !isPM && !isAM && !str.includes('24h')) return { complete: false, missing: 'ampm' }; 
                 if (isPM && hour < 12) hour += 12; if (isAM && hour === 12) hour = 0; 
@@ -1014,18 +1210,39 @@
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
 
                 if(model === 'gemini') {
-                    const modelName = 'gemini-2.5-flash'; const partsArray = [{ text: userText }];
-                    if (options.image && options.image.base64) {
-                        const base64Data = options.image.base64.split(',')[1]; partsArray.push({ inlineData: { mimeType: options.image.mime, data: base64Data } });
+                    const modelName = 'gemini-2.5-flash';
+                    const partsArray = [{ text: userText }];
+                    
+                    // Gemini 支援強大的 inlineData，可以吃 Image/Audio/Video/PDF
+                    if (options.file && options.file.category !== 'text') {
+                        const base64Data = options.file.data.split(',')[1];
+                        partsArray.push({ inlineData: { mimeType: options.file.mime, data: base64Data } });
                     }
+                    
                     const payload = { contents: [{ parts: partsArray }], generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } };
-                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.image) { payload.tools = [{ google_search: {} }]; }
-                    const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    const data = await res.json(); if (!res.ok) throw new Error(`Gemini 錯誤: ${data.error?.message || res.status}`);
-                    const candidate = data.candidates?.[0]; if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
-                    let outputText = ""; if (candidate.content && candidate.content.parts) { outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join(""); }
-                    let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
-                    if (!outputText && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。"; else if (!outputText) outputText = "(無回傳文字內容)";
+                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) { payload.tools = [{ google_search: {} }]; }
+
+                    const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { 
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) 
+                    });
+                    
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(`Gemini 錯誤: ${data.error?.message || res.status}`);
+
+                    const candidate = data.candidates?.[0];
+                    if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
+
+                    let outputText = "";
+                    if (candidate.content && candidate.content.parts) { outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join(""); }
+
+                    let sources = [];
+                    if (candidate.groundingMetadata?.groundingAttributions) {
+                        candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); });
+                    }
+
+                    if (!outputText && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。";
+                    else if (!outputText) outputText = "(無回傳文字內容)";
+
                     return { text: outputText, sources: sources };
                     
                 } else if (model === 'groq') {
@@ -1037,21 +1254,35 @@
                 } else if (model === 'grok') {
                     const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
                     let mName = appState.grokModel || 'grok-4-1-fast-reasoning';
+                    
+                    // 防呆：有圖片強制切到視覺模型 (Grok 只吃圖片，如果有文字檔在上面就已經轉成 Text Inject 了，不影響)
+                    if (options.file && options.file.category === 'image') { mName = 'grok-2-vision-1212'; }
+
                     let apiUrl, payload;
+                    
                     if (mName.includes('imagine')) {
-                        apiUrl = 'https://api.x.ai/v1/images/generations'; payload = { model: mName, prompt: userText };
+                        apiUrl = 'https://api.x.ai/v1/images/generations';
+                        payload = { model: mName, prompt: userText };
                     } else {
-                        apiUrl = 'https://api.x.ai/v1/chat/completions'; let msgContent = userText;
-                        if (options.image && options.image.base64) {
-                            const base64Data = options.image.base64.split(',')[1];
-                            msgContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.image.mime};base64,${base64Data}` } } ];
+                        apiUrl = 'https://api.x.ai/v1/chat/completions';
+                        let msgContent = userText;
+                        
+                        if (options.file && options.file.category === 'image') {
+                            const base64Data = options.file.data.split(',')[1];
+                            msgContent = [
+                                { type: "text", text: userText },
+                                { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } }
+                            ];
                         }
                         payload = { model: mName, messages: [{role: "user", content: msgContent}], temperature: 0.7 };
                     }
+
                     const fullUrl = `${myProxy}?url=${encodeURIComponent(apiUrl)}`;
                     const res = await fetchWithTimeout(fullUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    
                     if (!res.ok) { const errText = await res.text(); throw new Error(`Worker 錯誤: ${errText}`); }
                     const data = await res.json(); 
+                    
                     if (mName.includes('imagine')) {
                         if (data.data && data.data[0]) {
                             if (data.data[0].url) return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
@@ -1059,12 +1290,19 @@
                         }
                         return `生成任務已處理，回傳內容：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
                     }
+
                     return data.choices?.[0]?.message?.content || "無回應";
                 } else if (model === 'gpt') {
                     const ep = 'https://api.openai.com/v1/chat/completions'; const mName = 'gpt-4o-mini'; let msgContent = userText;
-                    if (options.image && options.image.base64) {
-                        const base64Data = options.image.base64.split(',')[1]; msgContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.image.mime};base64,${base64Data}` } } ];
+                    
+                    if (options.file && options.file.category === 'image') {
+                        const base64Data = options.file.data.split(',')[1];
+                        msgContent = [
+                            { type: "text", text: userText },
+                            { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } }
+                        ];
                     }
+                    
                     const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:msgContent}]}) });
                     const data = await res.json(); if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
                 }
@@ -1074,7 +1312,7 @@
         // --- INIT ---
         window.onload = () => {
             if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 29 啟動！\n✅ 已修復按鈕刪除與對話框發送等核心操作異常\n✅ 優化語音筆記儲存邏輯 (未綁定雲端仍可建立帶逐字稿的本地筆記)\n✅ 筆記本切換樣式與閱讀按鈕完美回歸', sender: 'ai', model: 'gemini', time: getTime() });
+                appState.messages.push({ id: 1, text: 'NOVA 30 啟動！\n✅ 已優化 Google Drive 網址攔截，無法讀取時會導向 Drive 首頁\n✅ 附件上傳全面解禁！現在可上傳 .txt, .csv, PDF, 音訊及影片檔供 AI 智慧分析\n✅ 系統會自動為特定檔案格式調用相容的 API 模型 (如 Gemini) 進行處理', sender: 'ai', model: 'gemini', time: getTime() });
             }
             renderAll();
             
@@ -1085,21 +1323,7 @@
             if(inputMain) inputMain.addEventListener('paste', handlePaste);
 
             const userInput = document.getElementById('user-input');
-            if(userInput) {
-                userInput.addEventListener('paste', (e) => {
-                    const items = (e.clipboardData || window.clipboardData).items;
-                    for (let i = 0; i < items.length; i++) {
-                        if (items[i].type.indexOf("image") !== -1) {
-                            const blob = items[i].getAsFile(); const reader = new FileReader();
-                            reader.onload = function(evt) {
-                                appState.chatImageBase64 = evt.target.result; appState.chatImageMime = blob.type;
-                                document.getElementById('chat-image-preview').src = evt.target.result; document.getElementById('chat-image-preview-container').classList.remove('hidden');
-                            };
-                            reader.readAsDataURL(blob); e.preventDefault(); return;
-                        }
-                    }
-                });
-            }
+            if(userInput) { userInput.addEventListener('paste', handlePaste); }
             
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
@@ -1150,4 +1374,4 @@
         };
     </script>
 </body>
-    </html>
+                             </html>
