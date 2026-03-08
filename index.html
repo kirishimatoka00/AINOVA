@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 33.3</title>
+    <title>NOVA 33.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.3</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.4</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.3</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.4</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -403,8 +403,8 @@
 
     <!-- MAIN SCRIPT -->
     <script>
-        let recognition = null; let noteRecognition = null; let voiceTimer = null; let initialInput = "";
-        let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
+        let recognition = null; let noteRecognition = null; let voiceTimer = null; let noteVoiceTimer = null;
+        let initialInput = ""; let initialNoteInput = "";
 
         // --- IndexedDB 全面初始化 (涵蓋所有巨量資料) ---
         const DB_NAME = 'NovaDB';
@@ -478,7 +478,7 @@
             isThinking: false, isListening: false, isNoteListening: false, noteVoiceActive: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null, sosTimer: null, sosCount: 10, isSOSDrill: false,
-            recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null
+            recordingContext: 'default', currentAudioTranscript: '', sessionSpoken: '', noteSessionSpoken: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null
         };
         
         const MODEL_CONFIG = {
@@ -722,11 +722,16 @@
             }else{ btn.classList.remove('cursor-not-allowed','opacity-70'); icon.classList.remove('ph-spinner','animate-spin'); icon.classList.add('ph-paper-plane-right'); } 
         }
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
-        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手掌握)", false); }
+        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手動)", false); }
         
         function toggleVoice() {
-            if (appState.isListening) { recognition.stop(); }
-            else { try { recognition.start(); } catch(e){} }
+            if (appState.isListening) { 
+                recognition.stop(); 
+            } else { 
+                appState.sessionSpoken = "";
+                initialInput = document.getElementById('user-input').value;
+                try { recognition.start(); } catch(e){} 
+            }
         }
         function toggleContinuous() {
             appState.isContinuous = !appState.isContinuous;
@@ -735,8 +740,15 @@
             else { btn.classList.remove('text-emerald-400', 'bg-emerald-900/30'); btn.classList.add('text-slate-500'); }
         }
         function toggleNoteVoice() {
-            if (appState.isNoteListening) { appState.noteVoiceActive = false; noteRecognition.stop(); }
-            else { appState.noteVoiceActive = true; try { noteRecognition.start(); } catch(e){} }
+            if (appState.isNoteListening) { 
+                appState.noteVoiceActive = false; 
+                noteRecognition.stop(); 
+            } else { 
+                appState.noteVoiceActive = true; 
+                appState.noteSessionSpoken = "";
+                initialNoteInput = document.getElementById('doc-input-main').value;
+                try { noteRecognition.start(); } catch(e){} 
+            }
         }
 
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
@@ -755,11 +767,20 @@
             let category = isImage ? 'image' : (isText ? 'text' : (isMedia ? 'media' : 'unknown'));
             if (category === 'unknown') category = 'media'; 
             
+            // 強制校正 MIME Type (解決下載的 webm 檔案被誤判為 application/octet-stream 導致 Gemini 拒絕分析)
+            let mimeType = file.type || 'application/octet-stream';
+            if (file.name.match(/\.webm$/i)) mimeType = 'audio/webm';
+            else if (file.name.match(/\.mp3$/i)) mimeType = 'audio/mp3';
+            else if (file.name.match(/\.wav$/i)) mimeType = 'audio/wav';
+            else if (file.name.match(/\.m4a$/i)) mimeType = 'audio/mp4';
+            else if (file.name.match(/\.mp4$/i)) mimeType = 'video/mp4';
+            else if (file.name.match(/\.pdf$/i)) mimeType = 'application/pdf';
+
             if (isText && file.size > 2 * 1024 * 1024) alert("提醒：純文字檔案較大，可能超出 AI 分析上限，建議擷取重點上傳。");
 
             const reader = new FileReader();
             reader.onload = function(evt) {
-                appState.chatFile = { category: category, data: evt.target.result, mime: file.type || 'application/octet-stream', name: file.name };
+                appState.chatFile = { category: category, data: evt.target.result, mime: mimeType, name: file.name };
                 showFilePreview(file.name, isImage, evt.target.result);
             };
             if (category === 'text') reader.readAsText(file); else reader.readAsDataURL(file);
@@ -1059,12 +1080,21 @@
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
+                mediaRecorder = new MediaRecorder(stream); audioChunks = []; 
+                
+                // 完全重置當前工作階段的逐字稿
+                appState.currentAudioTranscript = ""; 
+                appState.sessionSpoken = "";
+                initialInput = document.getElementById('user-input').value;
+
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = uploadAudioRecording; mediaRecorder.start();
                 document.getElementById('recording-status').classList.remove('hidden'); document.getElementById('recording-status').classList.add('flex');
                 let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (可輸入「結束錄音」或點擊上方紅燈停止)";
                 addMessage(titleMsg, 'system');
-                if (recognition && !appState.isListening) { initialInput = document.getElementById('user-input').value; recognition.start(); }
+                
+                if (recognition) { 
+                    if (!appState.isListening) { try { recognition.start(); } catch(e){} }
+                }
             } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
         }
         function stopAudioRecording() {
@@ -1428,7 +1458,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 33.3 升級完畢！\n✅ **筆記多圖上傳**：筆記中心已徹底轉移至原生資料庫，支援無限張圖片，再也不怕壞檔！\n✅ **Word 匯出修復**：修正編碼亂碼並完美支援多圖匯出\n✅ **逐字稿防斷線護盾**：即使引擎嘗試中斷，只要正在錄音，系統就會在背景於 0.25 秒內「強制重啟」逐字稿繼續打字，不再受限短短幾分鐘！', 
+                    text: 'NOVA 33.4 升級完畢！\n✅ **超強穩定逐字稿**：加入持久化字串拼接機制，現在無論瀏覽器在背景重啟幾次，逐字稿都會精準累積！\n✅ **AI 解鎖下載音檔**：修復下載後的 .webm/.mp3 無法被 Gemini 讀取的問題，全面打通分析阻礙！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1447,14 +1477,12 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
                 recognition = new SR(); recognition.lang = 'zh-TW'; recognition.continuous = true; recognition.interimResults = true; 
-                let voiceTimer = null; 
-                
-                recognition.onstart = () => { appState.isListening = true; updateVoiceUI(); initialInput = document.getElementById('user-input').value; };
                 
                 // 強制喚醒機制 (防斷線)
                 recognition.onend = () => { 
                     appState.isListening = false; updateVoiceUI(); 
                     if(voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; } 
+                    
                     // 當連續對話開啟，或者「背景正在錄音」時，無條件強制喚醒
                     if (appState.isContinuous || (mediaRecorder && mediaRecorder.state === 'recording')) { 
                         setTimeout(() => { try { recognition.start(); } catch(e){} }, 250); 
@@ -1462,37 +1490,63 @@
                 };
                 
                 recognition.onresult = (e) => {
-                    let currentTranscript = ""; 
-                    for (let i = 0; i < e.results.length; ++i) {
+                    let interim = "";
+                    for (let i = e.resultIndex; i < e.results.length; ++i) {
                         let text = e.results[i][0].transcript;
                         if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-                        currentTranscript += text;
+                        
+                        // 判斷是否為最終結果，如果是則存入持久化 sessionSpoken
+                        if (e.results[i].isFinal) {
+                            appState.sessionSpoken += text + " ";
+                        } else {
+                            interim += text;
+                        }
                     }
-                    if (document.getElementById('recording-status').classList.contains('flex')) { appState.currentAudioTranscript = currentTranscript.trim(); }
-                    const input = document.getElementById('user-input'); input.value = (initialInput ? initialInput + " " : "") + currentTranscript.trim(); autoResizeInput(input);
+                    
+                    const fullSpoken = appState.sessionSpoken + interim;
+                    
+                    if (document.getElementById('recording-status').classList.contains('flex')) { 
+                        appState.currentAudioTranscript = fullSpoken.trim(); 
+                    }
+                    
+                    const input = document.getElementById('user-input'); 
+                    input.value = (initialInput ? initialInput + " " : "") + fullSpoken.trim(); 
+                    autoResizeInput(input);
+                    
                     if (document.getElementById('recording-status').classList.contains('hidden')) {
-                        if (voiceTimer) clearTimeout(voiceTimer); voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000);
+                        if (voiceTimer) clearTimeout(voiceTimer); 
+                        voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000);
                     }
                 };
                 
                 noteRecognition = new SR(); noteRecognition.lang = 'zh-TW'; noteRecognition.continuous = true; noteRecognition.interimResults = true;
-                let noteVoiceTimer = null;
                 
-                noteRecognition.onstart = () => { appState.isNoteListening = true; updateNoteVoiceUI(); initialInput = document.getElementById('doc-input-main').value; };
                 noteRecognition.onend = () => { 
                     appState.isNoteListening = false; updateNoteVoiceUI(); 
                     if(noteVoiceTimer) clearTimeout(noteVoiceTimer); 
                     if (appState.noteVoiceActive) { setTimeout(() => { try { noteRecognition.start(); } catch(e){} }, 250); }
                 };
+                
                 noteRecognition.onresult = (e) => {
-                    let currentTranscript = ""; 
-                    for (let i = 0; i < e.results.length; ++i) {
+                    let interim = "";
+                    for (let i = e.resultIndex; i < e.results.length; ++i) {
                         let text = e.results[i][0].transcript;
                         if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-                        currentTranscript += text;
+                        
+                        if (e.results[i].isFinal) {
+                            appState.noteSessionSpoken += text + " ";
+                        } else {
+                            interim += text;
+                        }
                     }
-                    const el = document.getElementById('doc-input-main'); const separator = (initialInput && currentTranscript) ? "\n" : ""; el.value = initialInput + separator + currentTranscript.trim();
-                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 6000);
+                    
+                    const fullSpoken = appState.noteSessionSpoken + interim;
+                    const el = document.getElementById('doc-input-main'); 
+                    const separator = (initialNoteInput && fullSpoken) ? "\n" : ""; 
+                    el.value = initialNoteInput + separator + fullSpoken.trim();
+                    
+                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); 
+                    noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 6000);
                 };
             }
             tryGetLocation(true); updateModelUI(); setInterval(checkReminders, 10000);
