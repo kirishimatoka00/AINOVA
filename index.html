@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 33</title>
+    <title>NOVA 33.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.2</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.2</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -425,11 +425,79 @@
         let recognition = null; let noteRecognition = null; let voiceTimer = null; let initialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
 
+        // --- NEW: IndexedDB 初始化與封裝 ---
+        const DB_NAME = 'NovaDB';
+        const DB_VERSION = 1;
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    console.warn("瀏覽器不支援 IndexedDB，對話紀錄將無法永久保存。");
+                    resolve(null);
+                    return;
+                }
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('messages')) {
+                        db.createObjectStore('messages', { keyPath: 'id' });
+                    }
+                };
+                req.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function loadMessagesFromDB() {
+            return new Promise((resolve, reject) => {
+                if (!db) return resolve([]);
+                const tx = db.transaction('messages', 'readonly');
+                const store = tx.objectStore('messages');
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const msgs = req.result || [];
+                    msgs.sort((a, b) => a.id - b.id);
+                    resolve(msgs);
+                };
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function saveMessageToDB(msg) {
+            if (!db) return;
+            try {
+                const tx = db.transaction('messages', 'readwrite');
+                tx.objectStore('messages').put(msg);
+            } catch(e) { console.error("DB Save Error:", e); }
+        }
+
+        function deleteMessageDB(id) {
+            if (!db) return;
+            try {
+                const tx = db.transaction('messages', 'readwrite');
+                tx.objectStore('messages').delete(id);
+            } catch(e) { console.error("DB Delete Error:", e); }
+        }
+
+        function clearMessagesDB() {
+            if (!db) return;
+            try {
+                const tx = db.transaction('messages', 'readwrite');
+                tx.objectStore('messages').clear();
+            } catch(e) { console.error("DB Clear Error:", e); }
+        }
+
+        // --- 應用程式狀態 ---
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-4-1-fast-reasoning', 
             chatFile: null, 
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
-            messages: JSON.parse(localStorage.getItem('nova_messages') || '[]'), todos: JSON.parse(localStorage.getItem('nova_todos') || '[]'), notes: JSON.parse(localStorage.getItem('nova_notes') || '[]'), audioRecords: JSON.parse(localStorage.getItem('nova_audio_records') || '[]'),
+            messages: [], // 啟動時改為從 IndexedDB 載入
+            todos: JSON.parse(localStorage.getItem('nova_todos') || '[]'), notes: JSON.parse(localStorage.getItem('nova_notes') || '[]'), audioRecords: JSON.parse(localStorage.getItem('nova_audio_records') || '[]'),
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
             keys: { gemini: localStorage.getItem('nova_key_gemini')||'', groq: localStorage.getItem('nova_key_groq')||'', cohere: localStorage.getItem('nova_key_cohere')||'', openai: localStorage.getItem('nova_key_openai')||'', grok: localStorage.getItem('nova_key_grok')||'', serpapi: localStorage.getItem('nova_key_serpapi')||'' },
             isThinking: false, isListening: false, isNoteListening: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
@@ -442,28 +510,6 @@
             gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' }, grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' }, groq: { name: 'Groq', color: 'text-rose-400', bg: 'bg-rose-600', icon: 'ph-rocket' }, cohere: { name: 'Cohere', color: 'text-violet-400', bg: 'bg-violet-600', icon: 'ph-cpu' }, gpt: { name: 'OpenAI', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' }
         };
 
-        // --- 防爆 LocalStorage 儲存 ---
-        function saveMessages() { 
-            try {
-                // 為了避免巨大 Base64 檔案塞爆 5MB 限制導致當機，儲存時進行「卸載資料」處理
-                const lightweightMessages = appState.messages.map(msg => {
-                    if (msg.file && msg.file.data) {
-                        // 若不是圖片，或者圖片過大 (大約 > 500KB)，則在本地端抹除它的 base64 以保證瀏覽器存活
-                        if (msg.file.category !== 'image' || msg.file.data.length > 500000) {
-                            return { ...msg, file: { ...msg.file, data: null } };
-                        }
-                    }
-                    return msg;
-                });
-                localStorage.setItem('nova_messages', JSON.stringify(lightweightMessages)); 
-            } catch(e) {
-                console.warn("Storage quota exceeded. Saving fallback...");
-                try {
-                    const fallback = appState.messages.map(msg => ({ ...msg, file: msg.file ? { ...msg.file, data: null } : null }));
-                    localStorage.setItem('nova_messages', JSON.stringify(fallback));
-                } catch (e2) {}
-            }
-        }
         function saveData() { localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); localStorage.setItem('nova_audio_records', JSON.stringify(appState.audioRecords)); }
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         function formatMessage(text) { 
@@ -500,7 +546,12 @@
                         ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-1 block ${modelInfo?.color||'text-slate-400'} opacity-80">${modelInfo?.name||'System'}</span>` : ''}
                         ${mediaHTML} <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div> ${sourcesHTML}
                         <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
-                        <button onclick="deleteMessage(${msg.id})" class="msg-actions absolute top-2 right-2 p-1 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/50 rounded-full"><i class="ph-bold ph-trash text-xs"></i></button>
+                        
+                        <!-- 收藏與刪除動作按鈕 -->
+                        <div class="msg-actions absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="favoriteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-yellow-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm" title="收藏至筆記"><i class="ph-bold ph-star text-xs"></i></button>
+                            <button onclick="deleteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm" title="刪除"><i class="ph-bold ph-trash text-xs"></i></button>
+                        </div>
                     </div></div>`; 
             }).join(''); 
             container.scrollTop = container.scrollHeight; 
@@ -565,12 +616,58 @@
 
         // --- ACTIONS ---
         function addMessage(text, sender, model, sources=[], file=null) { 
-            appState.messages.push({id:Date.now(), text, sender, model, sources, file, time:getTime()}); 
-            saveMessages(); 
+            const newMsg = {id:Date.now(), text, sender, model, sources, file, time:getTime()};
+            appState.messages.push(newMsg); 
+            saveMessageToDB(newMsg); 
             renderMessages(); 
         }
-        function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); saveMessages(); renderMessages(); }
-        function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; saveMessages(); renderMessages(); } }
+
+        function deleteMessage(id) { 
+            appState.messages = appState.messages.filter(m => m.id !== id); 
+            deleteMessageDB(id); 
+            renderMessages(); 
+        }
+
+        function clearChatHistory() { 
+            if(confirm("確定要清空所有對話紀錄嗎？")) { 
+                appState.messages = []; 
+                clearMessagesDB(); 
+                renderMessages(); 
+            } 
+        }
+
+        // --- NEW: 收藏至筆記 ---
+        function favoriteMessage(id) {
+            const msg = appState.messages.find(m => m.id === id);
+            if (!msg) return;
+
+            let senderName = msg.sender === 'user' ? '你' : (msg.sender === 'system' ? '系統提示' : (MODEL_CONFIG[msg.model]?.name || '系統'));
+            let content = `[${senderName} 的對話紀錄]\n${msg.text}`;
+            
+            if (msg.sources && msg.sources.length > 0) {
+                content += `\n\n[參考來源]\n` + msg.sources.map((s,i) => `${i+1}. ${s.title} - ${s.uri}`).join('\n');
+            }
+
+            let imageBase64 = null;
+            if (msg.file && msg.file.category === 'image' && msg.file.data) {
+                imageBase64 = msg.file.data;
+            }
+
+            const noteId = Date.now();
+            const dateStr = new Date().toLocaleString();
+            appState.notes.unshift({
+                id: noteId,
+                title: `⭐ 收藏對話 - ${msg.time}`,
+                content: content,
+                date: dateStr,
+                type: 'text',
+                image: imageBase64
+            });
+            saveData();
+            renderNotes();
+            addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
+        }
+
         function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveData();renderTodos();} }
         function deleteTodo(id){ appState.todos=appState.todos.filter(x=>x.id!==id); saveData(); renderTodos(); }
         function deleteNote(id){ appState.notes=appState.notes.filter(x=>x.id!==id); saveData(); renderNotes(); }
@@ -921,6 +1018,7 @@
                 addMessage("⏹️ 錄音結束，正在處理並上傳檔案...", 'system');
             } else { document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex'); }
         }
+        
         async function uploadAudioRecording() {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const dateObj = new Date(); const dateStr = dateObj.toISOString().split('T')[0]; const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, ''); const recordId = Date.now();
@@ -932,9 +1030,10 @@
                 addMessage(`⚠️ 未設定 Drive URL，音檔已自動下載。`, 'system'); finalDriveUrl = url; 
             } else {
                 addMessage(`☁️ 正在上傳 ${filename} 到 Google Drive...`, 'system');
+                let base64data = ''; // 將變數宣告於此，解決 scope 錯誤
                 try {
                     const reader = new FileReader(); reader.readAsDataURL(audioBlob);
-                    const base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
+                    base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
                     const res = await fetch(appState.driveUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
                     if (res.ok) {
                         const resText = await res.text();
@@ -944,8 +1043,12 @@
                 } catch (e) { 
                     try {
                         addMessage(`⚠️ 無法直接取得真實連結 (需在 Apps Script 啟用 CORS)。改以背景排程上傳...`, 'system');
-                        await fetch(appState.driveUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
-                        finalDriveUrl = "https://drive.google.com/"; 
+                        if (base64data) {
+                            await fetch(appState.driveUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
+                            finalDriveUrl = "https://drive.google.com/"; 
+                        } else {
+                            throw new Error('無法讀取音檔內容');
+                        }
                     } catch(err) { addMessage(`❌ 上傳失敗: ${err.message}`, 'system'); }
                 }
             }
@@ -1233,10 +1336,36 @@
         }
 
         // --- INIT ---
-        window.onload = () => {
-            if(appState.messages.length === 0) {
-                appState.messages.push({ id: 1, text: 'NOVA 33 啟動！\n✅ 深度修復檔案上傳卡死 (無限轉圈) 的瀏覽器崩潰 Bug\n✅ 當您上傳特定模型不支援的檔案格式時，現在會立刻安全中斷並給出友善中文提示，由您全權控制！\n✅ 優化文字檔分析：將在後台無縫轉換為純文本，不再有格式阻礙', sender: 'ai', model: 'gemini', time: getTime() });
+        window.onload = async () => {
+            try {
+                await initDB();
+                
+                // 自動轉移舊版 localStorage 對話到 IndexedDB
+                const oldMsgs = localStorage.getItem('nova_messages');
+                if (oldMsgs) {
+                    try {
+                        const parsed = JSON.parse(oldMsgs);
+                        for (const m of parsed) await saveMessageToDB(m);
+                        localStorage.removeItem('nova_messages'); // 轉移完成後清除舊儲存
+                    } catch(e) {}
+                }
+
+                // 從資料庫載入對話歷史
+                appState.messages = await loadMessagesFromDB();
+            } catch (err) {
+                console.error("IndexedDB 初始化失敗", err);
             }
+
+            if(appState.messages.length === 0) {
+                const welcomeMsg = { 
+                    id: Date.now(), 
+                    text: 'NOVA 33.2 啟動！\n✅ 導入本地資料庫 (IndexedDB)，解除 5MB 限制，歷史紀錄無限保留！\n✅ 支援一鍵「收藏」對話至筆記本，重點資訊無縫存檔！', 
+                    sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
+                };
+                appState.messages.push(welcomeMsg);
+                saveMessageToDB(welcomeMsg);
+            }
+            
             renderAll();
             
             const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
