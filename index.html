@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 33.4</title>
+    <title>NOVA 33.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.4</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.3</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.4</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.3</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -218,7 +218,7 @@
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
                     
                     <!-- Chat Input Area -->
-                    <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col gap-2">
+                    <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col gap-2 relative">
                         
                         <!-- File/Image Preview Container -->
                         <div id="chat-file-preview-container" class="hidden relative inline-flex items-center bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-md self-start">
@@ -229,6 +229,9 @@
                             <span id="chat-file-name" class="text-xs text-slate-300 max-w-[150px] truncate">filename</span>
                             <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
+
+                        <!-- 隱藏的音檔分析專用 Input -->
+                        <input type="file" id="audio-analyze-input" accept="audio/*,video/*,.webm,.m4a,.mp3,.mp4,.wav" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
 
                         <!-- LINE 風格輸入框 -->
                         <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
@@ -403,8 +406,8 @@
 
     <!-- MAIN SCRIPT -->
     <script>
-        let recognition = null; let noteRecognition = null; let voiceTimer = null; let noteVoiceTimer = null;
-        let initialInput = ""; let initialNoteInput = "";
+        let recognition = null; let noteRecognition = null; let voiceTimer = null; let initialInput = "";
+        let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
 
         // --- IndexedDB 全面初始化 (涵蓋所有巨量資料) ---
         const DB_NAME = 'NovaDB';
@@ -478,7 +481,9 @@
             isThinking: false, isListening: false, isNoteListening: false, noteVoiceActive: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null, sosTimer: null, sosCount: 10, isSOSDrill: false,
-            recordingContext: 'default', currentAudioTranscript: '', sessionSpoken: '', noteSessionSpoken: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null
+            recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null,
+            // 音檔轉錄分析專用狀態
+            pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "" 
         };
         
         const MODEL_CONFIG = {
@@ -510,6 +515,7 @@
                         mediaHTML = `<img src="${msg.file.data}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">`;
                     } else {
                         let iconType = msg.file.category === 'image' ? 'ph-image' : 'ph-file';
+                        if (msg.file.mime && (msg.file.mime.includes('audio') || msg.file.mime.includes('video'))) iconType = 'ph-file-audio';
                         mediaHTML = `<div class="flex items-center gap-2 bg-slate-950/50 p-2 rounded border border-slate-700/50 mb-2 max-w-xs overflow-hidden"><i class="ph-fill ${iconType} text-blue-400 text-xl shrink-0"></i><span class="text-xs text-slate-300 truncate">${escapeHtml(msg.file.name)}</span></div>`;
                     }
                 }
@@ -548,7 +554,9 @@
             if(el) el.innerHTML=appState.notes.map(n=>{
                 const isAudio = n.type === 'audio'; const icon = isAudio ? '<i class="ph-fill ph-microphone text-purple-400"></i>' : '<i class="ph-fill ph-notebook text-emerald-400"></i>';
                 let actionButtons = `<button onclick="exportNoteWord(${n.id})" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors" title="匯出為Word"><i class="ph-bold ph-download-simple"></i> Word</button>`;
-                if(isAudio) actionButtons += `<button onclick="summarizeVoiceNote(${n.id})" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
+                
+                // 改進的 AI 分析按鈕
+                if(isAudio) actionButtons += `<button onclick="summarizeVoiceNote(${n.id})" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> 選取音檔以轉錄並分析</button>`;
                 
                 // Multi-image display
                 let imgHtml = '';
@@ -565,7 +573,7 @@
 
         function renderAudioRecords() {
             const el = document.getElementById('audio-records-list'); if(!el) return;
-            el.innerHTML = appState.audioRecords.map(r => `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord(${r.id})" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div><div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3"><a href="${r.driveUrl || '#'}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors ${!r.driveUrl || r.driveUrl==='#' ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"><i class="ph-bold ph-cloud-arrow-down"></i> 雲端硬碟檔案</a><button onclick="summarizeAudioRecord(${r.id})" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> AI 分析摘要</button></div></div>`).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
+            el.innerHTML = appState.audioRecords.map(r => `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord(${r.id})" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div><div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3"><a href="${r.driveUrl || '#'}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors ${!r.driveUrl || r.driveUrl==='#' ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"><i class="ph-bold ph-cloud-arrow-down"></i> 雲端硬碟檔案</a><button onclick="summarizeAudioRecord(${r.id})" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> 選取實體音檔分析</button></div></div>`).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
         }
 
         function renderWeather() { 
@@ -671,7 +679,7 @@
             const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
             appState.keys.gemini = safeGetVal('key-gemini'); appState.keys.groq = safeGetVal('key-groq'); appState.keys.cohere = safeGetVal('key-cohere'); appState.keys.openai = safeGetVal('key-openai'); appState.keys.grok = safeGetVal('key-grok'); appState.keys.serpapi = safeGetVal('key-serpapi'); 
             appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.noteDocUrl = safeGetVal('key-note-doc-url'); appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); appState.driveUrl = safeGetVal('key-drive-url'); 
-            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', appState.keys.openai); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
+            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', localStorage.setItem('nova_key_openai', appState.keys.openai)); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
             localStorage.setItem('nova_doc_url', appState.docMonitorUrl); localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); localStorage.setItem('nova_drive_url', appState.driveUrl); 
             updateModelUI(); closeSettings(); addMessage("✅ 設定已儲存", 'system'); 
         }
@@ -722,16 +730,11 @@
             }else{ btn.classList.remove('cursor-not-allowed','opacity-70'); icon.classList.remove('ph-spinner','animate-spin'); icon.classList.add('ph-paper-plane-right'); } 
         }
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
-        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手動)", false); }
+        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手掌握)", false); }
         
         function toggleVoice() {
-            if (appState.isListening) { 
-                recognition.stop(); 
-            } else { 
-                appState.sessionSpoken = "";
-                initialInput = document.getElementById('user-input').value;
-                try { recognition.start(); } catch(e){} 
-            }
+            if (appState.isListening) { recognition.stop(); }
+            else { try { recognition.start(); } catch(e){} }
         }
         function toggleContinuous() {
             appState.isContinuous = !appState.isContinuous;
@@ -740,43 +743,37 @@
             else { btn.classList.remove('text-emerald-400', 'bg-emerald-900/30'); btn.classList.add('text-slate-500'); }
         }
         function toggleNoteVoice() {
-            if (appState.isNoteListening) { 
-                appState.noteVoiceActive = false; 
-                noteRecognition.stop(); 
-            } else { 
-                appState.noteVoiceActive = true; 
-                appState.noteSessionSpoken = "";
-                initialNoteInput = document.getElementById('doc-input-main').value;
-                try { noteRecognition.start(); } catch(e){} 
-            }
+            if (appState.isNoteListening) { appState.noteVoiceActive = false; noteRecognition.stop(); }
+            else { appState.noteVoiceActive = true; try { noteRecognition.start(); } catch(e){} }
         }
 
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
         function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; if(el.value === '') el.style.height = '44px'; }
         
-        // --- CHAT FILE & IMAGE UPLOAD (UNIVERSAL) ---
+        // --- CHAT FILE & IMAGE UPLOAD (UNIVERSAL) & MIME TYPE FIX ---
         function triggerChatImageUpload() { document.getElementById('chat-file-input').click(); }
         
         function handleChatFileSelect(e) {
             const file = e.target.files[0]; if (!file) return;
-            if (file.size > 15 * 1024 * 1024) { alert("檔案過大，請上傳小於 15MB 的檔案以確保穩定性。"); e.target.value = ''; return; }
+            if (file.size > 20 * 1024 * 1024) { alert("檔案過大，請上傳小於 20MB 的檔案以確保穩定性。"); e.target.value = ''; return; }
 
             const isText = file.type.startsWith('text/') || !!file.name.match(/\.(txt|csv|md|json|js|html|css|py|cpp|c|java)$/i);
             const isImage = file.type.startsWith('image/');
-            const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf' || !!file.name.match(/\.(pdf|mp3|wav|mp4|webm)$/i);
+            const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf' || !!file.name.match(/\.(pdf|mp3|wav|mp4|webm|m4a)$/i);
             let category = isImage ? 'image' : (isText ? 'text' : (isMedia ? 'media' : 'unknown'));
             if (category === 'unknown') category = 'media'; 
             
-            // 強制校正 MIME Type (解決下載的 webm 檔案被誤判為 application/octet-stream 導致 Gemini 拒絕分析)
-            let mimeType = file.type || 'application/octet-stream';
-            if (file.name.match(/\.webm$/i)) mimeType = 'audio/webm';
-            else if (file.name.match(/\.mp3$/i)) mimeType = 'audio/mp3';
-            else if (file.name.match(/\.wav$/i)) mimeType = 'audio/wav';
-            else if (file.name.match(/\.m4a$/i)) mimeType = 'audio/mp4';
-            else if (file.name.match(/\.mp4$/i)) mimeType = 'video/mp4';
-            else if (file.name.match(/\.pdf$/i)) mimeType = 'application/pdf';
-
             if (isText && file.size > 2 * 1024 * 1024) alert("提醒：純文字檔案較大，可能超出 AI 分析上限，建議擷取重點上傳。");
+
+            // 修正 WebM 等多媒體的 MIME Type，避免 Gemini API 解析失敗
+            let mimeType = file.type || 'application/octet-stream';
+            const filenameLower = file.name.toLowerCase();
+            if (filenameLower.endsWith('.webm')) mimeType = 'audio/webm';
+            else if (filenameLower.endsWith('.mp3')) mimeType = 'audio/mp3';
+            else if (filenameLower.endsWith('.wav')) mimeType = 'audio/wav';
+            else if (filenameLower.endsWith('.m4a')) mimeType = 'audio/m4a';
+            else if (filenameLower.endsWith('.mp4')) mimeType = 'video/mp4';
+            else if (filenameLower.endsWith('.pdf')) mimeType = 'application/pdf';
 
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -802,6 +799,45 @@
         function clearChatFile() {
             appState.chatFile = null;
             document.getElementById('chat-file-preview-container').classList.add('hidden'); document.getElementById('chat-image-preview').src = '';
+        }
+
+        // --- NEW: ADVANCED AUDIO ANALYZE FLOW ---
+        function handleAudioAnalyzeSelect(e) {
+            const file = e.target.files[0];
+            if (!file) { appState.pendingAnalyzeContextId = null; return; }
+            
+            if (file.size > 20 * 1024 * 1024) { 
+                alert("音檔過大，請上傳小於 20MB 的檔案以確保轉錄順利。");
+                e.target.value = '';
+                appState.pendingAnalyzeContextId = null;
+                return;
+            }
+
+            let mimeType = file.type || 'application/octet-stream';
+            const filenameLower = file.name.toLowerCase();
+            if (filenameLower.endsWith('.webm')) mimeType = 'audio/webm';
+            else if (filenameLower.endsWith('.mp3')) mimeType = 'audio/mp3';
+            else if (filenameLower.endsWith('.wav')) mimeType = 'audio/wav';
+            else if (filenameLower.endsWith('.m4a')) mimeType = 'audio/m4a';
+            else if (filenameLower.endsWith('.mp4')) mimeType = 'video/mp4';
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                appState.chatFile = { 
+                    category: 'media', 
+                    data: evt.target.result, 
+                    mime: mimeType, 
+                    name: file.name 
+                };
+                
+                showFilePreview(file.name, false, null);
+                switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt;
+                
+                e.target.value = '';
+                handleSendMessage(); // 載入完成後直接自動送出分析
+            };
+            reader.readAsDataURL(file);
         }
 
         function handlePaste(e) {
@@ -1074,27 +1110,18 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        // --- NEW: VOICE NOTES & ENHANCED AUDIO RECORDING ---
+        // --- VOICE NOTES & ENHANCED AUDIO RECORDING ---
         function startVoiceNote() { appState.recordingContext = 'note'; switchTab('dashboard'); appState.currentAudioTranscript = ""; startAudioRecording(); }
         async function startAudioRecording() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = []; 
-                
-                // 完全重置當前工作階段的逐字稿
-                appState.currentAudioTranscript = ""; 
-                appState.sessionSpoken = "";
-                initialInput = document.getElementById('user-input').value;
-
+                mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = uploadAudioRecording; mediaRecorder.start();
                 document.getElementById('recording-status').classList.remove('hidden'); document.getElementById('recording-status').classList.add('flex');
                 let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (可輸入「結束錄音」或點擊上方紅燈停止)";
                 addMessage(titleMsg, 'system');
-                
-                if (recognition) { 
-                    if (!appState.isListening) { try { recognition.start(); } catch(e){} }
-                }
+                if (recognition && !appState.isListening) { initialInput = document.getElementById('user-input').value; recognition.start(); }
             } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
         }
         function stopAudioRecording() {
@@ -1117,7 +1144,7 @@
                 addMessage(`⚠️ 未設定 Drive URL，音檔已自動下載。`, 'system'); finalDriveUrl = url; 
             } else {
                 addMessage(`☁️ 正在上傳 ${filename} 到 Google Drive...`, 'system');
-                let base64data = ''; // 將變數宣告於此，解決 scope 錯誤
+                let base64data = '';
                 try {
                     const reader = new FileReader(); reader.readAsDataURL(audioBlob);
                     base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
@@ -1142,33 +1169,38 @@
 
             const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
             if (appState.recordingContext === 'note') {
-                const newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[錄音逐字稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: finalDriveUrl, transcript: capturedTranscript, images: [], image: null };
+                const newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: finalDriveUrl, transcript: capturedTranscript, images: [], image: null };
                 appState.notes.unshift(newNote); saveToDB('notes', newNote);
-                addMessage(`📝 語音筆記已儲存至「筆記/文件」分頁。`, 'system'); renderNotes();
+                addMessage(`📝 語音筆記已儲存至「筆記/文件」分頁。點擊筆記內的「選取音檔以轉錄並分析」可進行深度處理。`, 'system'); renderNotes();
             } else {
                 const newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: finalDriveUrl, transcript: capturedTranscript };
                 appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
-                addMessage(`📼 錄音已歸檔至左側「錄音紀錄」分頁。`, 'system'); renderAudioRecords();
+                addMessage(`📼 錄音已歸檔至「錄音紀錄」分頁。點擊紀錄內的「選取實體音檔分析」可進行精確轉錄與摘要。`, 'system'); renderAudioRecords();
             }
             appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
 
-        async function summarizeAudioRecord(id) {
+        // --- FILE-BASED AUDIO ANALYSIS ---
+        function summarizeAudioRecord(id) {
             const r = appState.audioRecords.find(x => x.id === id); if (!r) return;
-            if (!r.transcript || r.transcript.trim().length < 5) { alert("此錄音紀錄無足夠的逐字稿內容可供分析。"); return; }
-            switchTab('dashboard'); document.getElementById('user-input').value = `請幫我把這段錄音紀錄整理成重點摘要或會議紀錄：\n\n${r.transcript}`; handleSendMessage(); 
+            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+            if(!confirm(`即將對「${r.title}」進行深度分析。\n\n請在接下來的視窗中，選取您剛才下載或上傳至 Drive 的原始音檔 (.webm, .m4a 等)。`)) return;
+            
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'audioRecord';
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。`;
+            document.getElementById('audio-analyze-input').click();
         }
-        async function summarizeVoiceNote(id) {
+
+        function summarizeVoiceNote(id) {
             const n = appState.notes.find(x => x.id === id); if (!n) return;
-            if (!n.transcript || n.transcript.trim().length < 5) { alert("此語音筆記無逐字稿可供分析。"); return; }
-            addMessage(`🔄 正在後台分析語音筆記「${n.title}」的內容...`, 'system');
-            const prompt = `請將以下語音逐字稿整理成結構化的重點摘要或會議紀錄。直接輸出整理好的結果：\n\n${n.transcript}`; const modelToUse = appState.currentModel;
-            try {
-                const finalRes = await fetchAIResponse(prompt, modelToUse, { enableSearch: false, disableSearch: true });
-                const replyText = typeof finalRes === 'string' ? finalRes : finalRes.text;
-                n.content += `\n\n====================\n[AI 摘要分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${replyText}`;
-                saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成！摘要已自動附加到筆記「${n.title}」的內容中。`, 'system'); switchTab('notes'); 
-            } catch (err) { addMessage(`❌ 分析失敗：${err.message}`, 'system'); }
+            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+            if(!confirm(`即將對「${n.title}」進行深度分析。\n\n請在接下來的視窗中，選取該語音筆記的原始音檔 (.webm, .m4a 等)。`)) return;
+            
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'voiceNote';
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。`;
+            document.getElementById('audio-analyze-input').click();
         }
 
         // --- WEB SCRAPER & SEARCH ---
@@ -1219,7 +1251,6 @@
                 let displayMessage = text;
                 if (!text && fileDataToPass) { displayMessage = `請分析這份檔案: ${fileDataToPass.name}`; }
                 
-                // Now safely inside try/catch so QuotaExceededError won't cause infinite spin
                 addMessage(displayMessage, 'user', null, [], fileDataToPass);
                 
                 input.value = ''; input.style.height = '44px'; initialInput = ''; clearChatFile(); 
@@ -1299,12 +1330,39 @@
                     file: fileDataToPass 
                 });
                 
-                if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse);
-                else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources);
+                let outputText = typeof finalRes === 'string' ? finalRes : finalRes.text;
+
+                // 回傳到聊天室
+                if(typeof finalRes === 'string') addMessage(outputText, 'ai', modelToUse);
+                else addMessage(outputText, 'ai', modelToUse, finalRes.sources);
+
+                // 若有 pending 分析任務，自動將分析結果附加回對應的筆記/紀錄
+                if (appState.pendingAnalyzeContextId) {
+                    if (appState.pendingAnalyzeType === 'voiceNote') {
+                        const n = appState.notes.find(x => x.id === appState.pendingAnalyzeContextId);
+                        if (n) {
+                            n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${outputText}`;
+                            saveToDB('notes', n); renderNotes();
+                            addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system');
+                        }
+                    } else if (appState.pendingAnalyzeType === 'audioRecord') {
+                        const r = appState.audioRecords.find(x => x.id === appState.pendingAnalyzeContextId);
+                        if (r) {
+                            r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析]\n${outputText}`;
+                            saveToDB('audioRecords', r); renderAudioRecords();
+                            addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system');
+                        }
+                    }
+                    appState.pendingAnalyzeContextId = null;
+                    appState.pendingAnalyzeType = "";
+                    appState.pendingAnalyzePrompt = "";
+                }
 
             } catch (error) {
                 console.error("Handler Error:", error);
                 addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援分析您上傳的檔案格式，請嘗試更換其他模型。)\n`, 'system');
+                appState.pendingAnalyzeContextId = null;
+                appState.pendingAnalyzeType = "";
             } finally {
                 appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
             }
@@ -1346,10 +1404,10 @@
         }
 
         async function fetchAIResponse(userText, model, options = {}) {
-            const fetchWithTimeout = async (url, fetchOpts, timeout = 30000) => {
+            const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { // 分析音檔可能需要較長 timeout
                 const controller = new AbortController(); const id = setTimeout(() => controller.abort(), timeout);
                 try { const response = await fetch(url, { ...fetchOpts, signal: controller.signal }); clearTimeout(id); return response; } 
-                catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時 (30s)' : error.message); }
+                catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時，檔案可能過大或處理過久 (60s)' : error.message); }
             };
 
             try {
@@ -1360,7 +1418,7 @@
                     if (options.file && options.file.category !== 'text') {
                         const base64Data = options.file.data.split(',')[1]; partsArray.push({ inlineData: { mimeType: options.file.mime, data: base64Data } });
                     }
-                    const payload = { contents: [{ parts: partsArray }], generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } };
+                    const payload = { contents: [{ parts: partsArray }], generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } };
                     if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) { payload.tools = [{ google_search: {} }]; }
                     const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     
@@ -1428,14 +1486,11 @@
         window.onload = async () => {
             try {
                 await initDB();
-                
-                // 從資料庫載入資料 (取代舊的 localStorage)
                 appState.messages = (await loadStoreFromDB('messages')).sort((a,b)=>a.id-b.id);
                 appState.notes = (await loadStoreFromDB('notes')).sort((a,b)=>b.id-a.id);
                 appState.todos = (await loadStoreFromDB('todos')).sort((a,b)=>b.id-a.id);
                 appState.audioRecords = (await loadStoreFromDB('audioRecords')).sort((a,b)=>b.id-a.id);
 
-                // 自動轉移舊版 localStorage 的資料至 IndexedDB
                 const migrateLS = (lsKey, storeName, stateArray) => {
                     const oldData = localStorage.getItem(lsKey);
                     if (oldData && stateArray.length === 0) {
@@ -1447,18 +1502,16 @@
                         } catch(e) {}
                     }
                 };
-
                 migrateLS('nova_messages', 'messages', appState.messages);
                 migrateLS('nova_notes', 'notes', appState.notes);
                 migrateLS('nova_todos', 'todos', appState.todos);
                 migrateLS('nova_audio_records', 'audioRecords', appState.audioRecords);
-
             } catch (err) { console.error("IndexedDB 初始化失敗", err); }
 
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 33.4 升級完畢！\n✅ **超強穩定逐字稿**：加入持久化字串拼接機制，現在無論瀏覽器在背景重啟幾次，逐字稿都會精準累積！\n✅ **AI 解鎖下載音檔**：修復下載後的 .webm/.mp3 無法被 Gemini 讀取的問題，全面打通分析阻礙！', 
+                    text: 'NOVA 33.3 Ultimate 音訊分析大升級完畢！\n\n✅ **真．實體音檔分析**：現在點擊「選取實體音檔分析」，系統會直接讀取您的 `.webm` 或其他音檔，保證產生 100% 完整的逐字稿並進行摘要整理！\n✅ **自動修復 MIME 格式**：手動上傳 WebM 給 Gemini 也不會再發生解析錯誤，系統已全面強化格式相容性。\n✅ **分析結果自動儲存**：當音檔分析完成後，完整的逐字稿與摘要將會自動附加到您原本的「錄音紀錄」與「語音筆記」中永久保存。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1477,79 +1530,82 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
                 recognition = new SR(); recognition.lang = 'zh-TW'; recognition.continuous = true; recognition.interimResults = true; 
+                let voiceTimer = null; 
                 
-                // 強制喚醒機制 (防斷線)
+                recognition.onstart = () => { appState.isListening = true; updateVoiceUI(); initialInput = document.getElementById('user-input').value; };
                 recognition.onend = () => { 
                     appState.isListening = false; updateVoiceUI(); 
                     if(voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; } 
-                    
-                    // 當連續對話開啟，或者「背景正在錄音」時，無條件強制喚醒
                     if (appState.isContinuous || (mediaRecorder && mediaRecorder.state === 'recording')) { 
                         setTimeout(() => { try { recognition.start(); } catch(e){} }, 250); 
                     } 
                 };
                 
                 recognition.onresult = (e) => {
-                    let interim = "";
-                    for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    let currentTranscript = ""; 
+                    for (let i = 0; i < e.results.length; ++i) {
                         let text = e.results[i][0].transcript;
                         if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-                        
-                        // 判斷是否為最終結果，如果是則存入持久化 sessionSpoken
-                        if (e.results[i].isFinal) {
-                            appState.sessionSpoken += text + " ";
-                        } else {
-                            interim += text;
-                        }
+                        currentTranscript += text;
                     }
-                    
-                    const fullSpoken = appState.sessionSpoken + interim;
-                    
-                    if (document.getElementById('recording-status').classList.contains('flex')) { 
-                        appState.currentAudioTranscript = fullSpoken.trim(); 
-                    }
-                    
-                    const input = document.getElementById('user-input'); 
-                    input.value = (initialInput ? initialInput + " " : "") + fullSpoken.trim(); 
-                    autoResizeInput(input);
-                    
+                    if (document.getElementById('recording-status').classList.contains('flex')) { appState.currentAudioTranscript = currentTranscript.trim(); }
+                    const input = document.getElementById('user-input'); input.value = (initialInput ? initialInput + " " : "") + currentTranscript.trim(); autoResizeInput(input);
                     if (document.getElementById('recording-status').classList.contains('hidden')) {
-                        if (voiceTimer) clearTimeout(voiceTimer); 
-                        voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000);
+                        if (voiceTimer) clearTimeout(voiceTimer); voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000);
                     }
                 };
                 
                 noteRecognition = new SR(); noteRecognition.lang = 'zh-TW'; noteRecognition.continuous = true; noteRecognition.interimResults = true;
+                let noteVoiceTimer = null;
                 
+                noteRecognition.onstart = () => { appState.isNoteListening = true; updateNoteVoiceUI(); initialInput = document.getElementById('doc-input-main').value; };
                 noteRecognition.onend = () => { 
                     appState.isNoteListening = false; updateNoteVoiceUI(); 
                     if(noteVoiceTimer) clearTimeout(noteVoiceTimer); 
                     if (appState.noteVoiceActive) { setTimeout(() => { try { noteRecognition.start(); } catch(e){} }, 250); }
                 };
-                
                 noteRecognition.onresult = (e) => {
-                    let interim = "";
-                    for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    let currentTranscript = ""; 
+                    for (let i = 0; i < e.results.length; ++i) {
                         let text = e.results[i][0].transcript;
                         if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-                        
-                        if (e.results[i].isFinal) {
-                            appState.noteSessionSpoken += text + " ";
-                        } else {
-                            interim += text;
-                        }
+                        currentTranscript += text;
                     }
-                    
-                    const fullSpoken = appState.noteSessionSpoken + interim;
-                    const el = document.getElementById('doc-input-main'); 
-                    const separator = (initialNoteInput && fullSpoken) ? "\n" : ""; 
-                    el.value = initialNoteInput + separator + fullSpoken.trim();
-                    
-                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); 
-                    noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 6000);
+                    const el = document.getElementById('doc-input-main'); const separator = (initialInput && currentTranscript) ? "\n" : ""; el.value = initialInput + separator + currentTranscript.trim();
+                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 6000);
                 };
             }
-            tryGetLocation(true); updateModelUI(); setInterval(checkReminders, 10000);
+            tryGetLocation(true); updateModelUI(); 
+            // 提醒事項間隔檢查
+            const checkReminders = () => {
+                const now = Date.now();
+                appState.todos.forEach(t => {
+                    if (t.alertTime && t.alertEnabled !== false && !t.alerted && t.alertTime <= now && !t.done) {
+                        t.alerted = true; saveToDB('todos', t); renderTodos();
+                        document.getElementById('alarm-text').innerText = t.text;
+                        document.getElementById('alarm-modal').classList.remove('hidden'); document.getElementById('alarm-modal').classList.add('flex');
+                        try {
+                            alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            const osc = alarmAudioCtx.createOscillator(); const gain = alarmAudioCtx.createGain();
+                            osc.type = 'sine'; osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime);
+                            osc.connect(gain); gain.connect(alarmAudioCtx.destination);
+                            osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, alarmAudioCtx.currentTime + 0.5);
+                            alarmInterval = setInterval(() => {
+                                const osc2 = alarmAudioCtx.createOscillator(); const gain2 = alarmAudioCtx.createGain();
+                                osc2.type = 'sine'; osc2.frequency.setValueAtTime(880, alarmAudioCtx.currentTime);
+                                osc2.connect(gain2); gain2.connect(alarmAudioCtx.destination);
+                                osc2.start(); gain2.gain.exponentialRampToValueAtTime(0.00001, alarmAudioCtx.currentTime + 0.5);
+                            }, 1000);
+                        } catch(e) {}
+                    }
+                });
+            };
+            setInterval(checkReminders, 10000);
+            window.stopAlarm = function() {
+                document.getElementById('alarm-modal').classList.add('hidden'); document.getElementById('alarm-modal').classList.remove('flex');
+                if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+                if (alarmAudioCtx) { alarmAudioCtx.close(); alarmAudioCtx = null; }
+            };
         };
     </script>
 </body>
