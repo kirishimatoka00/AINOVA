@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 33.2</title>
+    <title>NOVA 33.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.2</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 33.3</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.2</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 33.3</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -164,24 +164,6 @@
                     <p id="alarm-text" class="text-lg text-slate-300 mb-8">提醒事項內容</p>
                     <button onclick="stopAlarm()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
                         <i class="ph-bold ph-check-circle mr-2"></i> 確 定 (停止)
-                    </button>
-                </div>
-            </div>
-
-            <!-- SOS MODAL -->
-            <div id="sos-modal" class="hidden fixed inset-0 z-[70] bg-red-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-                <i class="ph-fill ph-warning-circle text-7xl text-red-500 mb-4 animate-pulse"></i>
-                <h2 id="sos-title" class="text-3xl font-bold text-white mb-2">緊急救援觸發</h2>
-                <p class="text-lg text-red-200 mb-2">將撥打當地專線: <span id="sos-number" class="font-bold text-3xl text-white tracking-widest"></span></p>
-                <p class="text-sm text-slate-400 mb-8">並發送包含座標之求救簡訊</p>
-                <div class="text-9xl font-bold text-white mb-8" id="sos-countdown">10</div>
-                
-                <div class="w-full max-w-xs space-y-3">
-                    <button onclick="setSOSDrillMode()" id="sos-drill-btn" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
-                        <i class="ph-bold ph-shield-check mr-2"></i>切換為演習模式
-                    </button>
-                    <button onclick="cancelSOS()" class="w-full bg-slate-800 border border-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
-                        <i class="ph-bold ph-x mr-2"></i>取消 (Cancel)
                     </button>
                 </div>
             </div>
@@ -394,20 +376,19 @@
                         <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
                     <input type="hidden" id="edit-note-id">
-                    <div class="space-y-4 overflow-y-auto flex-1 pr-2">
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
                         <div><label class="text-xs text-slate-400 mb-1 block">標題</label><input type="text" id="edit-note-title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 outline-none"></div>
                         <div>
-                            <label class="text-xs text-slate-400 mb-1 block flex justify-between">
+                            <label class="text-xs text-slate-400 mb-1 flex justify-between">
                                 內文
-                                <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1"><i class="ph-bold ph-image"></i> 加入圖片</label>
-                                <input type="file" id="edit-note-img-upload" accept="image/*" class="hidden" onchange="handleNoteEditImage(event)">
+                                <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1"><i class="ph-bold ph-image"></i> 加入圖片 (支援多張)</label>
+                                <!-- Multi-image input added -->
+                                <input type="file" id="edit-note-img-upload" accept="image/*" multiple class="hidden" onchange="handleNoteEditImage(event)">
                             </label>
                             <textarea id="edit-note-content" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 outline-none resize-none"></textarea>
                             
-                            <div id="edit-note-img-preview-container" class="hidden mt-3 relative inline-block">
-                                <img id="edit-note-img-preview" src="" class="max-h-40 rounded border border-slate-700">
-                                <button onclick="removeNoteEditImage()" class="absolute -top-2 -right-2 bg-slate-800 text-red-400 rounded-full p-1 shadow hover:bg-slate-700"><i class="ph-bold ph-x text-xs"></i></button>
-                            </div>
+                            <!-- Container for multiple images -->
+                            <div id="edit-note-img-preview-container" class="hidden mt-3 flex-wrap gap-2"></div>
                         </div>
                     </div>
                     <div class="flex justify-end space-x-3 mt-4 shrink-0 pt-4 border-t border-slate-800">
@@ -425,69 +406,64 @@
         let recognition = null; let noteRecognition = null; let voiceTimer = null; let initialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
 
-        // --- NEW: IndexedDB 初始化與封裝 ---
+        // --- IndexedDB 全面初始化 (涵蓋所有巨量資料) ---
         const DB_NAME = 'NovaDB';
-        const DB_VERSION = 1;
+        const DB_VERSION = 2; // 升級資料庫版本以支援 notes, todos, audioRecords
         let db;
 
         function initDB() {
             return new Promise((resolve, reject) => {
                 if (!window.indexedDB) {
-                    console.warn("瀏覽器不支援 IndexedDB，對話紀錄將無法永久保存。");
+                    console.warn("瀏覽器不支援 IndexedDB，紀錄將無法永久保存。");
                     resolve(null);
                     return;
                 }
                 const req = indexedDB.open(DB_NAME, DB_VERSION);
                 req.onupgradeneeded = (e) => {
                     db = e.target.result;
-                    if (!db.objectStoreNames.contains('messages')) {
-                        db.createObjectStore('messages', { keyPath: 'id' });
-                    }
+                    if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('todos')) db.createObjectStore('todos', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('audioRecords')) db.createObjectStore('audioRecords', { keyPath: 'id' });
                 };
-                req.onsuccess = (e) => {
-                    db = e.target.result;
-                    resolve(db);
-                };
+                req.onsuccess = (e) => { db = e.target.result; resolve(db); };
                 req.onerror = (e) => reject(e.target.error);
             });
         }
 
-        function loadMessagesFromDB() {
+        function loadStoreFromDB(storeName) {
             return new Promise((resolve, reject) => {
                 if (!db) return resolve([]);
-                const tx = db.transaction('messages', 'readonly');
-                const store = tx.objectStore('messages');
-                const req = store.getAll();
-                req.onsuccess = () => {
-                    const msgs = req.result || [];
-                    msgs.sort((a, b) => a.id - b.id);
-                    resolve(msgs);
-                };
-                req.onerror = () => reject(req.error);
+                try {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const req = tx.objectStore(storeName).getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                    req.onerror = () => resolve([]);
+                } catch(e) { resolve([]); }
             });
         }
 
-        function saveMessageToDB(msg) {
+        function saveToDB(storeName, item) {
             if (!db) return;
             try {
-                const tx = db.transaction('messages', 'readwrite');
-                tx.objectStore('messages').put(msg);
+                const tx = db.transaction(storeName, 'readwrite');
+                tx.objectStore(storeName).put(item);
             } catch(e) { console.error("DB Save Error:", e); }
         }
 
-        function deleteMessageDB(id) {
+        function deleteFromDB(storeName, id) {
             if (!db) return;
             try {
-                const tx = db.transaction('messages', 'readwrite');
-                tx.objectStore('messages').delete(id);
+                const tx = db.transaction(storeName, 'readwrite');
+                tx.objectStore(storeName).delete(id);
             } catch(e) { console.error("DB Delete Error:", e); }
         }
 
-        function clearMessagesDB() {
+        function clearStoreDB(storeName) {
             if (!db) return;
             try {
-                const tx = db.transaction('messages', 'readwrite');
-                tx.objectStore('messages').clear();
+                const tx = db.transaction(storeName, 'readwrite');
+                tx.objectStore(storeName).clear();
             } catch(e) { console.error("DB Clear Error:", e); }
         }
 
@@ -496,21 +472,19 @@
             currentModel: 'gemini', grokModel: 'grok-4-1-fast-reasoning', 
             chatFile: null, 
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
-            messages: [], // 啟動時改為從 IndexedDB 載入
-            todos: JSON.parse(localStorage.getItem('nova_todos') || '[]'), notes: JSON.parse(localStorage.getItem('nova_notes') || '[]'), audioRecords: JSON.parse(localStorage.getItem('nova_audio_records') || '[]'),
+            messages: [], notes: [], todos: [], audioRecords: [], // 初始化皆為空，等待 DB 讀取
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
             keys: { gemini: localStorage.getItem('nova_key_gemini')||'', groq: localStorage.getItem('nova_key_groq')||'', cohere: localStorage.getItem('nova_key_cohere')||'', openai: localStorage.getItem('nova_key_openai')||'', grok: localStorage.getItem('nova_key_grok')||'', serpapi: localStorage.getItem('nova_key_serpapi')||'' },
-            isThinking: false, isListening: false, isNoteListening: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
+            isThinking: false, isListening: false, isNoteListening: false, noteVoiceActive: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null, sosTimer: null, sosCount: 10, isSOSDrill: false,
-            recordingContext: 'default', currentAudioTranscript: '', editNoteImageBase64: null, writeMode: 'text', pastedImageBase64: null
+            recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null
         };
         
         const MODEL_CONFIG = {
             gemini: { name: 'Gemini', color: 'text-blue-400', bg: 'bg-blue-600', icon: 'ph-globe' }, grok: { name: 'Grok', color: 'text-slate-100', bg: 'bg-slate-600', icon: 'ph-lightning' }, groq: { name: 'Groq', color: 'text-rose-400', bg: 'bg-rose-600', icon: 'ph-rocket' }, cohere: { name: 'Cohere', color: 'text-violet-400', bg: 'bg-violet-600', icon: 'ph-cpu' }, gpt: { name: 'OpenAI', color: 'text-emerald-400', bg: 'bg-emerald-600', icon: 'ph-cpu' }
         };
 
-        function saveData() { localStorage.setItem('nova_todos', JSON.stringify(appState.todos)); localStorage.setItem('nova_notes', JSON.stringify(appState.notes)); localStorage.setItem('nova_audio_records', JSON.stringify(appState.audioRecords)); }
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         function formatMessage(text) { 
             if (!text) return ''; 
@@ -575,7 +549,14 @@
                 const isAudio = n.type === 'audio'; const icon = isAudio ? '<i class="ph-fill ph-microphone text-purple-400"></i>' : '<i class="ph-fill ph-notebook text-emerald-400"></i>';
                 let actionButtons = `<button onclick="exportNoteWord(${n.id})" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors" title="匯出為Word"><i class="ph-bold ph-download-simple"></i> Word</button>`;
                 if(isAudio) actionButtons += `<button onclick="summarizeVoiceNote(${n.id})" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
-                let imgHtml = n.image ? `<div class="mt-2 mb-2"><img src="${n.image}" class="max-h-24 rounded border border-slate-700/50"></div>` : '';
+                
+                // Multi-image display
+                let imgHtml = '';
+                const displayImages = n.images || (n.image ? [n.image] : []);
+                if (displayImages.length > 0) {
+                    imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
+                }
+
                 let linkHtml = n.driveUrl ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-link"></i> 開啟雲端錄音檔</a></div>` : '';
                 return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit(${n.id})" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteNote(${n.id})" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}<div class="text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin whitespace-pre-wrap">${formatMessage(n.content)}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${actionButtons}</div></div>`;
             }).join('')||'<p class="text-slate-500 text-center col-span-3 mt-10">無筆記</p>'; 
@@ -613,68 +594,68 @@
                 else{ searchBtn.classList.remove('text-blue-400','bg-blue-900/30'); searchBtn.classList.add('text-slate-500'); if(badge)badge.classList.add('hidden'); if(hint)hint.classList.add('hidden'); }
             }
         }
+        
+        function updateVoiceUI() {
+            const btn = document.getElementById('voice-btn'); const icon = document.getElementById('voice-icon');
+            if (appState.isListening) { btn.classList.add('text-red-400', 'bg-red-900/30'); btn.classList.remove('text-slate-400'); icon.classList.add('animate-pulse'); } 
+            else { btn.classList.remove('text-red-400', 'bg-red-900/30'); btn.classList.add('text-slate-400'); icon.classList.remove('animate-pulse'); }
+        }
+
+        function updateNoteVoiceUI() {
+            const btn = document.getElementById('note-voice-btn'); const icon = document.getElementById('note-voice-icon');
+            if (appState.isNoteListening) { btn.classList.add('text-red-400'); btn.classList.remove('text-slate-500'); icon.classList.add('animate-pulse'); } 
+            else { btn.classList.remove('text-red-400'); btn.classList.add('text-slate-500'); icon.classList.remove('animate-pulse'); }
+        }
 
         // --- ACTIONS ---
         function addMessage(text, sender, model, sources=[], file=null) { 
             const newMsg = {id:Date.now(), text, sender, model, sources, file, time:getTime()};
             appState.messages.push(newMsg); 
-            saveMessageToDB(newMsg); 
+            saveToDB('messages', newMsg); 
             renderMessages(); 
         }
 
         function deleteMessage(id) { 
             appState.messages = appState.messages.filter(m => m.id !== id); 
-            deleteMessageDB(id); 
+            deleteFromDB('messages', id); 
             renderMessages(); 
         }
 
         function clearChatHistory() { 
             if(confirm("確定要清空所有對話紀錄嗎？")) { 
                 appState.messages = []; 
-                clearMessagesDB(); 
+                clearStoreDB('messages'); 
                 renderMessages(); 
             } 
         }
 
-        // --- NEW: 收藏至筆記 ---
+        // --- 收藏至筆記 ---
         function favoriteMessage(id) {
             const msg = appState.messages.find(m => m.id === id);
             if (!msg) return;
 
             let senderName = msg.sender === 'user' ? '你' : (msg.sender === 'system' ? '系統提示' : (MODEL_CONFIG[msg.model]?.name || '系統'));
             let content = `[${senderName} 的對話紀錄]\n${msg.text}`;
-            
-            if (msg.sources && msg.sources.length > 0) {
-                content += `\n\n[參考來源]\n` + msg.sources.map((s,i) => `${i+1}. ${s.title} - ${s.uri}`).join('\n');
-            }
+            if (msg.sources && msg.sources.length > 0) content += `\n\n[參考來源]\n` + msg.sources.map((s,i) => `${i+1}. ${s.title} - ${s.uri}`).join('\n');
 
-            let imageBase64 = null;
-            if (msg.file && msg.file.category === 'image' && msg.file.data) {
-                imageBase64 = msg.file.data;
-            }
+            let imagesArray = [];
+            if (msg.file && msg.file.category === 'image' && msg.file.data) imagesArray.push(msg.file.data);
 
-            const noteId = Date.now();
-            const dateStr = new Date().toLocaleString();
-            appState.notes.unshift({
-                id: noteId,
-                title: `⭐ 收藏對話 - ${msg.time}`,
-                content: content,
-                date: dateStr,
-                type: 'text',
-                image: imageBase64
-            });
-            saveData();
-            renderNotes();
+            const newNote = {
+                id: Date.now(), title: `⭐ 收藏對話 - ${msg.time}`, content: content, date: new Date().toLocaleString(), type: 'text',
+                images: imagesArray, image: imagesArray.length > 0 ? imagesArray[0] : null
+            };
+            appState.notes.unshift(newNote); saveToDB('notes', newNote); renderNotes();
             addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
         }
 
-        function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveData();renderTodos();} }
-        function deleteTodo(id){ appState.todos=appState.todos.filter(x=>x.id!==id); saveData(); renderTodos(); }
-        function deleteNote(id){ appState.notes=appState.notes.filter(x=>x.id!==id); saveData(); renderNotes(); }
-        function deleteAudioRecord(id) { appState.audioRecords = appState.audioRecords.filter(r => r.id !== id); saveData(); renderAudioRecords(); }
+        function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveToDB('todos', t);renderTodos();} }
+        function deleteTodo(id){ appState.todos=appState.todos.filter(x=>x.id!==id); deleteFromDB('todos', id); renderTodos(); }
+        function deleteNote(id){ appState.notes=appState.notes.filter(x=>x.id!==id); deleteFromDB('notes', id); renderNotes(); }
+        function deleteAudioRecord(id) { appState.audioRecords = appState.audioRecords.filter(r => r.id !== id); deleteFromDB('audioRecords', id); renderAudioRecords(); }
         
-        function addTodoManually(){ const t=prompt("任務"); if(t){appState.todos.push({id:Date.now(),text:t,done:false,time:'手動', alertEnabled: true});saveData();renderTodos();} }
-        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){appState.notes.push({id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString(), type: 'text'});saveData();renderNotes();} }
+        function addTodoManually(){ const t=prompt("任務"); if(t){const n={id:Date.now(),text:t,done:false,time:'手動', alertEnabled: true}; appState.todos.push(n);saveToDB('todos', n);renderTodos();} }
+        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){const n={id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString(), type: 'text', images: []}; appState.notes.push(n);saveToDB('notes', n);renderNotes();} }
         
         function switchTab(id){ 
             ['dashboard','schedule','notes','audio'].forEach(t=>document.getElementById(`view-${t}`)?.classList.add('hidden')); 
@@ -741,8 +722,23 @@
             }else{ btn.classList.remove('cursor-not-allowed','opacity-70'); icon.classList.remove('ph-spinner','animate-spin'); icon.classList.add('ph-paper-plane-right'); } 
         }
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
-        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手動)", false); }
+        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手掌握)", false); }
         
+        function toggleVoice() {
+            if (appState.isListening) { recognition.stop(); }
+            else { try { recognition.start(); } catch(e){} }
+        }
+        function toggleContinuous() {
+            appState.isContinuous = !appState.isContinuous;
+            const btn = document.getElementById('continuous-btn');
+            if (appState.isContinuous) { btn.classList.add('text-emerald-400', 'bg-emerald-900/30'); btn.classList.remove('text-slate-500'); }
+            else { btn.classList.remove('text-emerald-400', 'bg-emerald-900/30'); btn.classList.add('text-slate-500'); }
+        }
+        function toggleNoteVoice() {
+            if (appState.isNoteListening) { appState.noteVoiceActive = false; noteRecognition.stop(); }
+            else { appState.noteVoiceActive = true; try { noteRecognition.start(); } catch(e){} }
+        }
+
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
         function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; if(el.value === '') el.style.height = '44px'; }
         
@@ -917,36 +913,97 @@
                 if (timeInfo.complete) { t.time = new Date(timeInfo.timestamp).toLocaleString(); t.alertTime = timeInfo.timestamp; t.alerted = false; } 
                 else { t.time = newTimeStr; t.alerted = true; }
             }
-            saveData(); renderTodos(); closeTodoEdit();
+            saveToDB('todos', t); renderTodos(); closeTodoEdit();
         }
-        function toggleTodoAlarm(id) { const t = appState.todos.find(x => x.id === id); if(t) { t.alertEnabled = t.alertEnabled === false ? true : false; saveData(); renderTodos(); } }
+        function toggleTodoAlarm(id) { const t = appState.todos.find(x => x.id === id); if(t) { t.alertEnabled = t.alertEnabled === false ? true : false; saveToDB('todos', t); renderTodos(); } }
 
         function openNoteEdit(id) {
             const n = appState.notes.find(x => x.id === id); if(!n) return;
             document.getElementById('edit-note-id').value = n.id; document.getElementById('edit-note-title').value = n.title; document.getElementById('edit-note-content').value = n.content;
-            appState.editNoteImageBase64 = n.image || null;
-            const previewContainer = document.getElementById('edit-note-img-preview-container'); const previewImg = document.getElementById('edit-note-img-preview');
-            if(n.image) { previewImg.src = n.image; previewContainer.classList.remove('hidden'); } else { previewContainer.classList.add('hidden'); previewImg.src = ''; }
+            
+            // 讀取多圖 (相容舊版單圖)
+            appState.editNoteImagesBase64 = n.images ? [...n.images] : (n.image ? [n.image] : []);
+            renderNoteEditImages();
             document.getElementById('note-edit-modal').classList.remove('hidden');
         }
         function closeNoteEdit() { document.getElementById('note-edit-modal').classList.add('hidden'); }
-        function handleNoteEditImage(e) {
-            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = function(evt) { appState.editNoteImageBase64 = evt.target.result; document.getElementById('edit-note-img-preview').src = evt.target.result; document.getElementById('edit-note-img-preview-container').classList.remove('hidden'); };
-            reader.readAsDataURL(file); e.target.value = '';
+
+        async function handleNoteEditImage(e) {
+            const files = Array.from(e.target.files); if (!files.length) return;
+            const promises = files.map(file => new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = evt => resolve(evt.target.result);
+                reader.readAsDataURL(file);
+            }));
+            const base64Images = await Promise.all(promises);
+            appState.editNoteImagesBase64 = [...(appState.editNoteImagesBase64 || []), ...base64Images];
+            renderNoteEditImages();
+            e.target.value = ''; // Reset input
         }
-        function removeNoteEditImage() { appState.editNoteImageBase64 = null; document.getElementById('edit-note-img-preview-container').classList.add('hidden'); document.getElementById('edit-note-img-preview').src = ''; }
+
+        function renderNoteEditImages() {
+            const container = document.getElementById('edit-note-img-preview-container');
+            if(!appState.editNoteImagesBase64 || appState.editNoteImagesBase64.length === 0) {
+                container.classList.add('hidden'); container.innerHTML = ''; return;
+            }
+            container.classList.remove('hidden');
+            container.innerHTML = appState.editNoteImagesBase64.map((img, i) => `
+                <div class="relative inline-block mt-2">
+                    <img src="${img}" class="h-24 w-24 object-cover rounded border border-slate-700">
+                    <button onclick="removeNoteEditImage(${i})" class="absolute -top-2 -right-2 bg-slate-800 text-red-400 rounded-full p-1 shadow hover:bg-slate-700 transition-colors" title="移除此圖"><i class="ph-bold ph-x text-[10px]"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeNoteEditImage(idx) {
+            appState.editNoteImagesBase64.splice(idx, 1);
+            renderNoteEditImages();
+        }
+
         function saveNoteEdit() {
             const id = parseInt(document.getElementById('edit-note-id').value); const n = appState.notes.find(x => x.id === id); if(!n) return;
-            n.title = document.getElementById('edit-note-title').value.trim() || '未命名'; n.content = document.getElementById('edit-note-content').value; n.image = appState.editNoteImageBase64;
-            saveData(); renderNotes(); closeNoteEdit();
+            n.title = document.getElementById('edit-note-title').value.trim() || '未命名'; n.content = document.getElementById('edit-note-content').value; 
+            
+            // 儲存多圖陣列，並保留舊版 image 屬性作為相容性
+            n.images = [...appState.editNoteImagesBase64];
+            n.image = n.images.length > 0 ? n.images[0] : null;
+
+            saveToDB('notes', n); renderNotes(); closeNoteEdit();
         }
+
         function exportNoteWord(id) {
             const n = appState.notes.find(x=>x.id===id); if(!n) return;
-            let imgTag = n.image ? `<br><br><img src="${n.image}" style="max-width: 100%;">` : '';
-            let htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${n.title}</title></head><body><h1>${n.title}</h1><p style="color:gray; font-size:12px;">建立日期: ${n.date}</p><div style="margin-top:20px; font-family: sans-serif; white-space: pre-wrap;">${n.content.replace(/\n/g, '<br>')}</div>${imgTag}</body></html>`;
-            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' }); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.doc`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            
+            let imgTags = '';
+            const displayImages = n.images || (n.image ? [n.image] : []);
+            if (displayImages.length > 0) {
+                imgTags = displayImages.map(img => `<br><br><img src="${img}" style="max-width: 100%;">`).join('');
+            }
+
+            // Word 格式需要加上 BOM (\ufeff) 及特定的 Namespace 以保證多數瀏覽器能正確轉碼下載
+            let htmlContent = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>${n.title}</title></head>
+            <body>
+            <h1>${n.title}</h1>
+            <p style="color:gray; font-size:12px;">建立日期: ${n.date}</p>
+            <div style="margin-top:20px; font-family: sans-serif; white-space: pre-wrap;">${n.content.replace(/\n/g, '<br>')}</div>
+            ${imgTags}
+            </body></html>`;
+
+            try {
+                const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); 
+                a.href = url; 
+                a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.doc`; 
+                document.body.appendChild(a); 
+                a.click(); 
+                document.body.removeChild(a); 
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+            } catch (e) {
+                alert("下載失敗，您的瀏覽器可能阻擋了 Blob 生成：" + e.message);
+            }
         }
 
         async function tryGetLocation(silent=false) { 
@@ -1055,11 +1112,13 @@
 
             const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
             if (appState.recordingContext === 'note') {
-                appState.notes.unshift({ id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[錄音逐字稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: finalDriveUrl, transcript: capturedTranscript, image: null });
-                addMessage(`📝 語音筆記已儲存至「筆記/文件」分頁。`, 'system'); saveData(); renderNotes();
+                const newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[錄音逐字稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: finalDriveUrl, transcript: capturedTranscript, images: [], image: null };
+                appState.notes.unshift(newNote); saveToDB('notes', newNote);
+                addMessage(`📝 語音筆記已儲存至「筆記/文件」分頁。`, 'system'); renderNotes();
             } else {
-                appState.audioRecords.unshift({ id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: finalDriveUrl, transcript: capturedTranscript });
-                addMessage(`📼 錄音已歸檔至左側「錄音紀錄」分頁。`, 'system'); saveData(); renderAudioRecords();
+                const newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: finalDriveUrl, transcript: capturedTranscript };
+                appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
+                addMessage(`📼 錄音已歸檔至左側「錄音紀錄」分頁。`, 'system'); renderAudioRecords();
             }
             appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
@@ -1078,7 +1137,7 @@
                 const finalRes = await fetchAIResponse(prompt, modelToUse, { enableSearch: false, disableSearch: true });
                 const replyText = typeof finalRes === 'string' ? finalRes : finalRes.text;
                 n.content += `\n\n====================\n[AI 摘要分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${replyText}`;
-                saveData(); renderNotes(); addMessage(`✅ 分析完成！摘要已自動附加到筆記「${n.title}」的內容中。`, 'system'); switchTab('notes'); 
+                saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成！摘要已自動附加到筆記「${n.title}」的內容中。`, 'system'); switchTab('notes'); 
             } catch (err) { addMessage(`❌ 分析失敗：${err.message}`, 'system'); }
         }
 
@@ -1145,14 +1204,14 @@
                          else if (timeInfo.missing === 'date') { todo.tempTimeStr = combinedText; addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system'); appState.reminderStage = 2; } 
                          else if (timeInfo.missing === 'ampm') { todo.tempTimeStr = combinedText; addMessage(`請問是「上午」還是「下午」？`, 'system'); appState.reminderStage = 2; } 
                          else { addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system'); }
-                         saveData(); renderTodos();
+                         saveToDB('todos', todo); renderTodos();
                      }
                      return;
                 }
                 const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
                 if (reminderMatch) {
                     const content = reminderMatch[1].trim() || "未命名事項"; const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false, alertEnabled: true };
-                    appState.todos.push(newTodo); appState.pendingReminder = newTodo.id; appState.reminderStage = 1; saveData(); renderTodos();
+                    appState.todos.push(newTodo); saveToDB('todos', newTodo); appState.pendingReminder = newTodo.id; appState.reminderStage = 1; renderTodos();
                     addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？`, 'system');
                     return;
                 }
@@ -1340,30 +1399,39 @@
             try {
                 await initDB();
                 
-                // 自動轉移舊版 localStorage 對話到 IndexedDB
-                const oldMsgs = localStorage.getItem('nova_messages');
-                if (oldMsgs) {
-                    try {
-                        const parsed = JSON.parse(oldMsgs);
-                        for (const m of parsed) await saveMessageToDB(m);
-                        localStorage.removeItem('nova_messages'); // 轉移完成後清除舊儲存
-                    } catch(e) {}
-                }
+                // 從資料庫載入資料 (取代舊的 localStorage)
+                appState.messages = (await loadStoreFromDB('messages')).sort((a,b)=>a.id-b.id);
+                appState.notes = (await loadStoreFromDB('notes')).sort((a,b)=>b.id-a.id);
+                appState.todos = (await loadStoreFromDB('todos')).sort((a,b)=>b.id-a.id);
+                appState.audioRecords = (await loadStoreFromDB('audioRecords')).sort((a,b)=>b.id-a.id);
 
-                // 從資料庫載入對話歷史
-                appState.messages = await loadMessagesFromDB();
-            } catch (err) {
-                console.error("IndexedDB 初始化失敗", err);
-            }
+                // 自動轉移舊版 localStorage 的資料至 IndexedDB
+                const migrateLS = (lsKey, storeName, stateArray) => {
+                    const oldData = localStorage.getItem(lsKey);
+                    if (oldData && stateArray.length === 0) {
+                        try {
+                            const parsed = JSON.parse(oldData);
+                            parsed.forEach(item => saveToDB(storeName, item));
+                            stateArray.push(...parsed);
+                            localStorage.removeItem(lsKey);
+                        } catch(e) {}
+                    }
+                };
+
+                migrateLS('nova_messages', 'messages', appState.messages);
+                migrateLS('nova_notes', 'notes', appState.notes);
+                migrateLS('nova_todos', 'todos', appState.todos);
+                migrateLS('nova_audio_records', 'audioRecords', appState.audioRecords);
+
+            } catch (err) { console.error("IndexedDB 初始化失敗", err); }
 
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 33.2 啟動！\n✅ 導入本地資料庫 (IndexedDB)，解除 5MB 限制，歷史紀錄無限保留！\n✅ 支援一鍵「收藏」對話至筆記本，重點資訊無縫存檔！', 
+                    text: 'NOVA 33.3 升級完畢！\n✅ **筆記多圖上傳**：筆記中心已徹底轉移至原生資料庫，支援無限張圖片，再也不怕壞檔！\n✅ **Word 匯出修復**：修正編碼亂碼並完美支援多圖匯出\n✅ **逐字稿防斷線護盾**：即使引擎嘗試中斷，只要正在錄音，系統就會在背景於 0.25 秒內「強制重啟」逐字稿繼續打字，不再受限短短幾分鐘！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
-                appState.messages.push(welcomeMsg);
-                saveMessageToDB(welcomeMsg);
+                appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
             }
             
             renderAll();
@@ -1382,10 +1450,15 @@
                 let voiceTimer = null; 
                 
                 recognition.onstart = () => { appState.isListening = true; updateVoiceUI(); initialInput = document.getElementById('user-input').value; };
+                
+                // 強制喚醒機制 (防斷線)
                 recognition.onend = () => { 
                     appState.isListening = false; updateVoiceUI(); 
                     if(voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; } 
-                    if (appState.isContinuous) { setTimeout(() => { try { recognition.start(); } catch(e){} }, 100); } 
+                    // 當連續對話開啟，或者「背景正在錄音」時，無條件強制喚醒
+                    if (appState.isContinuous || (mediaRecorder && mediaRecorder.state === 'recording')) { 
+                        setTimeout(() => { try { recognition.start(); } catch(e){} }, 250); 
+                    } 
                 };
                 
                 recognition.onresult = (e) => {
@@ -1406,7 +1479,11 @@
                 let noteVoiceTimer = null;
                 
                 noteRecognition.onstart = () => { appState.isNoteListening = true; updateNoteVoiceUI(); initialInput = document.getElementById('doc-input-main').value; };
-                noteRecognition.onend = () => { appState.isNoteListening = false; updateNoteVoiceUI(); if(noteVoiceTimer) clearTimeout(noteVoiceTimer); };
+                noteRecognition.onend = () => { 
+                    appState.isNoteListening = false; updateNoteVoiceUI(); 
+                    if(noteVoiceTimer) clearTimeout(noteVoiceTimer); 
+                    if (appState.noteVoiceActive) { setTimeout(() => { try { noteRecognition.start(); } catch(e){} }, 250); }
+                };
                 noteRecognition.onresult = (e) => {
                     let currentTranscript = ""; 
                     for (let i = 0; i < e.results.length; ++i) {
@@ -1415,11 +1492,11 @@
                         currentTranscript += text;
                     }
                     const el = document.getElementById('doc-input-main'); const separator = (initialInput && currentTranscript) ? "\n" : ""; el.value = initialInput + separator + currentTranscript.trim();
-                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { noteRecognition.stop(); }, 6000);
+                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 6000);
                 };
             }
             tryGetLocation(true); updateModelUI(); setInterval(checkReminders, 10000);
         };
     </script>
 </body>
-</html>
+    </html>
