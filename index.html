@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 34</title>
+    <title>NOVA 35</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 34</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 35</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 34</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 35</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -230,8 +230,8 @@
                             <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
 
-                        <!-- 隱藏的音檔分析專用 Input -->
-                        <input type="file" id="audio-analyze-input" accept="audio/*,video/*,.webm,.m4a,.mp3,.mp4,.wav" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
+                        <!-- 隱藏的音檔分析專用 Input (修改 accept 屬性為全域，解決手機強制只顯示相簿的問題) -->
+                        <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
 
                         <!-- LINE 風格輸入框 -->
                         <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
@@ -678,7 +678,7 @@
             const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
             appState.keys.gemini = safeGetVal('key-gemini'); appState.keys.groq = safeGetVal('key-groq'); appState.keys.cohere = safeGetVal('key-cohere'); appState.keys.openai = safeGetVal('key-openai'); appState.keys.grok = safeGetVal('key-grok'); appState.keys.serpapi = safeGetVal('key-serpapi'); 
             appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.noteDocUrl = safeGetVal('key-note-doc-url'); appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); appState.driveUrl = safeGetVal('key-drive-url'); 
-            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', appState.keys.openai); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
+            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', localStorage.setItem('nova_key_openai', appState.keys.openai)); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
             localStorage.setItem('nova_doc_url', appState.docMonitorUrl); localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); localStorage.setItem('nova_drive_url', appState.driveUrl); 
             updateModelUI(); closeSettings(); addMessage("✅ 設定已儲存", 'system'); 
         }
@@ -699,7 +699,7 @@
         function exportSettings() {
             const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl } };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `NOVA34_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = `NOVA35_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
         }
         function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
         function importSettings(e) {
@@ -806,7 +806,7 @@
             if (!file) { appState.pendingAnalyzeContextId = null; return; }
             
             if (file.size > 20 * 1024 * 1024) { 
-                alert("音檔過大，請上傳小於 20MB 的檔案以確保轉錄順利。");
+                alert("檔案過大，請上傳小於 20MB 的檔案以確保轉錄順利。");
                 e.target.value = '';
                 appState.pendingAnalyzeContextId = null;
                 return;
@@ -1513,7 +1513,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 34 系統升級完畢！\n\n✅ **無縫雲端上傳**：修復了過去錄音上傳時會出現的 CORS 跨域錯誤警告，現在音檔將以無痕模式穩定同步至 Google Drive。\n✅ **真．實體音檔分析**：點擊「選取實體音檔分析」，系統會直接讀取 `.webm`，保證產生 100% 完整的逐字稿並進行摘要整理！\n✅ **分析結果自動儲存**：音檔分析完成後，完整的逐字稿與摘要將會自動附加到您原本的「錄音紀錄」與「語音筆記」中永久保存。', 
+                    text: 'NOVA 35 系統升級完畢！\n\n✅ **修復音檔選取限制**：移除了嚴格的檔案類型過濾，現在點擊「選取實體音檔分析」將強制開啟手機的原生檔案總管 (支援 Google Drive、iCloud 或內部儲存空間)，讓您可以自由選取所有音檔格式，不再受限於圖片庫！\n✅ **無縫雲端上傳**：修復了過去錄音上傳時會出現的 CORS 跨域錯誤警告，現在音檔將以無痕模式穩定同步至 Google Drive。\n✅ **真．實體音檔分析**：點擊「選取實體音檔分析」，系統會直接讀取 `.webm`，保證產生 100% 完整的逐字稿並進行摘要整理！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1611,4 +1611,4 @@
         };
     </script>
 </body>
-                                        </html>
+</html>
