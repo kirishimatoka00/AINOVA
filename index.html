@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 37</title>
+    <title>NOVA 38</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 37</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 38</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 37</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 38</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -187,11 +187,12 @@
                          
                          <!-- Dropdown Model Selection -->
                          <div class="flex space-x-2 ml-auto shrink-0">
-                             <!-- 新增 Gemini 細部分類選單 -->
+                             <!-- 升級版 Gemini 細部分類選單 -->
                              <select id="gemini-sub-model-select" onchange="setGeminiModel(this.value)" class="bg-blue-900 border border-blue-500/50 text-blue-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="gemini-multi">⚡ 智慧切換 (Auto)</option>
-                                 <option value="gemini-3.0-pro">Gemini 3.0 Pro</option>
-                                 <option value="gemini-3.0-flash">Gemini 3.0 Flash</option>
+                                 <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
+                                 <option value="gemini-3.0-flash">Gemini 3 Flash</option>
+                                 <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
                                  <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                              </select>
@@ -240,7 +241,7 @@
                             <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
 
-                        <!-- 隱藏的音檔分析專用 Input (全域 accept，確保手機呼叫檔案總管) -->
+                        <!-- 隱藏的音檔分析專用 Input -->
                         <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
 
                         <!-- LINE 風格輸入框 -->
@@ -1048,39 +1049,37 @@
             if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
             if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
-            // --- DEEP LINKING LOGIC (Universal Links) ---
+            // --- DEEP LINKING LOGIC ---
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
-            if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); window.open(`tel:${emergencyMatch[1]}`, '_self'); return; }
-            
+            if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); window.location.href = `tel:${emergencyMatch[1]}`; return; }
             const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
             if (callMatch) {
                 input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort();
-                addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self');
+                addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.location.href = `tel:${callMatch[1]}`;
                 return;
             }
 
             const appMatch = text.match(/^(?:打開|開啟|open|播放)\s*(youtube|yt|line|fb|facebook|ig|instagram|spotify|地圖|map|maps)(?:\s+(.+))?$/i);
             if (appMatch) {
-                const appName = appMatch[1].toLowerCase(); const query = (appMatch[2] || '').trim(); let url = '';
+                const appName = appMatch[1].toLowerCase(); const query = (appMatch[2] || '').trim(); 
+                let url = ''; let isCustomScheme = false;
                 
-                // 改用 Universal Links (HTTPS)，系統會自動攔截交由原生 APP 處理，若無 APP 則開啟網頁，不報錯。
-                if (appName === 'youtube' || appName === 'yt') url = query ? `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}` : `https://www.youtube.com/`;
-                else if (appName === 'line') url = `https://line.me/R/`;
-                else if (appName === 'ig' || appName === 'instagram') url = `https://www.instagram.com/`;
-                else if (appName === 'fb' || appName === 'facebook') url = `https://www.facebook.com/`;
-                else if (appName === 'spotify') url = query ? `https://open.spotify.com/search/${encodeURIComponent(query)}` : `https://open.spotify.com/`;
-                else if (appName.includes('地圖') || appName.includes('map')) url = query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : `https://www.google.com/maps`;
+                // 社群軟體改回 Custom Scheme 強制喚醒，最為穩定
+                if (appName === 'youtube' || appName === 'yt') { url = query ? `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}` : `https://www.youtube.com/`; }
+                else if (appName === 'line') { url = `line://`; isCustomScheme = true; } 
+                else if (appName === 'ig' || appName === 'instagram') { url = `instagram://`; isCustomScheme = true; }
+                else if (appName === 'fb' || appName === 'facebook') { url = `fb://`; isCustomScheme = true; }
+                else if (appName === 'spotify') { url = query ? `spotify:search:${encodeURIComponent(query)}` : `spotify://`; isCustomScheme = true; }
+                else if (appName.includes('地圖') || appName.includes('map')) { url = query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : `https://www.google.com/maps`; }
                 
                 addMessage(text, 'user'); addMessage(`📱 正在為您開啟 ${appName.toUpperCase()}...`, 'system');
                 
-                // 使用建立 a 標籤點擊的方式，提高行動端繞過彈出阻擋的成功率
-                const a = document.createElement('a');
-                a.href = url;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                if (isCustomScheme) {
+                    window.location.href = url; // 強制呼叫作業系統底層
+                } else {
+                    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                }
 
                 input.value = ''; input.style.height = '44px'; initialInput = ''; return;
             }
@@ -1089,12 +1088,9 @@
             if (navMatch) {
                 const dest = navMatch[1].trim();
                 addMessage(text, 'user'); addMessage(`🗺️ 正在為您規劃路線並導航至：${dest}`, 'system');
-                
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
-                const a = document.createElement('a');
-                a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
-
                 input.value = ''; input.style.height = '44px'; initialInput = ''; return;
             }
             // --------------------------
@@ -1253,16 +1249,17 @@
                 const chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
 
                 if(model === 'gemini') {
-                    // === Gemini 引擎判定 ===
+                    // === Gemini 引擎判定與最新模型導入 ===
                     let selectedModelName = appState.geminiModel;
                     let isAutoRouted = false;
 
-                    // 若選擇 Multi (Auto)，則進行智慧切換
+                    // 智慧切換邏輯 (Multi)
                     if (selectedModelName === 'gemini-multi') {
                         isAutoRouted = true;
-                        selectedModelName = 'gemini-2.5-flash'; // 預設使用高速模型
+                        selectedModelName = 'gemini-3.0-flash'; // 預設使用高速 3.0 Flash 處理一般對話
+                        
                         if (userText.length > 500 || /(深入|詳細|分析|總結|論文|報告|程式碼|複雜|重點摘要|結構化)/.test(userText) || (options.file && options.file.category === 'media')) {
-                            selectedModelName = 'gemini-3.0-pro'; // 遇到複雜需求，自動調用最新的 Pro 模型
+                            selectedModelName = 'gemini-3.1-pro'; // 複雜任務、長文、實體音檔分析自動升級為最新的 3.1 Pro
                         }
                     }
 
@@ -1312,7 +1309,7 @@
                     
                     // 若是由 Multi 智慧引擎切換，加上系統提示
                     if (isAutoRouted) {
-                        outputText += `\n\n*(系統提示：Gemini Multi 智慧引擎已自動為您調用 [${selectedModelName}] 執行此任務)*`;
+                        outputText += `\n\n*(系統提示：Gemini Multi 智慧引擎已自動為您調配 **${selectedModelName}** 執行此任務)*`;
                     }
 
                     return { text: outputText, sources: sources };
@@ -1404,7 +1401,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 37 系統升級完畢！\n\n✅ **APP 完美喚醒 (Universal Links)**：放棄了容易出錯的自訂協定，全面改用官方 Universal Links。現在對著我說「打開 YouTube」或「導航到 台北101」，如果手機有安裝 APP 會自動無縫開啟，若未安裝也會安全地幫您打開網頁版，不再報錯！\n✅ **Gemini 引擎自主選擇 & Multi 智慧切換**：右上角的模型選單加入了 Gemini 專屬下拉選項！您可以強制要求使用最新的 `Gemini 3.0 Pro` 或 `Flash`，或者選擇 `⚡ 智慧切換 (Auto)`，讓系統自己幫您根據任務難度挑選最適合的 API 節省資源並最大化效能！', 
+                    text: 'NOVA 38 系統升級完畢！\n\n✅ **LINE 喚醒完美修復**：重新編寫底層協定，強制透過作業系統直接喚醒社群軟體 (LINE/IG/FB)，不再被瀏覽器阻擋！\n✅ **全新 Gemini 3 上線**：右上角的模型選單已同步納入最新的 `Gemini 3.1 Pro`、`Gemini 3 Flash` 與 `Gemini 3.1 Flash-Lite`！\n✅ **Multi 智慧切換**：維持 `⚡ 智慧切換 (Auto)` 設定，系統會自動在高速的 3 Flash 與強大的 3.1 Pro 之間遊走，幫您平衡速度與精準度。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1491,4 +1488,4 @@
         };
     </script>
 </body>
-    </html>
+                             </html>
