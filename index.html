@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 35</title>
+    <title>NOVA 36</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 35</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 36</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 35</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 36</span></div>
                 
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
@@ -230,7 +230,7 @@
                             <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
 
-                        <!-- 隱藏的音檔分析專用 Input (修改 accept 屬性為全域，解決手機強制只顯示相簿的問題) -->
+                        <!-- 隱藏的音檔分析專用 Input (全域 accept，確保手機呼叫檔案總管) -->
                         <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
 
                         <!-- LINE 風格輸入框 -->
@@ -244,7 +244,7 @@
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
                             <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
                             
-                            <textarea id="user-input" rows="1" placeholder="對話、搜尋、撥打..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-2.5 my-0.5 leading-relaxed scrollbar-none" style="min-height: 44px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
+                            <textarea id="user-input" rows="1" placeholder="對話、搜尋、打開APP..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-2.5 my-0.5 leading-relaxed scrollbar-none" style="min-height: 44px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
                             
                             <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-2 px-3 mb-1 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
@@ -409,18 +409,14 @@
         let recognition = null; let noteRecognition = null; let voiceTimer = null; let initialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
 
-        // --- IndexedDB 全面初始化 (涵蓋所有巨量資料) ---
+        // --- IndexedDB 全面初始化 ---
         const DB_NAME = 'NovaDB';
-        const DB_VERSION = 2; // 升級資料庫版本以支援 notes, todos, audioRecords
+        const DB_VERSION = 2;
         let db;
 
         function initDB() {
             return new Promise((resolve, reject) => {
-                if (!window.indexedDB) {
-                    console.warn("瀏覽器不支援 IndexedDB，紀錄將無法永久保存。");
-                    resolve(null);
-                    return;
-                }
+                if (!window.indexedDB) { console.warn("瀏覽器不支援 IndexedDB"); resolve(null); return; }
                 const req = indexedDB.open(DB_NAME, DB_VERSION);
                 req.onupgradeneeded = (e) => {
                     db = e.target.result;
@@ -435,54 +431,31 @@
         }
 
         function loadStoreFromDB(storeName) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 if (!db) return resolve([]);
                 try {
-                    const tx = db.transaction(storeName, 'readonly');
-                    const req = tx.objectStore(storeName).getAll();
-                    req.onsuccess = () => resolve(req.result || []);
-                    req.onerror = () => resolve([]);
+                    const tx = db.transaction(storeName, 'readonly'); const req = tx.objectStore(storeName).getAll();
+                    req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]);
                 } catch(e) { resolve([]); }
             });
         }
 
-        function saveToDB(storeName, item) {
-            if (!db) return;
-            try {
-                const tx = db.transaction(storeName, 'readwrite');
-                tx.objectStore(storeName).put(item);
-            } catch(e) { console.error("DB Save Error:", e); }
-        }
-
-        function deleteFromDB(storeName, id) {
-            if (!db) return;
-            try {
-                const tx = db.transaction(storeName, 'readwrite');
-                tx.objectStore(storeName).delete(id);
-            } catch(e) { console.error("DB Delete Error:", e); }
-        }
-
-        function clearStoreDB(storeName) {
-            if (!db) return;
-            try {
-                const tx = db.transaction(storeName, 'readwrite');
-                tx.objectStore(storeName).clear();
-            } catch(e) { console.error("DB Clear Error:", e); }
-        }
+        function saveToDB(storeName, item) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).put(item); } catch(e) {} }
+        function deleteFromDB(storeName, id) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).delete(id); } catch(e) {} }
+        function clearStoreDB(storeName) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).clear(); } catch(e) {} }
 
         // --- 應用程式狀態 ---
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-4-1-fast-reasoning', 
             chatFile: null, 
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
-            messages: [], notes: [], todos: [], audioRecords: [], // 初始化皆為空，等待 DB 讀取
+            messages: [], notes: [], todos: [], audioRecords: [], 
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
             keys: { gemini: localStorage.getItem('nova_key_gemini')||'', groq: localStorage.getItem('nova_key_groq')||'', cohere: localStorage.getItem('nova_key_cohere')||'', openai: localStorage.getItem('nova_key_openai')||'', grok: localStorage.getItem('nova_key_grok')||'', serpapi: localStorage.getItem('nova_key_serpapi')||'' },
             isThinking: false, isListening: false, isNoteListening: false, noteVoiceActive: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
-            pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null, sosTimer: null, sosCount: 10, isSOSDrill: false,
+            pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
             recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null,
-            // 音檔轉錄分析專用狀態
             pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "" 
         };
         
@@ -508,26 +481,21 @@
             container.innerHTML = appState.messages.map(msg => { 
                 const isUser = msg.sender === 'user'; const modelInfo = isUser ? null : MODEL_CONFIG[msg.model]; 
                 let sourcesHTML = msg.sources?.length ? `<div class="mt-3 pt-3 border-t border-slate-700/50"><p class="text-[10px] text-slate-400 mb-1 font-bold">來源：</p><div class="flex flex-wrap gap-2">${msg.sources.map((s,i)=>`<a href="${s.uri}" target="_blank" class="text-[10px] bg-slate-950/50 text-blue-400 px-2 py-1 rounded border border-slate-700/50 block truncate max-w-[150px]">${i+1}. ${s.title}</a>`).join('')}</div></div>` : ''; 
-                
                 let mediaHTML = '';
                 if (msg.file) {
-                    if (msg.file.category === 'image' && msg.file.data) {
-                        mediaHTML = `<img src="${msg.file.data}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">`;
-                    } else {
+                    if (msg.file.category === 'image' && msg.file.data) mediaHTML = `<img src="${msg.file.data}" class="max-w-xs md:max-w-sm rounded-lg border border-slate-700/50 mb-2 shadow-sm">`;
+                    else {
                         let iconType = msg.file.category === 'image' ? 'ph-image' : 'ph-file';
                         if (msg.file.mime && (msg.file.mime.includes('audio') || msg.file.mime.includes('video'))) iconType = 'ph-file-audio';
                         mediaHTML = `<div class="flex items-center gap-2 bg-slate-950/50 p-2 rounded border border-slate-700/50 mb-2 max-w-xs overflow-hidden"><i class="ph-fill ${iconType} text-blue-400 text-xl shrink-0"></i><span class="text-xs text-slate-300 truncate">${escapeHtml(msg.file.name)}</span></div>`;
                     }
                 }
-
                 return `<div class="group flex ${isUser ? 'justify-end' : 'justify-start items-start space-x-3'} fade-in relative mb-4">
                     ${!isUser ? `<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${modelInfo?.bg||'bg-slate-700'}"><i class="ph-fill ${modelInfo?.icon||'ph-robot'} text-white text-sm"></i></div>` : ''}
                     <div class="msg-group relative max-w-[90%] md:max-w-[80%] rounded-2xl p-4 shadow-sm ${isUser ? 'bg-slate-800 text-white rounded-br-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'}">
                         ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-1 block ${modelInfo?.color||'text-slate-400'} opacity-80">${modelInfo?.name||'System'}</span>` : ''}
                         ${mediaHTML} <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div> ${sourcesHTML}
                         <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
-                        
-                        <!-- 收藏與刪除動作按鈕 -->
                         <div class="msg-actions absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onclick="favoriteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-yellow-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm" title="收藏至筆記"><i class="ph-bold ph-star text-xs"></i></button>
                             <button onclick="deleteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm" title="刪除"><i class="ph-bold ph-trash text-xs"></i></button>
@@ -543,6 +511,7 @@
             else if(!show && el) el.remove(); 
         }
 
+        // --- View Renderers ---
         function renderTodos() { 
             const el = document.getElementById('full-todo-list'); const mini = document.getElementById('mini-todo-list');
             if(el) el.innerHTML=appState.todos.map(t=>`<div class="group bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-slate-600 transition-all slide-in"><div class="flex items-center space-x-4"><button onclick="toggleTodo(${t.id})" class="text-slate-500 hover:text-blue-400"><i class="ph${t.done?'-fill ph-check-circle text-green-500':' ph-circle'} text-2xl"></i></button><div><p class="text-base ${t.done?'line-through text-slate-600':'text-slate-200'}">${escapeHtml(t.text)}</p><span class="text-xs text-slate-500">${t.time}</span></div></div><div class="flex items-center space-x-2"><button onclick="toggleTodoAlarm(${t.id})" class="${t.alertEnabled !== false ? 'text-yellow-500' : 'text-slate-600'} hover:text-yellow-400 p-2" title="${t.alertEnabled !== false ? '關閉提醒' : '開啟提醒'}"><i class="ph-bold ${t.alertEnabled !== false ? 'ph-bell-ringing' : 'ph-bell-slash'}"></i></button><button onclick="openTodoEdit(${t.id})" class="text-slate-500 hover:text-blue-400 p-2" title="編輯"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTodo(${t.id})" class="text-slate-500 hover:text-red-400 p-2" title="刪除"><i class="ph-bold ph-trash"></i></button></div></div>`).join('')||'<p class="text-slate-500 text-center mt-10">無任務</p>'; 
@@ -554,16 +523,10 @@
             if(el) el.innerHTML=appState.notes.map(n=>{
                 const isAudio = n.type === 'audio'; const icon = isAudio ? '<i class="ph-fill ph-microphone text-purple-400"></i>' : '<i class="ph-fill ph-notebook text-emerald-400"></i>';
                 let actionButtons = `<button onclick="exportNoteWord(${n.id})" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors" title="匯出為Word"><i class="ph-bold ph-download-simple"></i> Word</button>`;
-                
                 if(isAudio) actionButtons += `<button onclick="summarizeVoiceNote(${n.id})" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> 選取音檔以轉錄並分析</button>`;
-                
-                // Multi-image display
                 let imgHtml = '';
                 const displayImages = n.images || (n.image ? [n.image] : []);
-                if (displayImages.length > 0) {
-                    imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
-                }
-
+                if (displayImages.length > 0) imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
                 let linkHtml = n.driveUrl ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-link"></i> 開啟雲端錄音檔</a></div>` : '';
                 return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit(${n.id})" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteNote(${n.id})" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}<div class="text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin whitespace-pre-wrap">${formatMessage(n.content)}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${actionButtons}</div></div>`;
             }).join('')||'<p class="text-slate-500 text-center col-span-3 mt-10">無筆記</p>'; 
@@ -614,46 +577,22 @@
             else { btn.classList.remove('text-red-400'); btn.classList.add('text-slate-500'); icon.classList.remove('animate-pulse'); }
         }
 
-        // --- ACTIONS ---
+        // --- Core Interactions ---
         function addMessage(text, sender, model, sources=[], file=null) { 
             const newMsg = {id:Date.now(), text, sender, model, sources, file, time:getTime()};
-            appState.messages.push(newMsg); 
-            saveToDB('messages', newMsg); 
-            renderMessages(); 
+            appState.messages.push(newMsg); saveToDB('messages', newMsg); renderMessages(); 
         }
 
-        function deleteMessage(id) { 
-            appState.messages = appState.messages.filter(m => m.id !== id); 
-            deleteFromDB('messages', id); 
-            renderMessages(); 
-        }
-
-        function clearChatHistory() { 
-            if(confirm("確定要清空所有對話紀錄嗎？")) { 
-                appState.messages = []; 
-                clearStoreDB('messages'); 
-                renderMessages(); 
-            } 
-        }
-
-        // --- 收藏至筆記 ---
+        function deleteMessage(id) { appState.messages = appState.messages.filter(m => m.id !== id); deleteFromDB('messages', id); renderMessages(); }
+        function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; clearStoreDB('messages'); renderMessages(); } }
         function favoriteMessage(id) {
-            const msg = appState.messages.find(m => m.id === id);
-            if (!msg) return;
-
+            const msg = appState.messages.find(m => m.id === id); if (!msg) return;
             let senderName = msg.sender === 'user' ? '你' : (msg.sender === 'system' ? '系統提示' : (MODEL_CONFIG[msg.model]?.name || '系統'));
             let content = `[${senderName} 的對話紀錄]\n${msg.text}`;
             if (msg.sources && msg.sources.length > 0) content += `\n\n[參考來源]\n` + msg.sources.map((s,i) => `${i+1}. ${s.title} - ${s.uri}`).join('\n');
-
-            let imagesArray = [];
-            if (msg.file && msg.file.category === 'image' && msg.file.data) imagesArray.push(msg.file.data);
-
-            const newNote = {
-                id: Date.now(), title: `⭐ 收藏對話 - ${msg.time}`, content: content, date: new Date().toLocaleString(), type: 'text',
-                images: imagesArray, image: imagesArray.length > 0 ? imagesArray[0] : null
-            };
-            appState.notes.unshift(newNote); saveToDB('notes', newNote); renderNotes();
-            addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
+            let imagesArray = []; if (msg.file && msg.file.category === 'image' && msg.file.data) imagesArray.push(msg.file.data);
+            const newNote = { id: Date.now(), title: `⭐ 收藏對話 - ${msg.time}`, content: content, date: new Date().toLocaleString(), type: 'text', images: imagesArray, image: imagesArray.length > 0 ? imagesArray[0] : null };
+            appState.notes.unshift(newNote); saveToDB('notes', newNote); renderNotes(); addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
         }
 
         function toggleTodo(id){ const t=appState.todos.find(x=>x.id===id); if(t){t.done=!t.done;saveToDB('todos', t);renderTodos();} }
@@ -678,12 +617,12 @@
             const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
             appState.keys.gemini = safeGetVal('key-gemini'); appState.keys.groq = safeGetVal('key-groq'); appState.keys.cohere = safeGetVal('key-cohere'); appState.keys.openai = safeGetVal('key-openai'); appState.keys.grok = safeGetVal('key-grok'); appState.keys.serpapi = safeGetVal('key-serpapi'); 
             appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.noteDocUrl = safeGetVal('key-note-doc-url'); appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); appState.driveUrl = safeGetVal('key-drive-url'); 
-            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', localStorage.setItem('nova_key_openai', appState.keys.openai)); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
+            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', appState.keys.openai); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
             localStorage.setItem('nova_doc_url', appState.docMonitorUrl); localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); localStorage.setItem('nova_drive_url', appState.driveUrl); 
             updateModelUI(); closeSettings(); addMessage("✅ 設定已儲存", 'system'); 
         }
 
-        // --- TEST CONNECTION ---
+        // --- System connections & Settings ---
         function testDocConnection() {
             const url = document.getElementById('key-doc-url').value.trim(); const statusEl = document.getElementById('doc-monitor-status');
             if(!url) return alert("請輸入系統代理 Google Doc URL");
@@ -695,11 +634,10 @@
                 .catch(err => { alert("連線失敗：" + err.message); statusEl.innerText = "測試失敗"; statusEl.className = "text-[10px] text-red-400 font-bold"; });
             });
         }
-        
         function exportSettings() {
             const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl } };
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `NOVA35_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = `NOVA_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
         }
         function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
         function importSettings(e) {
@@ -731,40 +669,28 @@
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
         function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手掌握)", false); }
         
-        function toggleVoice() {
-            if (appState.isListening) { recognition.stop(); }
-            else { try { recognition.start(); } catch(e){} }
-        }
+        function toggleVoice() { if (appState.isListening) recognition.stop(); else { try { recognition.start(); } catch(e){} } }
         function toggleContinuous() {
-            appState.isContinuous = !appState.isContinuous;
-            const btn = document.getElementById('continuous-btn');
+            appState.isContinuous = !appState.isContinuous; const btn = document.getElementById('continuous-btn');
             if (appState.isContinuous) { btn.classList.add('text-emerald-400', 'bg-emerald-900/30'); btn.classList.remove('text-slate-500'); }
             else { btn.classList.remove('text-emerald-400', 'bg-emerald-900/30'); btn.classList.add('text-slate-500'); }
         }
-        function toggleNoteVoice() {
-            if (appState.isNoteListening) { appState.noteVoiceActive = false; noteRecognition.stop(); }
-            else { appState.noteVoiceActive = true; try { noteRecognition.start(); } catch(e){} }
-        }
-
+        function toggleNoteVoice() { if (appState.isNoteListening) { appState.noteVoiceActive = false; noteRecognition.stop(); } else { appState.noteVoiceActive = true; try { noteRecognition.start(); } catch(e){} } }
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
         function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; if(el.value === '') el.style.height = '44px'; }
         
-        // --- CHAT FILE & IMAGE UPLOAD (UNIVERSAL) & MIME TYPE FIX ---
+        // --- CHAT FILE UPLOAD ---
         function triggerChatImageUpload() { document.getElementById('chat-file-input').click(); }
-        
         function handleChatFileSelect(e) {
             const file = e.target.files[0]; if (!file) return;
             if (file.size > 20 * 1024 * 1024) { alert("檔案過大，請上傳小於 20MB 的檔案以確保穩定性。"); e.target.value = ''; return; }
-
             const isText = file.type.startsWith('text/') || !!file.name.match(/\.(txt|csv|md|json|js|html|css|py|cpp|c|java)$/i);
             const isImage = file.type.startsWith('image/');
             const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf' || !!file.name.match(/\.(pdf|mp3|wav|mp4|webm|m4a)$/i);
             let category = isImage ? 'image' : (isText ? 'text' : (isMedia ? 'media' : 'unknown'));
             if (category === 'unknown') category = 'media'; 
-            
             if (isText && file.size > 2 * 1024 * 1024) alert("提醒：純文字檔案較大，可能超出 AI 分析上限，建議擷取重點上傳。");
 
-            // 修正 WebM 等多媒體的 MIME Type，避免 Gemini API 解析失敗
             let mimeType = file.type || 'application/octet-stream';
             const filenameLower = file.name.toLowerCase();
             if (filenameLower.endsWith('.webm')) mimeType = 'audio/webm';
@@ -775,66 +701,34 @@
             else if (filenameLower.endsWith('.pdf')) mimeType = 'application/pdf';
 
             const reader = new FileReader();
-            reader.onload = function(evt) {
-                appState.chatFile = { category: category, data: evt.target.result, mime: mimeType, name: file.name };
-                showFilePreview(file.name, isImage, evt.target.result);
-            };
+            reader.onload = function(evt) { appState.chatFile = { category: category, data: evt.target.result, mime: mimeType, name: file.name }; showFilePreview(file.name, isImage, evt.target.result); };
             if (category === 'text') reader.readAsText(file); else reader.readAsDataURL(file);
             e.target.value = ''; 
         }
 
         function showFilePreview(name, isImage, dataUrl) {
-            const container = document.getElementById('chat-file-preview-container');
-            const imgEl = document.getElementById('chat-image-preview');
-            const iconEl = document.getElementById('chat-file-icon-wrapper');
-            const nameEl = document.getElementById('chat-file-name');
-            
-            container.classList.remove('hidden'); nameEl.innerText = name;
+            const container = document.getElementById('chat-file-preview-container'); const imgEl = document.getElementById('chat-image-preview'); const iconEl = document.getElementById('chat-file-icon-wrapper');
+            container.classList.remove('hidden'); document.getElementById('chat-file-name').innerText = name;
             if (isImage && dataUrl) { imgEl.src = dataUrl; imgEl.classList.remove('hidden'); iconEl.classList.add('hidden'); iconEl.classList.remove('flex'); } 
             else { imgEl.classList.add('hidden'); imgEl.src = ''; iconEl.classList.remove('hidden'); iconEl.classList.add('flex'); }
             document.getElementById('user-input').focus();
         }
+        function clearChatFile() { appState.chatFile = null; document.getElementById('chat-file-preview-container').classList.add('hidden'); document.getElementById('chat-image-preview').src = ''; }
 
-        function clearChatFile() {
-            appState.chatFile = null;
-            document.getElementById('chat-file-preview-container').classList.add('hidden'); document.getElementById('chat-image-preview').src = '';
-        }
-
-        // --- NEW: ADVANCED AUDIO ANALYZE FLOW ---
+        // --- AUDIO FILE ANALYSIS ---
         function handleAudioAnalyzeSelect(e) {
-            const file = e.target.files[0];
-            if (!file) { appState.pendingAnalyzeContextId = null; return; }
-            
-            if (file.size > 20 * 1024 * 1024) { 
-                alert("檔案過大，請上傳小於 20MB 的檔案以確保轉錄順利。");
-                e.target.value = '';
-                appState.pendingAnalyzeContextId = null;
-                return;
-            }
+            const file = e.target.files[0]; if (!file) { appState.pendingAnalyzeContextId = null; return; }
+            if (file.size > 20 * 1024 * 1024) { alert("檔案過大，請上傳小於 20MB 的檔案以確保轉錄順利。"); e.target.value = ''; appState.pendingAnalyzeContextId = null; return; }
 
             let mimeType = file.type || 'application/octet-stream';
             const filenameLower = file.name.toLowerCase();
-            if (filenameLower.endsWith('.webm')) mimeType = 'audio/webm';
-            else if (filenameLower.endsWith('.mp3')) mimeType = 'audio/mp3';
-            else if (filenameLower.endsWith('.wav')) mimeType = 'audio/wav';
-            else if (filenameLower.endsWith('.m4a')) mimeType = 'audio/m4a';
-            else if (filenameLower.endsWith('.mp4')) mimeType = 'video/mp4';
+            if (filenameLower.endsWith('.webm')) mimeType = 'audio/webm'; else if (filenameLower.endsWith('.mp3')) mimeType = 'audio/mp3'; else if (filenameLower.endsWith('.wav')) mimeType = 'audio/wav'; else if (filenameLower.endsWith('.m4a')) mimeType = 'audio/m4a'; else if (filenameLower.endsWith('.mp4')) mimeType = 'video/mp4';
 
             const reader = new FileReader();
             reader.onload = function(evt) {
-                appState.chatFile = { 
-                    category: 'media', 
-                    data: evt.target.result, 
-                    mime: mimeType, 
-                    name: file.name 
-                };
-                
-                showFilePreview(file.name, false, null);
-                switchTab('dashboard');
-                document.getElementById('user-input').value = appState.pendingAnalyzePrompt;
-                
-                e.target.value = '';
-                handleSendMessage(); 
+                appState.chatFile = { category: 'media', data: evt.target.result, mime: mimeType, name: file.name };
+                showFilePreview(file.name, false, null); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; e.target.value = ''; handleSendMessage(); 
             };
             reader.readAsDataURL(file);
         }
@@ -845,16 +739,12 @@
                 for (let i = 0; i < items.length; i++) {
                     if (items[i].type.indexOf("image") !== -1) {
                         const blob = items[i].getAsFile(); const reader = new FileReader();
-                        reader.onload = function(evt) {
-                            appState.chatFile = { category: 'image', data: evt.target.result, mime: blob.type, name: '剪貼簿圖片.png' };
-                            showFilePreview('剪貼簿圖片', true, evt.target.result);
-                        };
+                        reader.onload = function(evt) { appState.chatFile = { category: 'image', data: evt.target.result, mime: blob.type, name: '剪貼簿圖片.png' }; showFilePreview('剪貼簿圖片', true, evt.target.result); };
                         reader.readAsDataURL(blob); e.preventDefault(); return;
                     }
                 }
                 return;
             }
-
             const items = (e.clipboardData || window.clipboardData).items; if (!items) return;
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf("image") !== -1) {
@@ -868,92 +758,60 @@
                 }
             }
         }
-        
         function handleNoteKeydown(e) {
             if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
             if (appState.pastedImageBase64) {
                  const docInput = document.getElementById('doc-input-main');
-                 if (docInput && (docInput.value === "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]" || docInput.value === "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]")) {
-                     appState.pastedImageBase64 = null; const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden'); docInput.value = "";
-                 }
+                 if (docInput && (docInput.value === "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]" || docInput.value === "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]")) { appState.pastedImageBase64 = null; const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden'); docInput.value = ""; }
             }
             if (e.ctrlKey && e.key === 'Enter') handleDocWriteBtn();
         }
-        
         function clearNoteInput() {
              const docInputMain = document.getElementById('doc-input-main'); const docInputSub = document.getElementById('doc-input-sub');
              if(docInputMain) docInputMain.value = ''; if(docInputSub) docInputSub.value = ''; appState.pastedImageBase64 = null;
              const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden');
         }
 
+        // --- Notebook Handlers ---
         function setActiveNotebook(num) {
-            appState.activeNotebook = num;
-            const btn1 = document.getElementById('btn-nb-1'); const btn2 = document.getElementById('btn-nb-2'); const label = document.getElementById('active-notebook-label');
-            if(num === 1) {
-                btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white';
-                btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50';
-                label.innerText = '* 目前寫入目標：筆記本 A (URL 1)';
-            } else {
-                btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-teal-600 text-white';
-                btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50';
-                label.innerText = '* 目前寫入目標：筆記本 B (URL 2)';
-            }
+            appState.activeNotebook = num; const btn1 = document.getElementById('btn-nb-1'); const btn2 = document.getElementById('btn-nb-2'); const label = document.getElementById('active-notebook-label');
+            if(num === 1) { btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white'; btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50'; label.innerText = '* 目前寫入目標：筆記本 A (URL 1)'; } 
+            else { btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-teal-600 text-white'; btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50'; label.innerText = '* 目前寫入目標：筆記本 B (URL 2)'; }
         }
-
         function setWriteMode(mode) {
             appState.writeMode = mode;
-            ['text', 'image', 'link'].forEach(m => {
-                const btn = document.getElementById(`btn-mode-${m}`); if(!btn) return;
-                if(m === mode) btn.className = 'text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all';
-                else btn.className = 'text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all';
-            });
-            const mainInput = document.getElementById('doc-input-main'); const subInput = document.getElementById('doc-input-sub');
-            if(!mainInput || !subInput) return;
-            if(mode === 'text') { mainInput.placeholder = "輸入文字內容，或直接 Ctrl+V 貼上圖片..."; subInput.classList.add('hidden'); } 
-            else if (mode === 'image') { mainInput.placeholder = "輸入圖片網址 (https://...)"; subInput.classList.add('hidden'); } 
-            else if (mode === 'link') { mainInput.placeholder = "輸入連結顯示文字"; subInput.placeholder = "輸入連結網址 (https://...)"; subInput.classList.remove('hidden'); }
+            ['text', 'image', 'link'].forEach(m => { const btn = document.getElementById(`btn-mode-${m}`); if(!btn) return; if(m === mode) btn.className = 'text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all'; else btn.className = 'text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all'; });
+            const mainInput = document.getElementById('doc-input-main'); const subInput = document.getElementById('doc-input-sub'); if(!mainInput || !subInput) return;
+            if(mode === 'text') { mainInput.placeholder = "輸入文字內容，或直接 Ctrl+V 貼上圖片..."; subInput.classList.add('hidden'); } else if (mode === 'image') { mainInput.placeholder = "輸入圖片網址 (https://...)"; subInput.classList.add('hidden'); } else if (mode === 'link') { mainInput.placeholder = "輸入連結顯示文字"; subInput.placeholder = "輸入連結網址 (https://...)"; subInput.classList.remove('hidden'); }
         }
-
         async function handleDocWriteBtn() {
-            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
-            if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
-            
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
             const mainInput = document.getElementById('doc-input-main'); const subInput = document.getElementById('doc-input-sub'); if(!mainInput) return;
             const mainVal = mainInput.value.trim(); const subVal = subInput ? subInput.value.trim() : ''; const sendBtn = document.getElementById('note-send-btn');
-            
             let payload = {}; let currentMode = appState.writeMode || 'text';
             if (currentMode === 'image' && !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) currentMode = 'text';
             
             if (appState.pastedImageBase64 && (mainVal.includes("[已偵測到"))) { payload = { type: 'image_base64', content: appState.pastedImageBase64 };
             } else {
                 if(!mainVal && currentMode !== 'image_base64') return; 
-                if(currentMode === 'text') payload = { type: 'text', content: mainVal };
-                else if (currentMode === 'image') payload = { type: 'image', content: mainVal };
-                else if (currentMode === 'link') { if(!subVal) return alert("請輸入連結網址"); payload = { type: 'link', text: mainVal, content: subVal }; }
+                if(currentMode === 'text') payload = { type: 'text', content: mainVal }; else if (currentMode === 'image') payload = { type: 'image', content: mainVal }; else if (currentMode === 'link') { if(!subVal) return alert("請輸入連結網址"); payload = { type: 'link', text: mainVal, content: subVal }; }
             }
-            
             if(sendBtn) {
                 const originalText = sendBtn.innerHTML; sendBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> ⏳ 寫入中...'; sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
-                try { await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system'); clearNoteInput();
-                } catch(e) { alert("寫入失敗，請檢查 URL"); } finally { sendBtn.innerHTML = originalText; sendBtn.classList.remove('opacity-70', 'cursor-not-allowed'); }
+                try { await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system'); clearNoteInput(); } 
+                catch(e) { alert("寫入失敗，請檢查 URL"); } finally { sendBtn.innerHTML = originalText; sendBtn.classList.remove('opacity-70', 'cursor-not-allowed'); }
             }
         }
-
-        function openNoteDocViewer() { 
-            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
-            if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`);
-            document.getElementById('doc-viewer-modal').classList.remove('hidden'); refreshNoteDocView(); 
-        }
+        function openNoteDocViewer() { const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`); document.getElementById('doc-viewer-modal').classList.remove('hidden'); refreshNoteDocView(); }
         function closeDocViewer() { document.getElementById('doc-viewer-modal').classList.add('hidden'); }
         async function refreshNoteDocView() {
             const area = document.getElementById('doc-content-area'); if(!area) return;
             const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
             area.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 gap-2"><div class="dot-flashing bg-slate-400"></div> 讀取中...</div>';
-            try { const res = await fetch(targetUrl); const text = await res.text(); area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>'; } 
-            catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
+            try { const res = await fetch(targetUrl); const text = await res.text(); area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>'; } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
         }
 
-        // --- ENHANCED EDIT ACTIONS ---
+        // --- Note Edit Actions ---
         function openTodoEdit(id) {
             const t = appState.todos.find(x => x.id === id); if(!t) return;
             document.getElementById('edit-todo-id').value = t.id; document.getElementById('edit-todo-text').value = t.text; document.getElementById('edit-todo-time').value = t.time !== '手動' ? t.time : '';
@@ -964,11 +822,7 @@
             const id = parseInt(document.getElementById('edit-todo-id').value); const t = appState.todos.find(x => x.id === id); if(!t) return;
             const newText = document.getElementById('edit-todo-text').value.trim(); const newTimeStr = document.getElementById('edit-todo-time').value.trim();
             if(newText) t.text = newText;
-            if (newTimeStr && newTimeStr !== t.time) {
-                const timeInfo = parseTimeNatural(newTimeStr);
-                if (timeInfo.complete) { t.time = new Date(timeInfo.timestamp).toLocaleString(); t.alertTime = timeInfo.timestamp; t.alerted = false; } 
-                else { t.time = newTimeStr; t.alerted = true; }
-            }
+            if (newTimeStr && newTimeStr !== t.time) { const timeInfo = parseTimeNatural(newTimeStr); if (timeInfo.complete) { t.time = new Date(timeInfo.timestamp).toLocaleString(); t.alertTime = timeInfo.timestamp; t.alerted = false; } else { t.time = newTimeStr; t.alerted = true; } }
             saveToDB('todos', t); renderTodos(); closeTodoEdit();
         }
         function toggleTodoAlarm(id) { const t = appState.todos.find(x => x.id === id); if(t) { t.alertEnabled = t.alertEnabled === false ? true : false; saveToDB('todos', t); renderTodos(); } }
@@ -976,90 +830,41 @@
         function openNoteEdit(id) {
             const n = appState.notes.find(x => x.id === id); if(!n) return;
             document.getElementById('edit-note-id').value = n.id; document.getElementById('edit-note-title').value = n.title; document.getElementById('edit-note-content').value = n.content;
-            
-            // 讀取多圖 (相容舊版單圖)
-            appState.editNoteImagesBase64 = n.images ? [...n.images] : (n.image ? [n.image] : []);
-            renderNoteEditImages();
+            appState.editNoteImagesBase64 = n.images ? [...n.images] : (n.image ? [n.image] : []); renderNoteEditImages();
             document.getElementById('note-edit-modal').classList.remove('hidden');
         }
         function closeNoteEdit() { document.getElementById('note-edit-modal').classList.add('hidden'); }
-
         async function handleNoteEditImage(e) {
             const files = Array.from(e.target.files); if (!files.length) return;
-            const promises = files.map(file => new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onload = evt => resolve(evt.target.result);
-                reader.readAsDataURL(file);
-            }));
-            const base64Images = await Promise.all(promises);
-            appState.editNoteImagesBase64 = [...(appState.editNoteImagesBase64 || []), ...base64Images];
-            renderNoteEditImages();
-            e.target.value = ''; // Reset input
+            const promises = files.map(file => new Promise(resolve => { const reader = new FileReader(); reader.onload = evt => resolve(evt.target.result); reader.readAsDataURL(file); }));
+            const base64Images = await Promise.all(promises); appState.editNoteImagesBase64 = [...(appState.editNoteImagesBase64 || []), ...base64Images];
+            renderNoteEditImages(); e.target.value = ''; 
         }
-
         function renderNoteEditImages() {
             const container = document.getElementById('edit-note-img-preview-container');
-            if(!appState.editNoteImagesBase64 || appState.editNoteImagesBase64.length === 0) {
-                container.classList.add('hidden'); container.innerHTML = ''; return;
-            }
+            if(!appState.editNoteImagesBase64 || appState.editNoteImagesBase64.length === 0) { container.classList.add('hidden'); container.innerHTML = ''; return; }
             container.classList.remove('hidden');
             container.innerHTML = appState.editNoteImagesBase64.map((img, i) => `
-                <div class="relative inline-block mt-2">
-                    <img src="${img}" class="h-24 w-24 object-cover rounded border border-slate-700">
-                    <button onclick="removeNoteEditImage(${i})" class="absolute -top-2 -right-2 bg-slate-800 text-red-400 rounded-full p-1 shadow hover:bg-slate-700 transition-colors" title="移除此圖"><i class="ph-bold ph-x text-[10px]"></i></button>
-                </div>
+                <div class="relative inline-block mt-2"><img src="${img}" class="h-24 w-24 object-cover rounded border border-slate-700"><button onclick="removeNoteEditImage(${i})" class="absolute -top-2 -right-2 bg-slate-800 text-red-400 rounded-full p-1 shadow hover:bg-slate-700 transition-colors" title="移除此圖"><i class="ph-bold ph-x text-[10px]"></i></button></div>
             `).join('');
         }
-
-        function removeNoteEditImage(idx) {
-            appState.editNoteImagesBase64.splice(idx, 1);
-            renderNoteEditImages();
-        }
-
+        function removeNoteEditImage(idx) { appState.editNoteImagesBase64.splice(idx, 1); renderNoteEditImages(); }
         function saveNoteEdit() {
             const id = parseInt(document.getElementById('edit-note-id').value); const n = appState.notes.find(x => x.id === id); if(!n) return;
             n.title = document.getElementById('edit-note-title').value.trim() || '未命名'; n.content = document.getElementById('edit-note-content').value; 
-            
-            // 儲存多圖陣列，並保留舊版 image 屬性作為相容性
-            n.images = [...appState.editNoteImagesBase64];
-            n.image = n.images.length > 0 ? n.images[0] : null;
-
+            n.images = [...appState.editNoteImagesBase64]; n.image = n.images.length > 0 ? n.images[0] : null;
             saveToDB('notes', n); renderNotes(); closeNoteEdit();
         }
-
         function exportNoteWord(id) {
             const n = appState.notes.find(x=>x.id===id); if(!n) return;
-            
-            let imgTags = '';
-            const displayImages = n.images || (n.image ? [n.image] : []);
-            if (displayImages.length > 0) {
-                imgTags = displayImages.map(img => `<br><br><img src="${img}" style="max-width: 100%;">`).join('');
-            }
-
-            // Word 格式需要加上 BOM (\ufeff) 及特定的 Namespace 以保證多數瀏覽器能正確轉碼下載
-            let htmlContent = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head><meta charset='utf-8'><title>${n.title}</title></head>
-            <body>
-            <h1>${n.title}</h1>
-            <p style="color:gray; font-size:12px;">建立日期: ${n.date}</p>
-            <div style="margin-top:20px; font-family: sans-serif; white-space: pre-wrap;">${n.content.replace(/\n/g, '<br>')}</div>
-            ${imgTags}
-            </body></html>`;
-
+            let imgTags = ''; const displayImages = n.images || (n.image ? [n.image] : []);
+            if (displayImages.length > 0) imgTags = displayImages.map(img => `<br><br><img src="${img}" style="max-width: 100%;">`).join('');
+            let htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${n.title}</title></head><body><h1>${n.title}</h1><p style="color:gray; font-size:12px;">建立日期: ${n.date}</p><div style="margin-top:20px; font-family: sans-serif; white-space: pre-wrap;">${n.content.replace(/\n/g, '<br>')}</div>${imgTags}</body></html>`;
             try {
-                const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); 
-                a.href = url; 
-                a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.doc`; 
-                document.body.appendChild(a); 
-                a.click(); 
-                document.body.removeChild(a); 
-                setTimeout(() => URL.revokeObjectURL(url), 100);
-            } catch (e) {
-                alert("下載失敗，您的瀏覽器可能阻擋了 Blob 生成：" + e.message);
-            }
+                const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' }); const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.doc`; 
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 100);
+            } catch (e) { alert("下載失敗，您的瀏覽器可能阻擋了 Blob 生成：" + e.message); }
         }
 
         async function tryGetLocation(silent=false) { 
@@ -1109,7 +914,7 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        // --- VOICE NOTES & ENHANCED AUDIO RECORDING ---
+        // --- AUDIO RECORDING ---
         function startVoiceNote() { appState.recordingContext = 'note'; switchTab('dashboard'); appState.currentAudioTranscript = ""; startAudioRecording(); }
         async function startAudioRecording() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
@@ -1147,8 +952,6 @@
                 try {
                     const reader = new FileReader(); reader.readAsDataURL(audioBlob);
                     base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
-                    
-                    // 改用 text/plain，避開 OPTIONS 預檢，提高上傳成功率
                     const res = await fetch(appState.driveUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
                     if (res.ok) {
                         const resText = await res.text();
@@ -1158,13 +961,9 @@
                 } catch (e) { 
                     try {
                         if (base64data) {
-                            // 遇到 CORS 錯誤時，改用無痕 (no-cors) 傳送。確保送出但不要求讀取回傳。
                             await fetch(appState.driveUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
-                            finalDriveUrl = "https://drive.google.com/"; 
-                            addMessage(`✅ 音檔已成功同步至 Google Drive`, 'system');
-                        } else {
-                            throw new Error('無法讀取音檔內容');
-                        }
+                            finalDriveUrl = "https://drive.google.com/"; addMessage(`✅ 音檔已成功同步至 Google Drive`, 'system');
+                        } else throw new Error('無法讀取音檔內容');
                     } catch(err) { addMessage(`❌ 雲端同步失敗: 請檢查設定中的 URL 是否正確。(${err.message})`, 'system'); }
                 }
             }
@@ -1187,9 +986,7 @@
             const r = appState.audioRecords.find(x => x.id === id); if (!r) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
             if(!confirm(`即將對「${r.title}」進行深度分析。\n\n請在接下來的視窗中，選取您剛才下載或上傳至 Drive 的原始音檔 (.webm, .m4a 等)。`)) return;
-            
-            appState.pendingAnalyzeContextId = id;
-            appState.pendingAnalyzeType = 'audioRecord';
+            appState.pendingAnalyzeContextId = id; appState.pendingAnalyzeType = 'audioRecord';
             appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。`;
             document.getElementById('audio-analyze-input').click();
         }
@@ -1198,9 +995,7 @@
             const n = appState.notes.find(x => x.id === id); if (!n) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
             if(!confirm(`即將對「${n.title}」進行深度分析。\n\n請在接下來的視窗中，選取該語音筆記的原始音檔 (.webm, .m4a 等)。`)) return;
-            
-            appState.pendingAnalyzeContextId = id;
-            appState.pendingAnalyzeType = 'voiceNote';
+            appState.pendingAnalyzeContextId = id; appState.pendingAnalyzeType = 'voiceNote';
             appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。`;
             document.getElementById('audio-analyze-input').click();
         }
@@ -1226,7 +1021,7 @@
             return resultText;
         }
 
-        // --- AI LOGIC ---
+        // --- AI LOGIC & DEEP LINKING ---
         async function handleSendMessage() {
             if(appState.isThinking) return;
             const input = document.getElementById('user-input'); let text = input.value.trim(); const hasChatFile = appState.chatFile !== null;
@@ -1236,6 +1031,7 @@
             if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
             if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; initialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
+            // --- DEEP LINKING LOGIC ---
             const emergencyMatch = text.match(/^(?:call|撥打)\s*(110|119)$/i);
             if (emergencyMatch) { input.value = ''; input.style.height = '44px'; initialInput = ''; if(recognition) recognition.abort(); triggerEmergency(emergencyMatch[1]); return; }
             const callMatch = text.match(/^(?:call|撥打)\s*(\+?\d+)$/i);
@@ -1245,6 +1041,30 @@
                 else { addMessage(`📞 呼叫電話 APP：${callMatch[1]}`, 'system'); window.open(`tel:${callMatch[1]}`, '_self'); }
                 return;
             }
+
+            const appMatch = text.match(/^(?:打開|開啟|open|播放)\s*(youtube|yt|line|fb|facebook|ig|instagram|spotify|地圖|map|maps)(?:\s+(.+))?$/i);
+            if (appMatch) {
+                const appName = appMatch[1].toLowerCase(); const query = (appMatch[2] || '').trim(); let url = '';
+                if (appName === 'youtube' || appName === 'yt') url = query ? `youtube://results?search_query=${encodeURIComponent(query)}` : `youtube://`;
+                else if (appName === 'line') url = `line://`;
+                else if (appName === 'ig' || appName === 'instagram') url = `instagram://`;
+                else if (appName === 'fb' || appName === 'facebook') url = `fb://`;
+                else if (appName === 'spotify') url = query ? `spotify:search:${encodeURIComponent(query)}` : `spotify://`;
+                else if (appName.includes('地圖') || appName.includes('map')) url = query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : `https://www.google.com/maps`;
+                
+                addMessage(text, 'user'); addMessage(`📱 正在為您喚醒 ${appName.toUpperCase()}...`, 'system');
+                window.open(url, '_blank');
+                input.value = ''; input.style.height = '44px'; initialInput = ''; return;
+            }
+
+            const navMatch = text.match(/^(?:導航到|帶我去|navigate to)\s*(.+)$/i);
+            if (navMatch) {
+                const dest = navMatch[1].trim();
+                addMessage(text, 'user'); addMessage(`🗺️ 正在為您規劃路線並導航至：${dest}`, 'system');
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`, '_blank');
+                input.value = ''; input.style.height = '44px'; initialInput = ''; return;
+            }
+            // --------------------------
 
             appState.isThinking = true; updateSendButtonState(true);
             
@@ -1259,6 +1079,7 @@
                 if (recognition) { try { recognition.abort(); } catch(e){} }
                 renderThinkingState(true);
 
+                // Reminder Logic
                 if (appState.pendingReminder && appState.reminderStage > 0) {
                      const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                      if (todo) {
@@ -1281,20 +1102,15 @@
 
                 let systemPromptAddon = ""; let injectedContext = ""; let modelToUse = appState.currentModel; let enableSearchTool = appState.isSearchEnabled;
                 if (appState.weather && appState.weather.loc && appState.weather.loc !== '未定位') {
-                    systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，座標: ${appState.lastLat}, ${appState.lastLon}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
+                    systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
                 }
 
                 if (fileDataToPass) {
                     if (fileDataToPass.category === 'text') {
                         injectedContext += `\n\n[附檔內容 - ${fileDataToPass.name}]:\n${fileDataToPass.data}\n\n`;
                         if (!text) text = `請分析這份名為 ${fileDataToPass.name} 的檔案內容。`;
-                    } 
-                    else if (fileDataToPass.category === 'image') {
-                        if (!text) text = "請詳細分析這張圖片的內容";
-                    }
-                    else if (fileDataToPass.category === 'media') {
-                        if (!text) text = `請詳細分析這份名為 ${fileDataToPass.name} 的檔案內容`;
-                    }
+                    } else if (fileDataToPass.category === 'image') { if (!text) text = "請詳細分析這張圖片的內容"; }
+                    else if (fileDataToPass.category === 'media') { if (!text) text = `請詳細分析這份名為 ${fileDataToPass.name} 的檔案內容`; }
                 } 
                 else {
                     const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
@@ -1303,23 +1119,20 @@
                         if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(searchKeyword); } catch (e) { addMessage(`⚠️ ${e.message}`, 'system'); } }
                         if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(searchKeyword);
                         else if (!searchResultText && appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
-
                         if (searchResultText) { text = `請根據以下搜尋結果摘要回答：\n\n${searchResultText}`; injectedContext = ""; systemPromptAddon = ""; enableSearchTool = false; }
                     } else {
                         const urlMatch = text.match(/https?:\/\/[^\s]+/);
                         if (urlMatch) {
                             const url = urlMatch[0];
-                            if (!url.includes('youtube') && !url.includes('twitter')) {
-                                addMessage(`🔍 抓取網頁中...`, 'system'); const content = await fetchUrlViaGas(url); if (content) injectedContext = `\n\n[網頁內容]:\n${content}\n\n`;
-                            } else if (appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
+                            if (!url.includes('youtube') && !url.includes('twitter')) { addMessage(`🔍 抓取網頁中...`, 'system'); const content = await fetchUrlViaGas(url); if (content) injectedContext = `\n\n[網頁內容]:\n${content}\n\n`; } 
+                            else if (appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
                         }
                     }
 
                     if (enableSearchTool && modelToUse !== 'gemini' && !searchMatch) {
                         addMessage(`🌐 (代理連網) 正在透過網路搜尋相關資訊...`, 'system'); let searchResultText = "";
-                        if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(text); } catch (e) { console.warn(e); } }
+                        if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(text); } catch (e) {} }
                         if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(text);
-
                         if (searchResultText) { injectedContext += `\n\n[系統自動連網搜尋結果，請參考此最新資訊來回答使用者的問題]:\n${searchResultText}\n\n`; } 
                         else { addMessage(`⚠️ 代理搜尋失敗，將以原始知識庫回答。`, 'system'); }
                     }
@@ -1342,29 +1155,18 @@
                 if (appState.pendingAnalyzeContextId) {
                     if (appState.pendingAnalyzeType === 'voiceNote') {
                         const n = appState.notes.find(x => x.id === appState.pendingAnalyzeContextId);
-                        if (n) {
-                            n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${outputText}`;
-                            saveToDB('notes', n); renderNotes();
-                            addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system');
-                        }
+                        if (n) { n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${outputText}`; saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system'); }
                     } else if (appState.pendingAnalyzeType === 'audioRecord') {
                         const r = appState.audioRecords.find(x => x.id === appState.pendingAnalyzeContextId);
-                        if (r) {
-                            r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析]\n${outputText}`;
-                            saveToDB('audioRecords', r); renderAudioRecords();
-                            addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system');
-                        }
+                        if (r) { r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析]\n${outputText}`; saveToDB('audioRecords', r); renderAudioRecords(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system'); }
                     }
-                    appState.pendingAnalyzeContextId = null;
-                    appState.pendingAnalyzeType = "";
-                    appState.pendingAnalyzePrompt = "";
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ""; appState.pendingAnalyzePrompt = "";
                 }
 
             } catch (error) {
                 console.error("Handler Error:", error);
                 addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援分析您上傳的檔案格式，請嘗試更換其他模型。)\n`, 'system');
-                appState.pendingAnalyzeContextId = null;
-                appState.pendingAnalyzeType = "";
+                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = "";
             } finally {
                 appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
             }
@@ -1389,8 +1191,7 @@
 
             let hour = -1, minute = 0;
             const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
-            if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } 
-            else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
+            if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
 
             let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
             let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
@@ -1406,7 +1207,7 @@
         }
 
         async function fetchAIResponse(userText, model, options = {}) {
-            const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { // 分析音檔可能需要較長 timeout
+            const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { 
                 const controller = new AbortController(); const id = setTimeout(() => controller.abort(), timeout);
                 try { const response = await fetch(url, { ...fetchOpts, signal: controller.signal }); clearTimeout(id); return response; } 
                 catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時，檔案可能過大或處理過久 (60s)' : error.message); }
@@ -1415,13 +1216,49 @@
             try {
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
 
+                // === 歷史對話提取 (擷取最後 6 則非系統訊息) ===
+                const chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
+
                 if(model === 'gemini') {
-                    const modelName = 'gemini-2.5-flash'; const partsArray = [{ text: userText }];
-                    if (options.file && options.file.category !== 'text') {
-                        const base64Data = options.file.data.split(',')[1]; partsArray.push({ inlineData: { mimeType: options.file.mime, data: base64Data } });
+                    // === Gemini 智慧大腦自動選擇 (Auto-Routing) ===
+                    let modelName = 'gemini-2.5-flash'; // 預設使用高速模型
+                    if (userText.length > 500 || /(深入|詳細|分析|總結|論文|報告|程式碼|複雜|重點摘要|結構化)/.test(userText) || (options.file && options.file.category === 'media' && /(分析|摘要)/.test(userText))) {
+                        modelName = 'gemini-2.5-pro'; // 需要複雜邏輯、長篇分析時自動升級為 Pro
                     }
-                    const payload = { contents: [{ parts: partsArray }], generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } };
+
+                    // === Gemini 連續記憶打包 ===
+                    const allMessages = [...chatHistory, { sender: 'user', text: userText, file: options.file }];
+                    const contents = [];
+                    let currentRole = null;
+                    let currentParts = [];
+
+                    for (const m of allMessages) {
+                        const role = m.sender === 'user' ? 'user' : 'model';
+                        let partsToAdd = [];
+
+                        if (m.text) partsToAdd.push({ text: m.text });
+                        else if (!m.file) partsToAdd.push({ text: "[沒有文字]" });
+
+                        // 只有當前最新的訊息才夾帶真實檔案，歷史檔案用文字佔位符節省 Token
+                        if (m === allMessages[allMessages.length - 1] && m.file && m.file.category !== 'text') {
+                             const base64Data = m.file.data.split(',')[1];
+                             partsToAdd.push({ inlineData: { mimeType: m.file.mime, data: base64Data } });
+                        }
+
+                        // Gemini API 嚴格要求 role 必須交替，若出現連續同角色，則合併其內容
+                        if (role === currentRole) {
+                            currentParts.push(...partsToAdd);
+                        } else {
+                            if (currentRole) contents.push({ role: currentRole, parts: currentParts });
+                            currentRole = role;
+                            currentParts = [...partsToAdd];
+                        }
+                    }
+                    if (currentRole) contents.push({ role: currentRole, parts: currentParts });
+
+                    const payload = { contents: contents, generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } };
                     if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) { payload.tools = [{ google_search: {} }]; }
+                    
                     const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     
                     const resText = await res.text();
@@ -1432,38 +1269,60 @@
                     let outputText = ""; if (candidate.content && candidate.content.parts) { outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join(""); }
                     let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
                     if (!outputText && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。"; else if (!outputText) outputText = "(無回傳文字內容)";
+                    
+                    // 若有降級/升級提示
+                    if (modelName === 'gemini-2.5-pro') outputText += "\n\n*(系統提示：此任務已自動啟用 Gemini 2.5 Pro 進行深度分析)*";
+
                     return { text: outputText, sources: sources };
                     
-                } else if (model === 'groq') {
-                    const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: userText }] }) });
+                } else if (model === 'groq' || model === 'gpt') {
+                    // === OpenAI 標準格式記憶打包 ===
+                    const messagesPayload = chatHistory.map(m => ({
+                        role: m.sender === 'user' ? 'user' : 'assistant',
+                        content: m.text || "[附檔]"
+                    }));
+                    
+                    let finalUserContent = userText;
+                    if (options.file && options.file.category === 'image') {
+                        const base64Data = options.file.data.split(',')[1];
+                        finalUserContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
+                    }
+                    messagesPayload.push({ role: 'user', content: finalUserContent });
+
+                    let ep = '', mName = '';
+                    if(model === 'groq') { ep = 'https://api.groq.com/openai/v1/chat/completions'; mName = 'llama-3.3-70b-versatile'; }
+                    else { ep = 'https://api.openai.com/v1/chat/completions'; mName = 'gpt-4o-mini'; }
+
+                    const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages: messagesPayload}) });
                     const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
                     if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
                 } else if (model === 'cohere') {
-                    const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText }) });
+                    // Cohere 記憶打包
+                    const chatHistoryPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'USER' : 'CHATBOT', message: m.text || "[附檔]" }));
+                    const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText, chat_history: chatHistoryPayload }) });
                     const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
                     if (!res.ok) throw new Error(`${data.message || res.status}`); return data.text || "無回應";
                 } else if (model === 'grok') {
-                    const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
-                    let mName = appState.grokModel || 'grok-4-1-fast-reasoning'; 
-
+                    const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; let mName = appState.grokModel || 'grok-4-1-fast-reasoning'; 
                     let apiUrl, payload;
                     if (mName.includes('imagine')) {
                         apiUrl = 'https://api.x.ai/v1/images/generations'; payload = { model: mName, prompt: userText };
                     } else {
-                        apiUrl = 'https://api.x.ai/v1/chat/completions'; let msgContent = userText;
+                        apiUrl = 'https://api.x.ai/v1/chat/completions';
+                        const messagesPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text || "[附檔]" }));
+                        let finalUserContent = userText;
                         if (options.file && options.file.category === 'image') {
                             const base64Data = options.file.data.split(',')[1];
-                            msgContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
+                            finalUserContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
                         }
-                        payload = { model: mName, messages: [{role: "user", content: msgContent}], temperature: 0.7 };
+                        messagesPayload.push({role: "user", content: finalUserContent});
+                        payload = { model: mName, messages: messagesPayload, temperature: 0.7 };
                     }
                     const fullUrl = `${myProxy}?url=${encodeURIComponent(apiUrl)}`;
                     const res = await fetchWithTimeout(fullUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     const resText = await res.text();
-                    
                     if (!res.ok) throw new Error(`${resText}`);
                     const data = JSON.parse(resText);
-                    
                     if (mName.includes('imagine')) {
                         if (data.data && data.data[0]) {
                             if (data.data[0].url) return `✨ 生成成功！\n\n![Generated Image](${data.data[0].url})\n\n[🔗 點擊這裡開啟原檔](${data.data[0].url})`;
@@ -1472,14 +1331,6 @@
                         return `生成任務已處理，回傳內容：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
                     }
                     return data.choices?.[0]?.message?.content || "無回應";
-                } else if (model === 'gpt') {
-                    const ep = 'https://api.openai.com/v1/chat/completions'; const mName = 'gpt-4o-mini'; let msgContent = userText;
-                    if (options.file && options.file.category === 'image') {
-                        const base64Data = options.file.data.split(',')[1]; msgContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
-                    }
-                    const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages:[{role:"user", content:msgContent}]}) });
-                    const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
-                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
                 }
             } catch(e) { throw e; }
         }
@@ -1497,10 +1348,8 @@
                     const oldData = localStorage.getItem(lsKey);
                     if (oldData && stateArray.length === 0) {
                         try {
-                            const parsed = JSON.parse(oldData);
-                            parsed.forEach(item => saveToDB(storeName, item));
-                            stateArray.push(...parsed);
-                            localStorage.removeItem(lsKey);
+                            const parsed = JSON.parse(oldData); parsed.forEach(item => saveToDB(storeName, item));
+                            stateArray.push(...parsed); localStorage.removeItem(lsKey);
                         } catch(e) {}
                     }
                 };
@@ -1513,7 +1362,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 35 系統升級完畢！\n\n✅ **修復音檔選取限制**：移除了嚴格的檔案類型過濾，現在點擊「選取實體音檔分析」將強制開啟手機的原生檔案總管 (支援 Google Drive、iCloud 或內部儲存空間)，讓您可以自由選取所有音檔格式，不再受限於圖片庫！\n✅ **無縫雲端上傳**：修復了過去錄音上傳時會出現的 CORS 跨域錯誤警告，現在音檔將以無痕模式穩定同步至 Google Drive。\n✅ **真．實體音檔分析**：點擊「選取實體音檔分析」，系統會直接讀取 `.webm`，保證產生 100% 完整的逐字稿並進行摘要整理！', 
+                    text: 'NOVA 36 系統大躍進完畢！\n\n✅ **Gemini 智慧模型自動調度**：系統現在會根據您丟出的需求(例如：長篇寫作、深度音檔分析、一般對話) 自動在最適合的 Gemini 模型 (Flash / Pro) 中切換，兼顧速度與邏輯品質！\n✅ **對話連續記憶 (Contextual Memory)**：您可以隨意追問上下文了！系統現在會將您與 AI 剛才聊過的歷史記錄帶入運算中，全模型皆適用。\n✅ **原生 APP 深層喚醒**：您可以直接輸入或用語音說出指令，例如：「導航到 台北101」、「打開 YouTube 周杰倫」、「打開 IG」，系統會直接喚醒您手機裡的原生應用程式！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1524,10 +1373,8 @@
             const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
             safeSet('key-gemini', appState.keys.gemini); safeSet('key-groq', appState.keys.groq); safeSet('key-cohere', appState.keys.cohere); safeSet('key-openai', appState.keys.openai); safeSet('key-grok', appState.keys.grok); safeSet('key-serpapi', appState.keys.serpapi); safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-note-doc-url', appState.noteDocUrl); safeSet('key-note-doc-url-2', appState.noteDocUrl2); safeSet('key-drive-url', appState.driveUrl);
             
-            const inputMain = document.getElementById('doc-input-main');
-            if(inputMain) inputMain.addEventListener('paste', handlePaste);
-            const userInput = document.getElementById('user-input');
-            if(userInput) { userInput.addEventListener('paste', handlePaste); }
+            const inputMain = document.getElementById('doc-input-main'); if(inputMain) inputMain.addEventListener('paste', handlePaste);
+            const userInput = document.getElementById('user-input'); if(userInput) userInput.addEventListener('paste', handlePaste);
             
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
@@ -1538,11 +1385,8 @@
                 recognition.onend = () => { 
                     appState.isListening = false; updateVoiceUI(); 
                     if(voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; } 
-                    if (appState.isContinuous || (mediaRecorder && mediaRecorder.state === 'recording')) { 
-                        setTimeout(() => { try { recognition.start(); } catch(e){} }, 250); 
-                    } 
+                    if (appState.isContinuous || (mediaRecorder && mediaRecorder.state === 'recording')) { setTimeout(() => { try { recognition.start(); } catch(e){} }, 250); } 
                 };
-                
                 recognition.onresult = (e) => {
                     let currentTranscript = ""; 
                     for (let i = 0; i < e.results.length; ++i) {
@@ -1552,9 +1396,7 @@
                     }
                     if (document.getElementById('recording-status').classList.contains('flex')) { appState.currentAudioTranscript = currentTranscript.trim(); }
                     const input = document.getElementById('user-input'); input.value = (initialInput ? initialInput + " " : "") + currentTranscript.trim(); autoResizeInput(input);
-                    if (document.getElementById('recording-status').classList.contains('hidden')) {
-                        if (voiceTimer) clearTimeout(voiceTimer); voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000);
-                    }
+                    if (document.getElementById('recording-status').classList.contains('hidden')) { if (voiceTimer) clearTimeout(voiceTimer); voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000); }
                 };
                 
                 noteRecognition = new SR(); noteRecognition.lang = 'zh-TW'; noteRecognition.continuous = true; noteRecognition.interimResults = true;
@@ -1578,24 +1420,20 @@
                 };
             }
             tryGetLocation(true); updateModelUI(); 
-            // 提醒事項間隔檢查
             const checkReminders = () => {
                 const now = Date.now();
                 appState.todos.forEach(t => {
                     if (t.alertTime && t.alertEnabled !== false && !t.alerted && t.alertTime <= now && !t.done) {
                         t.alerted = true; saveToDB('todos', t); renderTodos();
-                        document.getElementById('alarm-text').innerText = t.text;
-                        document.getElementById('alarm-modal').classList.remove('hidden'); document.getElementById('alarm-modal').classList.add('flex');
+                        document.getElementById('alarm-text').innerText = t.text; document.getElementById('alarm-modal').classList.remove('hidden'); document.getElementById('alarm-modal').classList.add('flex');
                         try {
                             alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                             const osc = alarmAudioCtx.createOscillator(); const gain = alarmAudioCtx.createGain();
-                            osc.type = 'sine'; osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime);
-                            osc.connect(gain); gain.connect(alarmAudioCtx.destination);
+                            osc.type = 'sine'; osc.frequency.setValueAtTime(880, alarmAudioCtx.currentTime); osc.connect(gain); gain.connect(alarmAudioCtx.destination);
                             osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, alarmAudioCtx.currentTime + 0.5);
                             alarmInterval = setInterval(() => {
                                 const osc2 = alarmAudioCtx.createOscillator(); const gain2 = alarmAudioCtx.createGain();
-                                osc2.type = 'sine'; osc2.frequency.setValueAtTime(880, alarmAudioCtx.currentTime);
-                                osc2.connect(gain2); gain2.connect(alarmAudioCtx.destination);
+                                osc2.type = 'sine'; osc2.frequency.setValueAtTime(880, alarmAudioCtx.currentTime); osc2.connect(gain2); gain2.connect(alarmAudioCtx.destination);
                                 osc2.start(); gain2.gain.exponentialRampToValueAtTime(0.00001, alarmAudioCtx.currentTime + 0.5);
                             }, 1000);
                         } catch(e) {}
@@ -1611,4 +1449,4 @@
         };
     </script>
 </body>
-</html>
+                                     </html>
