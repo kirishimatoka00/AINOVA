@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 43</title>
+    <title>NOVA 45</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -60,7 +60,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 43</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 45</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -82,7 +82,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 43</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 45</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -169,25 +169,36 @@
                          
                          <!-- Dropdown Model Selection -->
                          <div class="flex space-x-2 ml-auto shrink-0">
-                             <!-- 官方全陣列 Gemini 選單 -->
+                             <!-- 官方全陣列 Gemini 選單 (加入 Imagen 4.0 與 實驗性模型) -->
                              <select id="gemini-sub-model-select" onchange="setGeminiModel(this.value)" class="bg-blue-900 border border-blue-500/50 text-blue-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="gemini-multi">⚡ 智慧切換 (Auto)</option>
-                                 <optgroup label="Gemini 3 預覽系列">
-                                     <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
-                                     <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
-                                     <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash-Lite</option>
-                                     <option value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash-Image (繪圖)</option>
-                                     <option value="gemini-3-pro-image-preview">Gemini 3 Pro-Image (繪圖)</option>
+                                 <optgroup label="Imagen 4.0 生成">
+                                     <option value="imagen-4.0-generate-001">Imagen 4.0 Standard</option>
+                                     <option value="imagen-4.0-ultra-generate-001">Imagen 4.0 Ultra</option>
+                                     <option value="imagen-4.0-fast-generate-001">Imagen 4.0 Fast</option>
                                  </optgroup>
-                                 <optgroup label="Gemini 2.5 系列">
+                                 <optgroup label="Gemini 3 預覽系列">
+                                     <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
+                                     <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                                     <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash-Lite Preview</option>
+                                     <option value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash-Image</option>
+                                     <option value="gemini-3-pro-image-preview">Gemini 3 Pro-Image</option>
+                                 </optgroup>
+                                 <optgroup label="Gemini 2.5 實驗與預覽">
+                                     <option value="deep-research-pro-preview-12-2025">Deep Research Pro (12-2025)</option>
+                                     <option value="gemini-2.5-computer-use-preview-10-2025">Computer Use (10-2025)</option>
+                                     <option value="gemini-2.5-flash-native-audio-preview-12-2025">Native Audio (12-2025)</option>
+                                 </optgroup>
+                                 <optgroup label="Gemini 2.5 穩定系列">
                                      <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                                      <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</option>
-                                     <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image (繪圖)</option>
+                                     <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image</option>
                                  </optgroup>
                              </select>
-                             <!-- Grok 細部分類選單 -->
+                             <!-- Grok 細部分類選單 (加入 Auto 選項) -->
                              <select id="grok-sub-model-select" onchange="setGrokModel(this.value)" class="hidden bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1 outline-none focus:border-slate-400 font-medium max-w-[140px] md:max-w-none">
+                                 <option value="grok-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Language models">
                                      <option value="grok-4-1-fast-reasoning">grok-4-1-fast-reasoning</option>
                                      <option value="grok-4-1-fast-non-reasoning">grok-4-1-fast-non-reasoning</option>
@@ -416,7 +427,7 @@
 
         // --- 應用程式狀態 ---
         const appState = {
-            currentModel: 'gemini', grokModel: 'grok-4-1-fast-reasoning', geminiModel: 'gemini-multi',
+            currentModel: 'gemini', grokModel: 'grok-multi', geminiModel: 'gemini-multi',
             chatFile: null, 
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
             messages: [], notes: [], todos: [], audioRecords: [], 
@@ -435,7 +446,7 @@
 
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
-        // --- ★ 終極修復: Markdown 與 Azure Blob 圖片防失真解析器 ---
+        // --- Markdown 與 Azure Blob 圖片防失真解析器 ---
         function formatMessage(text) { 
             if (!text) return ''; 
             let images = [];
@@ -483,7 +494,7 @@
                 if (msg.file) {
                     if (msg.file.category === 'image' && msg.file.data) {
                         mediaHTML = `
-                        <div class="relative group mb-3 max-w-sm">
+                        <div class="relative group mb-3 max-w-sm w-full">
                             <img src="${msg.file.data}" class="rounded-lg border border-slate-700/50 shadow-sm w-full object-contain bg-slate-900">
                             <a href="${msg.file.data}" download="${escapeHtml(msg.file.name || 'image.png')}" class="absolute top-2 right-2 bg-blue-600/90 hover:bg-blue-500 text-white p-2 rounded-lg shadow-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 backdrop-blur-md" title="下載圖片">
                                 <i class="ph-bold ph-download-simple"></i> 下載
@@ -594,7 +605,6 @@
             const grokSelect = document.getElementById('grok-sub-model-select');
             if(grokSelect) { if (appState.currentModel === 'grok') { grokSelect.classList.remove('hidden'); grokSelect.value = appState.grokModel; } else { grokSelect.classList.add('hidden'); } }
             
-            // ★ Gemini 全新選單控制
             const geminiSelect = document.getElementById('gemini-sub-model-select');
             if(geminiSelect) { if (appState.currentModel === 'gemini') { geminiSelect.classList.remove('hidden'); geminiSelect.value = appState.geminiModel; } else { geminiSelect.classList.add('hidden'); } }
 
@@ -1022,7 +1032,6 @@
             appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
 
-        // --- FILE-BASED AUDIO ANALYSIS ---
         function summarizeAudioRecord(id) {
             const r = appState.audioRecords.find(x => x.id === id); if (!r) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
@@ -1128,7 +1137,10 @@
             const actionKeywords = ['打開', '開啟', 'open', '播放', '傳', '發', '發送', '導航', '帶我', '撥打', 'call', '打給', '幫我'];
             const isAction = actionKeywords.some(kw => text.toLowerCase().startsWith(kw));
 
-            if (isAction && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile) {
+            // ★ 排除畫圖意圖，確保「幫我畫圖」不被誤判為 App 跳轉
+            const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(text.trim());
+
+            if (isAction && !isImageIntent && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile) {
                 appState.isThinking = true; updateSendButtonState(true);
                 
                 const sysMsgId = Date.now();
@@ -1303,28 +1315,45 @@
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
                 const chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
 
+                // 全域畫圖意圖偵測
+                const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim());
+
                 if(model === 'gemini') {
                     let selectedModelName = appState.geminiModel;
                     let isAutoRouted = false;
 
-                    // ★ AI 畫圖自動攔截 (避免文字模型幻覺產生破圖)
-                    if (selectedModelName === 'gemini-multi' && /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim())) {
-                        selectedModelName = 'gemini-3-pro-image-preview'; // 自動指派給最強繪圖模型
+                    // ★ AI 畫圖自動攔截 (防呆：即使選了文字模型，只要是畫圖意圖，強制轉給 Imagen)
+                    if (isImageIntent && !selectedModelName.includes('imagen') && !selectedModelName.includes('image')) {
+                        selectedModelName = 'imagen-4.0-generate-001'; 
                         isAutoRouted = true;
-                    }
-
-                    // === Gemini 引擎智慧判定 ===
-                    if (selectedModelName === 'gemini-multi') {
+                    } 
+                    // ★ 智慧切換邏輯 (Multi)
+                    else if (selectedModelName === 'gemini-multi') {
                         isAutoRouted = true;
-                        selectedModelName = 'gemini-3-flash-preview'; // 預設高速
+                        selectedModelName = 'gemini-3.0-flash'; // 預設高速
                         if (userText.length > 500 || /(深入|詳細|分析|總結|論文|報告|程式碼|複雜|重點摘要|結構化)/.test(userText) || (options.file && options.file.category === 'media')) {
-                            selectedModelName = 'gemini-3.1-pro-preview'; // 複雜任務升級
+                            selectedModelName = 'gemini-3.1-pro'; // 複雜任務升級
                         }
                     }
 
-                    // 決定 API Endpoint (預覽版與 3.x 版必須走 v1alpha)
+                    // === Imagen 圖像生成專屬處理 (支援 3.0 與 4.0 全系列) ===
+                    if (selectedModelName.includes('imagen')) {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModelName}:predict?key=${key}`;
+                        const payload = { instances: [{ prompt: userText }], parameters: { sampleCount: 1 } };
+                        const res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error?.message || '圖像生成失敗，請檢查提示詞或API權限。');
+                        
+                        const base64Image = data.predictions[0].bytesBase64Encoded;
+                        const fileObj = { category: 'image', data: `data:image/png;base64,${base64Image}`, name: 'Imagen_Generated.png' };
+                        let resTxt = `✨ 圖片生成成功！已為您附在下方。`;
+                        if(isAutoRouted) resTxt += `\n\n*(系統提示：已自動為您調配至 **${selectedModelName}** 執行繪圖任務)*`;
+                        return { text: resTxt, sources: [], file: fileObj };
+                    }
+
+                    // 決定 API Endpoint (實驗版/預覽版/3.x必須走 v1alpha)
                     let apiVersion = 'v1beta';
-                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3')) {
+                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3') || selectedModelName.includes('thinking') || selectedModelName.includes('research') || selectedModelName.includes('computer')) {
                         apiVersion = 'v1alpha'; 
                     }
 
@@ -1334,16 +1363,13 @@
                     for (const m of allMessages) {
                         const role = m.sender === 'user' ? 'user' : 'model';
                         let partsToAdd = [];
-
                         if (m.text) partsToAdd.push({ text: m.text }); 
                         else if (!m.file) partsToAdd.push({ text: "[沒有文字]" });
 
-                        // 只有最新對話才夾帶真實檔案
                         if (m === allMessages[allMessages.length - 1] && m.file && m.file.category !== 'text') {
                              const base64Data = m.file.data.split(',')[1];
                              partsToAdd.push({ inlineData: { mimeType: m.file.mime, data: base64Data } });
                         }
-
                         if (role === currentRole) currentParts.push(...partsToAdd); 
                         else {
                             if (currentRole) contents.push({ role: currentRole, parts: currentParts });
@@ -1359,12 +1385,11 @@
                     let res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     let data = await res.json();
                     
-                    // ★ 終極防呆降級機制：如果 3.x 預覽版在該 API Key 沒權限報 404，自動降回 2.5
-                    if (!res.ok && data.error && data.error.code === 404 && selectedModelName.includes('preview')) {
+                    // ★ 終極防呆降級機制：如果 3.x 或實驗版在該 API Key 沒權限報 404，自動降回 2.5
+                    if (!res.ok && data.error && data.error.code === 404 && (selectedModelName.includes('preview') || selectedModelName.includes('3.'))) {
                         console.warn(`[Auto-Fallback] Model ${selectedModelName} not found, retrying with 2.5 series.`);
                         let fallbackModel = 'gemini-2.5-flash';
                         if (selectedModelName.includes('pro')) fallbackModel = 'gemini-2.5-pro';
-                        if (selectedModelName.includes('image')) fallbackModel = 'gemini-2.5-flash'; 
                         selectedModelName = fallbackModel;
                         apiVersion = 'v1beta';
                         endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:generateContent?key=${key}`;
@@ -1377,7 +1402,6 @@
 
                     const candidate = data.candidates?.[0]; if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
                     
-                    // 影像模型支援：捕捉模型回傳的 inlineData
                     let outputText = "";
                     let responseImageFile = null;
 
@@ -1394,9 +1418,7 @@
                     }
 
                     let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
-                    
                     if (!outputText && !responseImageFile && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。"; 
-                    
                     if (isAutoRouted) { outputText += `\n\n*(系統提示：已為您動態調配至 **${selectedModelName}** 執行此任務)*`; }
 
                     return { text: outputText || (responseImageFile ? "✨ 圖片生成成功！已為您附在下方。" : "(無回傳文字)"), sources: sources, file: responseImageFile };
@@ -1423,7 +1445,19 @@
                     const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
                     if (!res.ok) throw new Error(`${data.message || res.status}`); return data.text || "無回應";
                 } else if (model === 'grok') {
-                    const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; let mName = appState.grokModel || 'grok-4-1-fast-reasoning'; 
+                    const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
+                    let mName = appState.grokModel || 'grok-multi'; 
+                    let isGrokAutoRouted = false;
+
+                    // ★ Grok 畫圖意圖強制攔截與智慧切換
+                    if (isImageIntent && !mName.includes('imagine')) {
+                        mName = 'grok-imagine-image-pro';
+                        isGrokAutoRouted = true;
+                    } else if (mName === 'grok-multi') {
+                        mName = 'grok-4-1-fast-reasoning';
+                        isGrokAutoRouted = true;
+                    }
+
                     let apiUrl, payload;
                     if (mName.includes('imagine')) {
                         apiUrl = 'https://api.x.ai/v1/images/generations'; payload = { model: mName, prompt: userText };
@@ -1443,14 +1477,21 @@
                     const resText = await res.text();
                     if (!res.ok) throw new Error(`${resText}`);
                     const data = JSON.parse(resText);
+                    
                     if (mName.includes('imagine')) {
+                        let successTxt = `✨ 圖片生成成功！已為您附在下方。`;
+                        if (isGrokAutoRouted) successTxt += `\n\n*(系統提示：Grok Multi 已自動為您調配至 **${mName}** 執行繪圖任務)*`;
+                        
                         if (data.data && data.data[0]) {
-                            if (data.data[0].url) return { text: `✨ 圖片生成成功！已為您附在下方。`, sources: [], file: { category: 'image', data: data.data[0].url, name: 'Grok_Image.png' } };
-                            else if (data.data[0].b64_json) return { text: `✨ 圖片生成成功！已為您附在下方。`, sources: [], file: { category: 'image', data: `data:image/png;base64,${data.data[0].b64_json}`, name: 'Grok_Image.png' } };
+                            if (data.data[0].url) return { text: successTxt, sources: [], file: { category: 'image', data: data.data[0].url, name: 'Grok_Image.png' } };
+                            else if (data.data[0].b64_json) return { text: successTxt, sources: [], file: { category: 'image', data: `data:image/png;base64,${data.data[0].b64_json}`, name: 'Grok_Image.png' } };
                         }
                         return `生成任務已處理，回傳內容：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
                     }
-                    return data.choices?.[0]?.message?.content || "無回應";
+
+                    let outputText = data.choices?.[0]?.message?.content || "無回應";
+                    if (isGrokAutoRouted) outputText += `\n\n*(系統提示：Grok Multi 已自動為您調配至 **${mName}** 執行此任務)*`;
+                    return outputText;
                 }
             } catch(e) { throw e; }
         }
@@ -1482,7 +1523,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 43 系統終極升級完畢！\n\n✅ **完整對齊官方 Gemini 模型庫**：右上角選單已完美收錄最新的 `Gemini 3.1 Pro Preview`、`Gemini 3 Flash`、`Gemini 3 Pro Image` 等全系列模型。\n✅ **自動降級容錯護盾**：若您的 API Key 尚未開通最新 3.x 預覽版導致 404 報錯，系統會在一秒內「自動降級」回穩定的 2.5 家族，讓對話絕不中斷！\n✅ **原生繪圖模型支援**：選擇 Image 系列模型或直接對我下達「畫一張圖...」指令，系統能完美攔截並直接在畫面中渲染高清原圖！\n\n*(試試對我說：「幫我畫一張貓咪在森林奔跑的照片」吧！)*', 
+                    text: 'NOVA 45 系統終極進化完畢！\n\n✅ **Imagen 4.0 畫圖全制霸**：不僅收錄了完整的 Imagen 4.0 家族與 Gemini 實驗版，現在只要您說出「畫一張...」，無論當前在哪個文字模型下，系統都會**強制自動調度**最強的繪圖 API 為您作畫！\n✅ **Grok 加入智慧切換**：Grok 選單也迎來 `⚡ 智慧切換 (Auto)`！打字用文字模型，畫圖用語音模型，全自動判斷。\n✅ **APP 喚醒卡片全面進化**：捨棄了僵硬的正則表達式，導入 AI 意圖辨識 (Intent) 來判斷您的操作，為您產生精美的「APP 喚醒卡片」，確保 100% 跳轉成功！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
