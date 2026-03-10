@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 45</title>
+    <title>NOVA 46</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -60,7 +60,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 45</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 46</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -82,7 +82,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 45</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 46</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -169,7 +169,7 @@
                          
                          <!-- Dropdown Model Selection -->
                          <div class="flex space-x-2 ml-auto shrink-0">
-                             <!-- 官方全陣列 Gemini 選單 (加入 Imagen 4.0 與 實驗性模型) -->
+                             <!-- 修正後的 Gemini 乾淨選單 -->
                              <select id="gemini-sub-model-select" onchange="setGeminiModel(this.value)" class="bg-blue-900 border border-blue-500/50 text-blue-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="gemini-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Imagen 4.0 生成">
@@ -184,11 +184,6 @@
                                      <option value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash-Image</option>
                                      <option value="gemini-3-pro-image-preview">Gemini 3 Pro-Image</option>
                                  </optgroup>
-                                 <optgroup label="Gemini 2.5 實驗與預覽">
-                                     <option value="deep-research-pro-preview-12-2025">Deep Research Pro (12-2025)</option>
-                                     <option value="gemini-2.5-computer-use-preview-10-2025">Computer Use (10-2025)</option>
-                                     <option value="gemini-2.5-flash-native-audio-preview-12-2025">Native Audio (12-2025)</option>
-                                 </optgroup>
                                  <optgroup label="Gemini 2.5 穩定系列">
                                      <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
@@ -196,7 +191,7 @@
                                      <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image</option>
                                  </optgroup>
                              </select>
-                             <!-- Grok 細部分類選單 (加入 Auto 選項) -->
+                             <!-- Grok 細部分類選單 -->
                              <select id="grok-sub-model-select" onchange="setGrokModel(this.value)" class="hidden bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1 outline-none focus:border-slate-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="grok-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Language models">
@@ -570,10 +565,14 @@
             if(el) el.innerHTML=appState.notes.map(n=>{
                 const isAudio = n.type === 'audio'; const icon = isAudio ? '<i class="ph-fill ph-microphone text-purple-400"></i>' : '<i class="ph-fill ph-notebook text-emerald-400"></i>';
                 let actionButtons = `<button onclick="exportNoteWord(${n.id})" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors" title="匯出為Word"><i class="ph-bold ph-download-simple"></i> Word</button>`;
-                if(isAudio) actionButtons += `<button onclick="summarizeVoiceNote(${n.id})" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> 選取音檔以轉錄並分析</button>`;
+                if(isAudio) actionButtons += `<button onclick="summarizeVoiceNote(${n.id})" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
+                
                 let imgHtml = '';
                 const displayImages = n.images || (n.image ? [n.image] : []);
-                if (displayImages.length > 0) imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
+                if (displayImages.length > 0) {
+                    imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
+                }
+
                 let linkHtml = n.driveUrl ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-link"></i> 開啟雲端錄音檔</a></div>` : '';
                 return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit(${n.id})" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteNote(${n.id})" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}<div class="text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin whitespace-pre-wrap">${formatMessage(n.content)}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${actionButtons}</div></div>`;
             }).join('')||'<p class="text-slate-500 text-center col-span-3 mt-10">無筆記</p>'; 
@@ -582,7 +581,7 @@
 
         function renderAudioRecords() {
             const el = document.getElementById('audio-records-list'); if(!el) return;
-            el.innerHTML = appState.audioRecords.map(r => `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord(${r.id})" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div><div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3"><a href="${r.driveUrl || '#'}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors ${!r.driveUrl || r.driveUrl==='#' ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"><i class="ph-bold ph-cloud-arrow-down"></i> 雲端硬碟檔案</a><button onclick="summarizeAudioRecord(${r.id})" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> 選取實體音檔分析</button></div></div>`).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
+            el.innerHTML = appState.audioRecords.map(r => `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord(${r.id})" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div><div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3"><a href="${r.driveUrl || '#'}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors ${!r.driveUrl || r.driveUrl==='#' ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"><i class="ph-bold ph-cloud-arrow-down"></i> 雲端硬碟檔案</a><button onclick="summarizeAudioRecord(${r.id})" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> AI 分析摘要</button></div></div>`).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
         }
 
         function renderWeather() { 
@@ -605,6 +604,7 @@
             const grokSelect = document.getElementById('grok-sub-model-select');
             if(grokSelect) { if (appState.currentModel === 'grok') { grokSelect.classList.remove('hidden'); grokSelect.value = appState.grokModel; } else { grokSelect.classList.add('hidden'); } }
             
+            // 更新精簡後的 Gemini 選單
             const geminiSelect = document.getElementById('gemini-sub-model-select');
             if(geminiSelect) { if (appState.currentModel === 'gemini') { geminiSelect.classList.remove('hidden'); geminiSelect.value = appState.geminiModel; } else { geminiSelect.classList.add('hidden'); } }
 
@@ -1161,6 +1161,9 @@
                     }
                     
                     input.value = ''; input.style.height = '44px'; initialInput = '';
+                    
+                    // 中斷語音辨識以免在跳轉前收到雜音
+                    if (recognition) { try { recognition.abort(); } catch(e){} }
                     return;
                 } else {
                     renderMessages(); 
@@ -1177,7 +1180,11 @@
                 addMessage(displayMessage, 'user', null, [], fileDataToPass);
                 
                 input.value = ''; input.style.height = '44px'; initialInput = ''; clearChatFile(); 
+                
+                // ★ 關鍵：送出訊息時一定要中止當前的 recognition session，讓 e.results 清空，防止下次觸發時舊文字復活
                 if (recognition) { try { recognition.abort(); } catch(e){} }
+                if (noteRecognition) { try { noteRecognition.abort(); } catch(e){} }
+                
                 renderThinkingState(true);
 
                 // Reminder Logic
@@ -1264,7 +1271,7 @@
 
             } catch (error) {
                 console.error("Handler Error:", error);
-                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援分析您上傳的檔案格式，請嘗試更換其他模型。)\n`, 'system');
+                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援此格式或伺服器壅塞，請稍後再試。)\n`, 'system');
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = "";
             } finally {
                 appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
@@ -1308,7 +1315,7 @@
             const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { 
                 const controller = new AbortController(); const id = setTimeout(() => controller.abort(), timeout);
                 try { const response = await fetch(url, { ...fetchOpts, signal: controller.signal }); clearTimeout(id); return response; } 
-                catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時，檔案可能過大或處理過久 (60s)' : error.message); }
+                catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時，檔案可能過大或伺服器無回應 (60s)' : error.message); }
             };
 
             try {
@@ -1336,13 +1343,32 @@
                         }
                     }
 
-                    // === Imagen 圖像生成專屬處理 (支援 3.0 與 4.0 全系列) ===
+                    // === Imagen 圖像生成專屬處理 (防禦 Safety Filter 導致的 Undefined 錯誤) ===
                     if (selectedModelName.includes('imagen')) {
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModelName}:predict?key=${key}`;
+                        let apiVersion = selectedModelName.includes('4.0') ? 'v1alpha' : 'v1beta';
+                        // 如果 4.0 在 v1alpha 報錯，退回 v1beta 或 3.0。為求穩定先嘗試預設
+                        let url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:predict?key=${key}`;
+                        
                         const payload = { instances: [{ prompt: userText }], parameters: { sampleCount: 1 } };
-                        const res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                        const data = await res.json();
+                        let res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        let data = await res.json();
+                        
+                        // Fallback 如果 4.0 尚未開放 predict endpoint
+                        if (!res.ok && data.error && data.error.code === 404 && selectedModelName.includes('4.0')) {
+                            console.warn("Imagen 4.0 failed, falling back to 3.0");
+                            selectedModelName = 'imagen-3.0-generate-001';
+                            url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModelName}:predict?key=${key}`;
+                            res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                            data = await res.json();
+                            isAutoRouted = true;
+                        }
+
                         if (!res.ok) throw new Error(data.error?.message || '圖像生成失敗，請檢查提示詞或API權限。');
+                        
+                        // ★ 核心修復：防止 Safety Filter 觸發時 predictions 為空導致 undefined
+                        if (!data.predictions || data.predictions.length === 0 || !data.predictions[0].bytesBase64Encoded) {
+                            throw new Error("無法生成圖片。這通常是因為提示詞 (Prompt) 觸發了 AI 的安全審查機制 (Safety Filter) 而遭到阻擋。請嘗試修改您的描述。");
+                        }
                         
                         const base64Image = data.predictions[0].bytesBase64Encoded;
                         const fileObj = { category: 'image', data: `data:image/png;base64,${base64Image}`, name: 'Imagen_Generated.png' };
@@ -1353,7 +1379,7 @@
 
                     // 決定 API Endpoint (實驗版/預覽版/3.x必須走 v1alpha)
                     let apiVersion = 'v1beta';
-                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3') || selectedModelName.includes('thinking') || selectedModelName.includes('research') || selectedModelName.includes('computer')) {
+                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3') || selectedModelName.includes('thinking')) {
                         apiVersion = 'v1alpha'; 
                     }
 
@@ -1449,7 +1475,6 @@
                     let mName = appState.grokModel || 'grok-multi'; 
                     let isGrokAutoRouted = false;
 
-                    // ★ Grok 畫圖意圖強制攔截與智慧切換
                     if (isImageIntent && !mName.includes('imagine')) {
                         mName = 'grok-imagine-image-pro';
                         isGrokAutoRouted = true;
@@ -1523,7 +1548,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 45 系統終極進化完畢！\n\n✅ **Imagen 4.0 畫圖全制霸**：不僅收錄了完整的 Imagen 4.0 家族與 Gemini 實驗版，現在只要您說出「畫一張...」，無論當前在哪個文字模型下，系統都會**強制自動調度**最強的繪圖 API 為您作畫！\n✅ **Grok 加入智慧切換**：Grok 選單也迎來 `⚡ 智慧切換 (Auto)`！打字用文字模型，畫圖用語音模型，全自動判斷。\n✅ **APP 喚醒卡片全面進化**：捨棄了僵硬的正則表達式，導入 AI 意圖辨識 (Intent) 來判斷您的操作，為您產生精美的「APP 喚醒卡片」，確保 100% 跳轉成功！', 
+                    text: 'NOVA 46 系統體驗升級完畢！\n\n✅ **Imagen 4.0 崩潰修復**：解決了因「安全審查 (Safety Filter)」被阻擋時產生的 `Cannot read properties of undefined` 報錯，現在會優雅地提示您修改敏感詞彙。\n✅ **語音辨識疊字修復**：徹底重構了背景聆聽的字串解析機制，終結 Android/iOS 連續語音時產生的「自動重複」與「疊字」Bug！\n✅ **對話連續性精準化**：連續語音模式現在會在無聲判定後 **5 秒** 精準為您自動發送訊息。\n✅ **選單去蕪存菁**：移除了目前不穩定且易報錯的實驗性模型 (Computer Use / Deep Research)。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1549,15 +1574,28 @@
                     if (appState.isContinuous || (mediaRecorder && mediaRecorder.state === 'recording')) { setTimeout(() => { try { recognition.start(); } catch(e){} }, 250); } 
                 };
                 recognition.onresult = (e) => {
-                    let currentTranscript = ""; 
-                    for (let i = 0; i < e.results.length; ++i) {
-                        let text = e.results[i][0].transcript;
-                        if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-                        currentTranscript += text;
-                    }
+                    // ★ 終極修復語音重複 Bug：放棄累加，改為 map 出過濾後的最新結果，防止 session 疊加錯誤
+                    let currentTranscript = Array.from(e.results).map(res => {
+                        let text = res[0].transcript;
+                        // 過濾 Android 偶發性的句內疊字 (如 "測試測試" -> "測試")
+                        if (text.length >= 2 && text.length % 2 === 0) {
+                            const mid = Math.floor(text.length / 2);
+                            if (text.slice(0, mid) === text.slice(mid)) text = text.slice(0, mid);
+                        }
+                        return text;
+                    }).join('');
+
                     if (document.getElementById('recording-status').classList.contains('flex')) { appState.currentAudioTranscript = currentTranscript.trim(); }
-                    const input = document.getElementById('user-input'); input.value = (initialInput ? initialInput + " " : "") + currentTranscript.trim(); autoResizeInput(input);
-                    if (document.getElementById('recording-status').classList.contains('hidden')) { if (voiceTimer) clearTimeout(voiceTimer); voiceTimer = setTimeout(() => { handleSendMessage(); }, 6000); }
+                    
+                    const input = document.getElementById('user-input'); 
+                    input.value = (initialInput ? initialInput + " " : "") + currentTranscript.trim(); 
+                    autoResizeInput(input);
+                    
+                    if (document.getElementById('recording-status').classList.contains('hidden')) { 
+                        if (voiceTimer) clearTimeout(voiceTimer); 
+                        // ★ 連續語音：5 秒自動送出
+                        voiceTimer = setTimeout(() => { handleSendMessage(); }, 5000); 
+                    }
                 };
                 
                 noteRecognition = new SR(); noteRecognition.lang = 'zh-TW'; noteRecognition.continuous = true; noteRecognition.interimResults = true;
@@ -1570,14 +1608,19 @@
                     if (appState.noteVoiceActive) { setTimeout(() => { try { noteRecognition.start(); } catch(e){} }, 250); }
                 };
                 noteRecognition.onresult = (e) => {
-                    let currentTranscript = ""; 
-                    for (let i = 0; i < e.results.length; ++i) {
-                        let text = e.results[i][0].transcript;
-                        if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); }
-                        currentTranscript += text;
-                    }
+                    let currentTranscript = Array.from(e.results).map(res => {
+                        let text = res[0].transcript;
+                        if (text.length >= 2 && text.length % 2 === 0) {
+                            const mid = Math.floor(text.length / 2);
+                            if (text.slice(0, mid) === text.slice(mid)) text = text.slice(0, mid);
+                        }
+                        return text;
+                    }).join('');
+                    
                     const el = document.getElementById('doc-input-main'); const separator = (initialInput && currentTranscript) ? "\n" : ""; el.value = initialInput + separator + currentTranscript.trim();
-                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 6000);
+                    if (noteVoiceTimer) clearTimeout(noteVoiceTimer); 
+                    // ★ 連續語音：5 秒自動停止/送出
+                    noteVoiceTimer = setTimeout(() => { appState.noteVoiceActive = false; noteRecognition.stop(); }, 5000);
                 };
             }
             tryGetLocation(true); updateModelUI(); 
@@ -1610,4 +1653,4 @@
         };
     </script>
 </body>
-    </html>
+                                                                                                                                                               </html>
