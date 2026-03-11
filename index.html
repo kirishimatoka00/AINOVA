@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 50</title>
+    <title>NOVA 51</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -60,7 +60,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 50</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 51</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -82,7 +82,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 50</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 51</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -169,7 +169,6 @@
                          
                          <!-- Dropdown Model Selection -->
                          <div class="flex space-x-2 ml-auto shrink-0">
-                             <!-- 官方全陣列 Gemini 選單 (加入 Imagen 4.0 與 實驗性模型) -->
                              <select id="gemini-sub-model-select" onchange="setGeminiModel(this.value)" class="bg-blue-900 border border-blue-500/50 text-blue-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="gemini-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Imagen 4.0 生成">
@@ -191,7 +190,6 @@
                                      <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image</option>
                                  </optgroup>
                              </select>
-                             <!-- Grok 細部分類選單 -->
                              <select id="grok-sub-model-select" onchange="setGrokModel(this.value)" class="hidden bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1 outline-none focus:border-slate-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="grok-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Language models">
@@ -206,7 +204,6 @@
                                      <option value="grok-imagine-image">grok-imagine-image</option>
                                  </optgroup>
                              </select>
-                             <!-- 主模型切換 -->
                              <select id="main-model-select" onchange="setModel(this.value)" class="bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-1 outline-none focus:border-blue-500 font-bold tracking-wide">
                                  <option value="gemini">Gemini</option>
                                  <option value="grok">Grok</option>
@@ -220,7 +217,6 @@
                     
                     <!-- Chat Input Area -->
                     <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(1rem+env(safe-area-inset-bottom))] flex flex-col gap-2 relative">
-                        <!-- File/Image Preview Container -->
                         <div id="chat-file-preview-container" class="hidden relative inline-flex items-center bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-md self-start">
                             <img id="chat-image-preview" src="" class="h-12 w-auto rounded hidden mr-2">
                             <div id="chat-file-icon-wrapper" class="hidden flex items-center justify-center bg-blue-900/50 w-12 h-12 rounded mr-2"><i class="ph-fill ph-file text-2xl text-blue-400"></i></div>
@@ -390,6 +386,7 @@
         </main>
     </div>
     
+    <!-- 全域 Toast 提示框 -->
     <div id="toast">✅ 訊息提示</div>
 
     <script>
@@ -693,11 +690,24 @@
                 .catch(err => { alert("連線失敗：" + err.message); statusEl.innerText = "測試失敗"; statusEl.className = "text-[10px] text-red-400 font-bold"; });
             });
         }
+        
+        // ★ 修復手機匯出按鈕：必須加入 DOM 中點擊後再移除
         function exportSettings() {
             const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl } };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `NOVA_Settings_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); 
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); 
+            a.style.display = 'none';
+            a.href = url; 
+            a.download = `NOVA_Settings_${new Date().toISOString().split('T')[0]}.json`; 
+            document.body.appendChild(a); 
+            a.click(); 
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 2000);
         }
+        
         function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
         function importSettings(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -733,7 +743,6 @@
         function toggleVoice() {
             appState.isVoiceActive = !appState.isVoiceActive;
             if (appState.isVoiceActive) {
-                // 若手動開啟單次語音，則關閉連續語音狀態
                 appState.isContinuous = false; 
                 document.getElementById('continuous-btn').classList.remove('text-emerald-400', 'bg-emerald-900/30'); 
                 document.getElementById('continuous-btn').classList.add('text-slate-500');
@@ -1124,7 +1133,7 @@
             const key = appState.keys.gemini;
             if(!key) return null;
             
-            const systemInstruction = `你是一個手機作業系統的智慧助手。任務是辨識使用者的自然語言指令，轉換為對應的 App 喚醒連結。請優先使用 Universal Links (https 開頭)，沒有才使用自定義 Scheme (如 tel: 或 line:)。
+            const systemInstruction = `你是一個手機作業系統的智慧助手。任務是辨識使用者的自然語言指令，轉換為對應的 App 喚醒連結。請優先使用 Universal Links (https 開頭)。
 常見格式：
 - 電話：tel:{電話號碼}
 - 簡訊：sms:{電話號碼}?body={URL編碼}
@@ -1140,13 +1149,13 @@
             const schema = {
                 type: "OBJECT",
                 properties: {
-                    intentFound: { type: "BOOLEAN" },
-                    appName: { type: "STRING" },
-                    actionDescription: { type: "STRING" },
-                    deepLinkUrl: { type: "STRING" },
-                    replyMessage: { type: "STRING" }
+                    intentFound: { type: "BOOLEAN", description: "是否成功辨識為應用程式開啟或系統動作指令" },
+                    appName: { type: "STRING", description: "目標應用程式的名稱" },
+                    actionDescription: { type: "STRING", description: "即將執行的動作描述" },
+                    deepLinkUrl: { type: "STRING", description: "轉換後的跳轉網址(Universal Link)" },
+                    replyMessage: { type: "STRING", description: "給使用者的友善回覆" }
                 },
-                required: ["intentFound", "replyMessage"]
+                required: ["intentFound", "appName", "actionDescription", "deepLinkUrl", "replyMessage"]
             };
 
             const payload = {
@@ -1184,7 +1193,7 @@
             const actionKeywords = ['打開', '開啟', 'open', '播放', '傳', '發', '發送', '導航', '帶我', '撥打', 'call', '打給', '幫我'];
             const isAction = actionKeywords.some(kw => text.toLowerCase().startsWith(kw));
 
-            // ★ 排除畫圖意圖，確保「幫我畫圖」不被誤判為 App 跳轉
+            // 排除畫圖意圖
             const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(text.trim());
 
             if (isAction && !isImageIntent && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile) {
@@ -1203,13 +1212,13 @@
                     addMessage(text, 'user');
                     addMessage(intentData.replyMessage, 'ai', 'gemini', [], null, intentData);
                     
-                    if (intentData.deepLinkUrl.startsWith('tel:')) {
+                    // ★ 延遲自動跳轉以繞過部分 Popup Blocker (強制變更 location.href)
+                    setTimeout(() => {
                         window.location.href = intentData.deepLinkUrl;
-                    }
+                    }, 1500);
                     
                     input.value = ''; input.style.height = '44px'; chatInitialInput = '';
                     
-                    // 避免語音在跳轉前收到雜音
                     if (recognition) { try { recognition.abort(); } catch(e){} }
                     return;
                 } else {
@@ -1226,22 +1235,18 @@
                 
                 addMessage(displayMessage, 'user', null, [], fileDataToPass);
                 
-                // ★ 傳送後清空字串與 Buffer
                 input.value = ''; input.style.height = '44px'; chatInitialInput = ''; clearChatFile(); 
                 
-                // ★ 若未開啟連續模式，則停止麥克風
                 if (!appState.isContinuous && appState.isVoiceActive) {
                     appState.isVoiceActive = false;
                     updateVoiceUI();
                     if (recognition) { try { recognition.abort(); } catch(e){} }
                 } else if (appState.isContinuous) {
-                    // 若是連續模式，Abort 會讓它立刻觸發 onend 並重新 Start，徹底清空內部疊字 Buffer
                     if (recognition) { try { recognition.abort(); } catch(e){} }
                 }
                 
                 renderThinkingState(true);
 
-                // Reminder Logic
                 if (appState.pendingReminder && appState.reminderStage > 0) {
                      const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                      if (todo) {
@@ -1307,11 +1312,9 @@
                     file: fileDataToPass 
                 });
                 
-                // 回傳到聊天室
                 if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse);
                 else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources, finalRes.file);
 
-                // 若有 pending 分析任務，自動將分析結果附加回對應的筆記/紀錄
                 if (appState.pendingAnalyzeContextId) {
                     if (appState.pendingAnalyzeType === 'voiceNote') {
                         const n = appState.notes.find(x => x.id === appState.pendingAnalyzeContextId);
@@ -1325,7 +1328,7 @@
 
             } catch (error) {
                 console.error("Handler Error:", error);
-                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援分析您上傳的檔案格式，請嘗試更換其他模型。)\n`, 'system');
+                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援此格式或伺服器壅塞，請稍後再試。)\n`, 'system');
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = "";
             } finally {
                 appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
@@ -1376,27 +1379,24 @@
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
                 const chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
 
-                // 全域畫圖意圖偵測
                 const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim());
 
                 if(model === 'gemini') {
                     let selectedModelName = appState.geminiModel;
                     let isAutoRouted = false;
 
-                    // ★ AI 畫圖自動攔截 
                     if (isImageIntent && !selectedModelName.includes('imagen') && !selectedModelName.includes('image')) {
                         selectedModelName = 'imagen-4.0-generate-001'; 
                         isAutoRouted = true;
                     } 
                     else if (selectedModelName === 'gemini-multi') {
                         isAutoRouted = true;
-                        selectedModelName = 'gemini-3.0-flash'; // 預設高速
+                        selectedModelName = 'gemini-3.0-flash'; 
                         if (userText.length > 500 || /(深入|詳細|分析|總結|論文|報告|程式碼|複雜|重點摘要|結構化)/.test(userText) || (options.file && options.file.category === 'media')) {
-                            selectedModelName = 'gemini-3.1-pro'; // 複雜任務升級
+                            selectedModelName = 'gemini-3.1-pro'; 
                         }
                     }
 
-                    // === Imagen 圖像生成專屬處理 (防禦 Safety Filter 導致的 Undefined 錯誤) ===
                     if (selectedModelName.includes('imagen')) {
                         let apiVersion = selectedModelName.includes('4.0') ? 'v1alpha' : 'v1beta';
                         let url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:predict?key=${key}`;
@@ -1416,7 +1416,6 @@
 
                         if (!res.ok) throw new Error(data.error?.message || '圖像生成失敗，請檢查提示詞或API權限。');
                         
-                        // ★ 核心修復：防止 Safety Filter 觸發時 predictions 為空導致 undefined
                         if (!data.predictions || data.predictions.length === 0 || !data.predictions[0].bytesBase64Encoded) {
                             throw new Error("無法生成圖片。這通常是因為提示詞 (Prompt) 觸發了 AI 的安全審查機制 (Safety Filter) 而遭到阻擋。請嘗試修改您的描述。");
                         }
@@ -1428,9 +1427,8 @@
                         return { text: resTxt, sources: [], file: fileObj };
                     }
 
-                    // 決定 API Endpoint (實驗版/預覽版/3.x必須走 v1alpha)
                     let apiVersion = 'v1beta';
-                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3') || selectedModelName.includes('thinking')) {
+                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3') || selectedModelName.includes('thinking') || selectedModelName.includes('research') || selectedModelName.includes('computer')) {
                         apiVersion = 'v1alpha'; 
                     }
 
@@ -1462,7 +1460,6 @@
                     let res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     let data = await res.json();
                     
-                    // ★ 終極防呆降級機制：如果 3.x 或實驗版在該 API Key 沒權限報 404，自動降回 2.5
                     if (!res.ok && data.error && data.error.code === 404 && (selectedModelName.includes('preview') || selectedModelName.includes('3.'))) {
                         console.warn(`[Auto-Fallback] Model ${selectedModelName} not found, retrying with 2.5 series.`);
                         let fallbackModel = 'gemini-2.5-flash';
@@ -1599,7 +1596,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 50 系統震撼升級完畢！\n\n✅ **LINE 喚醒精準修復**：引入最新的結構化意圖辨識，保證每次要求傳 Line 都能產生完美的 Universal Links 並直接喚醒原生 APP！\n✅ **連續語音極簡進化**：現在只需一鍵按下 (∞) 按鈕，即刻啟動連續對話模式，再按一次即可關閉，無需繁瑣設定。\n✅ **語音防疊字護盾**：徹底修復了 Android Web Speech API 著名的疊字與重複 Bug！系統會在使用期間自動清空底層記憶體，讓對話前所未有地流暢！', 
+                    text: 'NOVA 51 系統升級完畢！\n\n✅ **手機設定匯出修復**：修正了在手機環境下無法順利下載設定檔的問題，現在點擊保證可以順利匯出了！\n✅ **APP 自動跳轉優化**：針對手機瀏覽器嚴格的彈出視窗阻擋器，重新設計了跳轉機制。現在系統產生精美的跳轉卡片後，會自動嘗試繞過阻擋將您帶往目標 APP；若遭到阻擋，您仍可隨時點擊卡片手動開啟。\n✅ **自動約束指令**：要求 AI 必須 100% 回傳跳轉網址，確保 APP 跳轉卡片永遠不會消失！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1616,10 +1613,8 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
                 
-                // ★ NOVA 50 核心修復：強制關閉原生的 continuous 屬性，交由我們手動循環重啟
-                // 這能徹底解決 Android Chrome 內建緩衝區造成的「疊字」與「句子重複」Bug
                 recognition = new SR(); recognition.lang = 'zh-TW'; 
-                recognition.continuous = false; // 關鍵修復點
+                recognition.continuous = false; 
                 recognition.interimResults = true; 
                 
                 recognition.onstart = () => { 
@@ -1627,7 +1622,6 @@
                 };
                 
                 recognition.onend = () => { 
-                    // 當處於活躍狀態時，無聲中斷後立刻重啟 (清除原生 Buffer)
                     if (appState.isContinuous || appState.isVoiceActive || (mediaRecorder && mediaRecorder.state === 'recording')) { 
                         setTimeout(() => { try { recognition.start(); } catch(e){} }, 100); 
                     } else {
@@ -1641,7 +1635,6 @@
                     
                     for (let i = e.resultIndex; i < e.results.length; ++i) {
                         let text = e.results[i][0].transcript;
-                        // 雙重防護：防禦句內疊字 (如 測試測試 -> 測試)
                         if (text.length >= 4 && text.length % 2 === 0) { 
                             const mid = text.length / 2; 
                             if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); 
@@ -1650,7 +1643,6 @@
                         else interimT += text;
                     }
                     
-                    // 當一句話被最終確立時，才推入我們的緩衝區
                     if (finalT) {
                         chatInitialInput += (chatInitialInput ? " " : "") + finalT;
                     }
@@ -1667,11 +1659,10 @@
                         if (voiceTimer) clearTimeout(voiceTimer); 
                         voiceTimer = setTimeout(() => { 
                             if(input.value.trim() !== '') handleSendMessage(); 
-                        }, 5000); // 5秒自動送出
+                        }, 5000); 
                     }
                 };
                 
-                // Note 區的語音輸入同樣套用防疊字機制
                 noteRecognition = new SR(); noteRecognition.lang = 'zh-TW'; 
                 noteRecognition.continuous = false; 
                 noteRecognition.interimResults = true;
@@ -1741,4 +1732,4 @@
         };
     </script>
 </body>
-    </html>
+</html>
