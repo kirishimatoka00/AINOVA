@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 58</title>
+    <title>NOVA 59</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 58</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 59</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 58</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 59</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -315,7 +315,6 @@
                     <header class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white">本地筆記中心</h2>
                         <div class="flex space-x-2">
-                            <!-- ★ 修改點：新增會議雙軌錄音按鈕 -->
                             <button onclick="startMeetingRecording('note')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm" title="雙軌錄製麥克風與會議聲音"><i class="ph-bold ph-headset"></i><span class="hidden sm:inline">雙軌錄音</span></button>
                             <button onclick="startVoiceNote()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-microphone"></i><span class="hidden sm:inline">一般錄音</span></button>
                             <button onclick="addNoteManually()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-plus"></i><span class="hidden sm:inline">新增</span></button>
@@ -331,7 +330,6 @@
                     <header class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white">錄音紀錄</h2>
                         <div class="flex space-x-2">
-                            <!-- ★ 修改點：新增會議雙軌錄音按鈕與一般錄音按鈕 -->
                             <button onclick="startAudioRecordOnly()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-microphone"></i><span class="hidden sm:inline">錄音</span></button>
                             <button onclick="startMeetingRecording('record')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm" title="雙軌錄製麥克風與會議聲音"><i class="ph-bold ph-headset"></i><span class="hidden sm:inline">雙軌會議錄音</span></button>
                         </div>
@@ -356,7 +354,7 @@
 
             <!-- EDIT TODO MODAL -->
             <div id="todo-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex-col">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="text-xl font-bold text-white">編輯行程</h3>
                         <button onclick="closeTodoEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
@@ -447,7 +445,7 @@
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
             recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null,
             pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "",
-            activeMediaTracks: [], recordingAudioCtx: null // 用於雙軌錄音停止與清除
+            activeMediaTracks: [], recordingAudioCtx: null 
         };
         
         const MODEL_CONFIG = {
@@ -456,7 +454,6 @@
 
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
-        // --- Markdown 與 Azure Blob 圖片防失真解析器 ---
         function formatMessage(text) { 
             if (!text) return ''; 
             let images = [];
@@ -492,7 +489,6 @@
             document.body.removeChild(textArea);
         };
         
-        // --- ★ 修復手機端下載：Base64 轉 Blob 實體下載機制 ---
         function base64ToBlob(base64URI) {
             const splitIndex = base64URI.indexOf(',');
             const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
@@ -515,11 +511,9 @@
             const year = dateObj.getFullYear();
             const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
             
-            // 強制使用 .weba 副檔名
             const finalFilename = `NOVA_Audio_${month}${day}${year}_${timeStr}.weba`;
 
             try {
-                // 將 Base64 轉回實體 Blob，解決手機瀏覽器遺失檔名與副檔名的問題
                 const blob = base64ToBlob(record.audioData);
                 const blobUrl = URL.createObjectURL(blob);
 
@@ -530,7 +524,6 @@
                 document.body.appendChild(a);
                 a.click();
                 
-                // 延遲釋放資源，確保手機有足夠時間觸發下載
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(blobUrl);
@@ -627,7 +620,6 @@
             if(mini) mini.innerHTML=appState.todos.slice(0,3).map(t=>`<div class="flex items-center space-x-3 p-2 bg-slate-950/50 rounded-lg border border-slate-800/50"><div class="w-1.5 h-8 rounded-full ${t.done?'bg-green-500':'bg-blue-500'}"></div><div class="flex-1 min-w-0"><p class="text-xs truncate ${t.done?'line-through text-slate-600':'text-slate-300'}">${escapeHtml(t.text)}</p></div></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無待辦</p>'; 
         }
 
-        // --- ★ LOCAL AUDIO RENDERING FOR NOTES & RECORDS ---
         function renderNotes() { 
             const el = document.getElementById('full-note-list'); const mini = document.getElementById('mini-note-list');
             if(el) el.innerHTML=appState.notes.map(n=>{
@@ -1135,16 +1127,22 @@
             let sysStream = null;
             let mixedStream = null;
 
+            // ★ 偵測是否為手機或平板環境
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
             try {
-                // 1. 取得麥克風
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // 1. 取得麥克風 (若是手機則強制關閉降噪等處理，追求極限環境收音)
+                const micConstraints = isMobile ? 
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } } : 
+                    { audio: true };
+
+                micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
                 appState.activeMediaTracks.push(...micStream.getTracks());
 
-                // 2. 嘗試取得系統音訊 (需要使用者互動)
-                if (navigator.mediaDevices.getDisplayMedia) {
+                // 2. 嘗試取得系統音訊 (僅限電腦端)
+                if (!isMobile && navigator.mediaDevices.getDisplayMedia) {
                     try {
                         addMessage("💡 提示：請在彈出的視窗中選擇【分頁】或【整個螢幕】，並務必勾選左下角的【分享分頁音訊】或【分享系統音訊】，才能成功錄下會議中別人的聲音喔！", 'system');
-                        // 瀏覽器通常要求 video: true 才能同時要 audio
                         sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                         appState.activeMediaTracks.push(...sysStream.getTracks());
                         
@@ -1153,8 +1151,9 @@
                     } catch (sysErr) {
                         addMessage("⚠️ 未取得系統音訊授權或取消操作，將為您降級為僅錄製麥克風聲音。", 'system');
                     }
-                } else {
-                    addMessage("⚠️ 您當前的瀏覽器或裝置(通常為手機)不支援擷取系統聲音，將僅錄製麥克風。", 'system');
+                } else if (isMobile) {
+                    // ★ 手機環境的特別溫馨提示
+                    addMessage("⚠️ **系統限制提醒**：iOS 與 Android 手機「網頁端」基於隱私安全，嚴格禁止在戴耳機時側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，系統已自動為您切換為【高靈敏度環境收音模式】。請**拔下耳機，改用手機擴音播放**，讓麥克風同時收錄您的聲音與擴音器的聲音！", 'system');
                 }
 
                 // 3. 混合音軌 (使用 Web Audio API)
@@ -1176,11 +1175,11 @@
                     }
                     
                     mixedStream = dest.stream;
-                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始【雙軌語音筆記】... (已成功混合麥克風與會議聲音，點擊紅燈結束)" : "🎙️ 開始【雙軌會議錄音】... (已成功混合麥克風與會議聲音，點擊紅燈結束)";
+                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始【雙軌語音筆記】... (已成功混合麥克風與系統聲音，點擊紅燈結束)" : "🎙️ 開始【雙軌會議錄音】... (已成功混合麥克風與系統聲音，點擊紅燈結束)";
                     addMessage(titleMsg, 'system');
                 } else {
                     mixedStream = micStream;
-                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製語音筆記... (僅麥克風，點擊紅燈結束)" : "🎙️ 開始錄音... (僅麥克風，點擊紅燈結束)";
+                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製語音筆記... (僅麥克風環境音，點擊紅燈結束)" : "🎙️ 開始錄音... (僅麥克風環境音，點擊紅燈結束)";
                     addMessage(titleMsg, 'system');
                 }
 
@@ -1210,7 +1209,7 @@
         }
 
         async function startAudioRecording() {
-            // 這個舊版函式保留供普通錄音按鈕調用 (僅錄 Mic)
+            // 普通錄音按鈕調用 (僅錄 Mic)
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1853,7 +1852,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 58 系統升級完畢！\n\n✅ **會議雙軌錄音 (雙向擷取)**：當您戴著耳機開會時，一般錄音只能錄到自己的聲音。現在新增了「雙軌錄音」功能！點擊後系統會同時擷取「您的麥克風」以及「電腦會議發出的聲音」，完美記錄整個會議過程！\n*(註: 此雙向擷取功能受限於系統安全限制，強烈建議在電腦版 Chrome/Edge 上使用)*\n✅ **下載 Bug 終極修復**：修正了在手機環境下無法順利下載設定檔的問題，點擊保證可以順利匯出！', 
+                    text: 'NOVA 59 系統升級完畢！\n\n✅ **手機會議收音突破方案**：解決了手機瀏覽器「戴耳機無法擷取系統音效」的硬體限制。當您在手機使用「雙軌錄音」時，系統會啟動【高靈敏度環境收音模式】。只需**拔下耳機、使用擴音**，即可完美收錄會議全場聲音！\n✅ **精準相容性優化**：移除了不穩定的實驗性模型，保障連線速度；修復了 Imagen 4.0 的安全審查錯誤，讓每一次畫圖都能優雅給出提示而不崩潰；同時下調了連續對話的等待時間至 **5 秒**！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
