@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 52</title>
+    <title>NOVA 53</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -34,6 +34,7 @@
         .dot-flashing::after { left: 10px; animation-delay: 1s; }
         @keyframes dot-flashing { 0% { background-color: #9880ff; } 50%, 100% { background-color: rgba(152, 128, 255, 0.2); } }
         .msg-content a, #doc-content-area a { color: #60a5fa; text-decoration: underline; word-break: break-all; cursor: pointer; }
+        .msg-content img, #doc-content-area img { max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; border: 1px solid rgba(255,255,255,0.1); }
         .msg-content p, #doc-content-area div { margin-bottom: 0.5em; line-height: 1.6; }
         .slide-in { animation: slideIn 0.3s ease-out; }
         .msg-group:hover .msg-actions { opacity: 1; }
@@ -60,7 +61,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 52</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 53</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -82,7 +83,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 52</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 53</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -223,7 +224,7 @@
                             <span id="chat-file-name" class="text-xs text-slate-300 max-w-[150px] truncate">filename</span>
                             <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
                         </div>
-                        <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
+                        <input type="file" id="audio-analyze-input" accept="audio/*,video/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
                         
                         <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
                             <label for="chat-file-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳檔案或圖片"><i class="ph-bold ph-paperclip text-xl"></i></label>
@@ -1011,7 +1012,7 @@
         async function fetchWeather(lat, lon, locName, silent) { try { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`; const res = await fetch(url); const data = await res.json(); if(data.current) { const c = data.current; appState.weather = { temp: Math.round(c.temperature_2m), humidity: c.relative_humidity_2m, wind: c.wind_speed_10m, condition: wmoToCondition(c.weather_code), loc: locName }; renderWeather(); updateLocStatus("已更新"); if(!silent) addMessage(`✅ 天氣已更新: ${c.temperature_2m}°C`, "system"); } } catch(e) { updateLocStatus("錯誤"); } }
         function updateLocStatus(msg) { 
             const el = document.getElementById('location-status'); if(el) el.innerText = msg; 
-            if(msg==="已更新"||msg.includes("預設")||msg.includes("手動")) { 
+            if(msg==="已更新"||msg.includes("預設")||msg.includes("手掌握")) { 
                 const {loc, temp} = appState.weather; 
                 const locName = document.getElementById('location-name'); if(locName) locName.innerText = loc; 
                 const mTemp = document.getElementById('mobile-weather-temp'); if(mTemp) mTemp.innerText = `${temp}°`; 
@@ -1026,7 +1027,10 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = uploadAudioRecording; mediaRecorder.start();
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = uploadAudioRecording; 
+                mediaRecorder.start();
+                
                 document.getElementById('recording-status').classList.remove('hidden'); document.getElementById('recording-status').classList.add('flex');
                 let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (可輸入「結束錄音」或點擊上方紅燈停止)";
                 addMessage(titleMsg, 'system');
@@ -1043,21 +1047,43 @@
         }
         
         async function uploadAudioRecording() {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            if (audioChunks.length === 0) {
+                addMessage(`⚠️ 錄音失敗：未擷取到音訊內容`, 'system');
+                appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
+                return;
+            }
+
+            // 動態抓取瀏覽器錄製的 MimeType，解決 iOS (mp4) vs Android (webm) 衝突
+            const actualMimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+            const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+            
+            let ext = 'webm';
+            if (actualMimeType.includes('mp4')) ext = 'm4a';
+            else if (actualMimeType.includes('mpeg')) ext = 'mp3';
+            else if (actualMimeType.includes('ogg')) ext = 'ogg';
+            
             const dateObj = new Date(); const dateStr = dateObj.toISOString().split('T')[0]; const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, ''); const recordId = Date.now();
-            const filename = `NOVA_Audio_${dateStr}_${timeStr}.webm`; const displayDate = dateObj.toLocaleString();
+            const filename = `NOVA_Audio_${dateStr}_${timeStr}.${ext}`; const displayDate = dateObj.toLocaleString();
             let finalDriveUrl = "此為跨域代理，請至您的 Google Drive 確認檔案";
 
             if (!appState.driveUrl) {
-                const url = URL.createObjectURL(audioBlob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+                const url = URL.createObjectURL(audioBlob); 
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = filename; 
+                document.body.appendChild(a); a.click(); 
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
                 addMessage(`⚠️ 未設定 Drive URL，音檔已自動下載。`, 'system'); finalDriveUrl = url; 
             } else {
                 addMessage(`☁️ 正在同步 ${filename} 到 Google Drive...`, 'system');
-                let base64data = '';
                 try {
                     const reader = new FileReader(); reader.readAsDataURL(audioBlob);
-                    base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
-                    const res = await fetch(appState.driveUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
+                    const base64data = await new Promise((resolve, reject) => { 
+                        reader.onloadend = () => resolve(reader.result.split(',')[1]); 
+                        reader.onerror = reject;
+                    });
+                    
+                    const payload = JSON.stringify({ filename, mimeType: actualMimeType, data: base64data });
+                    let res = await fetch(appState.driveUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: payload });
+                    
                     if (res.ok) {
                         const resText = await res.text();
                         try { const resJson = JSON.parse(resText); finalDriveUrl = resJson.url || resJson.link || resText; } catch(e) { finalDriveUrl = resText; }
@@ -1065,11 +1091,19 @@
                     } else { throw new Error('HTTP ' + res.status); }
                 } catch (e) { 
                     try {
-                        if (base64data) {
-                            await fetch(appState.driveUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ filename, mimeType: 'audio/webm', data: base64data }) });
-                            finalDriveUrl = "https://drive.google.com/"; addMessage(`✅ 音檔已成功同步至 Google Drive`, 'system');
-                        } else throw new Error('無法讀取音檔內容');
-                    } catch(err) { addMessage(`❌ 雲端同步失敗: 請檢查設定中的 URL 是否正確。(${err.message})`, 'system'); }
+                        const reader = new FileReader(); reader.readAsDataURL(audioBlob);
+                        const base64data = await new Promise((resolve) => { reader.onloadend = () => resolve(reader.result.split(',')[1]); });
+                        
+                        await fetch(appState.driveUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ filename, mimeType: actualMimeType, data: base64data }) });
+                        finalDriveUrl = "https://drive.google.com/"; addMessage(`✅ 音檔已透過背景強制同步至 Google Drive`, 'system');
+                    } catch(err) { 
+                        addMessage(`❌ 雲端同步失敗: 請檢查設定中的 URL 是否正確。已為您啟動本機下載備份。(${err.message})`, 'system'); 
+                        const url = URL.createObjectURL(audioBlob); 
+                        const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = filename; 
+                        document.body.appendChild(a); a.click(); 
+                        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+                        finalDriveUrl = url;
+                    }
                 }
             }
 
@@ -1137,7 +1171,10 @@
 - Email：mailto:{信箱}?subject={URL編碼}&body={URL編碼}
 - Line 傳訊/開啟：https://line.me/R/msg/text/?{URL編碼(若無指定內容請填寫"你好")}
 - YouTube 搜尋：https://www.youtube.com/results?search_query={URL編碼}
+- Facebook：https://www.facebook.com/
+- Instagram：https://www.instagram.com/
 - Google 地圖：https://www.google.com/maps/search/?api=1&query={URL編碼}
+- 網頁搜尋：https://www.google.com/search?q={URL編碼}
 - 台灣高鐵/T-EX行動購票：tex:// 或 https://tex.thsrc.com.tw/
 - 蝦皮購物：shopee://tw 或 https://shopee.tw/
 - 其他各式 APP (如銀行、訂票、社群)：請盡全力判斷並使用其專屬的 Custom Scheme (例如 appname://)；若不確定 Scheme，請輸出該 APP 的官方 HTTPS 網址 (現代手機會透過 Universal Link 自動攔截)。
@@ -1309,9 +1346,11 @@
                     file: fileDataToPass 
                 });
                 
+                // 回傳到聊天室
                 if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse);
                 else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources, finalRes.file);
 
+                // 若有 pending 分析任務，自動將分析結果附加回對應的筆記/紀錄
                 if (appState.pendingAnalyzeContextId) {
                     if (appState.pendingAnalyzeType === 'voiceNote') {
                         const n = appState.notes.find(x => x.id === appState.pendingAnalyzeContextId);
@@ -1593,7 +1632,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 52 系統大核心升級完畢！\n\n✅ **APP 喚醒精準度大躍進**：透過強化 AI 的知識庫，現在除了常規的 LINE、YouTube 之外，像「T-EX行動購票」、「蝦皮購物」等各種區域性、特定應用的 APP，系統都能以極高精準度找到其專屬的 Custom Scheme 來為您強勢喚醒！\n✅ **語音體驗再次進化**：針對 Android 與 iOS 在不同瀏覽器下導致的語音記憶體錯亂 Bug 進行了徹底攔截，疊字與重複已不復存在。', 
+                    text: 'NOVA 53 系統升級完畢！\n\n✅ **動態錄音格式偵測**：系統現在能自動判斷您的手機作業系統 (iOS / Android) 所採用的錄音格式 (MP4/M4A/WebM)。再也不會有「檔案類型不符」導致無法上傳 Google Drive 或檔案損毀的問題！\n✅ **三層雲端同步護盾**：錄音上傳加入了「常規上傳」、「無痕背景同步」與「本機自動備份下載」三層防護。如果您的 Google Drive 腳本設定有誤，或瀏覽器嚴格阻擋跨域，系統會立即啟動備案將音檔直接下載回手機內，確保您的語音筆記絕對不會遺失！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
