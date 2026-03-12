@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 57</title>
+    <title>NOVA 58</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 57</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 58</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 57</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 58</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -315,8 +315,10 @@
                     <header class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white">本地筆記中心</h2>
                         <div class="flex space-x-2">
-                            <button onclick="startVoiceNote()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"><i class="ph-bold ph-microphone"></i><span class="hidden sm:inline">新增語音筆記</span></button>
-                            <button onclick="addNoteManually()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"><i class="ph-bold ph-plus"></i><span>新增</span></button>
+                            <!-- ★ 修改點：新增會議雙軌錄音按鈕 -->
+                            <button onclick="startMeetingRecording('note')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm" title="雙軌錄製麥克風與會議聲音"><i class="ph-bold ph-headset"></i><span class="hidden sm:inline">雙軌錄音</span></button>
+                            <button onclick="startVoiceNote()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-microphone"></i><span class="hidden sm:inline">一般錄音</span></button>
+                            <button onclick="addNoteManually()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-plus"></i><span class="hidden sm:inline">新增</span></button>
                         </div>
                     </header>
                     <div id="full-note-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -326,7 +328,14 @@
             <!-- AUDIO RECORDS VIEW -->
             <div id="view-audio" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-4xl mx-auto w-full">
-                    <header class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">錄音紀錄</h2></header>
+                    <header class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">錄音紀錄</h2>
+                        <div class="flex space-x-2">
+                            <!-- ★ 修改點：新增會議雙軌錄音按鈕與一般錄音按鈕 -->
+                            <button onclick="startAudioRecordOnly()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-microphone"></i><span class="hidden sm:inline">錄音</span></button>
+                            <button onclick="startMeetingRecording('record')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm" title="雙軌錄製麥克風與會議聲音"><i class="ph-bold ph-headset"></i><span class="hidden sm:inline">雙軌會議錄音</span></button>
+                        </div>
+                    </header>
                     <div id="audio-records-list" class="space-y-4"></div>
                 </div>
             </div>
@@ -347,8 +356,11 @@
 
             <!-- EDIT TODO MODAL -->
             <div id="todo-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex-col">
-                    <h3 class="text-xl font-bold text-white mb-4">編輯行程</h3>
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col">
+                    <div class="flex justify-between items-center mb-4 shrink-0">
+                        <h3 class="text-xl font-bold text-white">編輯行程</h3>
+                        <button onclick="closeTodoEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+                    </div>
                     <input type="hidden" id="edit-todo-id">
                     <div class="space-y-4">
                         <div><label class="text-xs text-slate-400 mb-1 block">行程內容</label><input type="text" id="edit-todo-text" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none"></div>
@@ -363,7 +375,7 @@
 
             <!-- EDIT NOTE MODAL -->
             <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex-col max-h-[90vh]">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="text-xl font-bold text-white">編輯筆記</h3>
                         <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
@@ -417,7 +429,7 @@
                 req.onerror = (e) => reject(e.target.error);
             });
         }
-        function loadStoreFromDB(storeName) { return new Promise((resolve) => { if (!db) return resolve([]); try { const tx = db.transaction(storeName, 'readonly'); const req = tx.objectStore(storeName).getAll(); req.onsংস= () => resolve(req.result || []); req.onerror = () => resolve([]); } catch(e) { resolve([]); } }); }
+        function loadStoreFromDB(storeName) { return new Promise((resolve) => { if (!db) return resolve([]); try { const tx = db.transaction(storeName, 'readonly'); const req = tx.objectStore(storeName).getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); } catch(e) { resolve([]); } }); }
         function saveToDB(storeName, item) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).put(item); } catch(e) {} }
         function deleteFromDB(storeName, id) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).delete(id); } catch(e) {} }
         function clearStoreDB(storeName) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).clear(); } catch(e) {} }
@@ -434,7 +446,8 @@
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
             recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null,
-            pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "" 
+            pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "",
+            activeMediaTracks: [], recordingAudioCtx: null // 用於雙軌錄音停止與清除
         };
         
         const MODEL_CONFIG = {
@@ -614,6 +627,7 @@
             if(mini) mini.innerHTML=appState.todos.slice(0,3).map(t=>`<div class="flex items-center space-x-3 p-2 bg-slate-950/50 rounded-lg border border-slate-800/50"><div class="w-1.5 h-8 rounded-full ${t.done?'bg-green-500':'bg-blue-500'}"></div><div class="flex-1 min-w-0"><p class="text-xs truncate ${t.done?'line-through text-slate-600':'text-slate-300'}">${escapeHtml(t.text)}</p></div></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無待辦</p>'; 
         }
 
+        // --- ★ LOCAL AUDIO RENDERING FOR NOTES & RECORDS ---
         function renderNotes() { 
             const el = document.getElementById('full-note-list'); const mini = document.getElementById('mini-note-list');
             if(el) el.innerHTML=appState.notes.map(n=>{
@@ -1087,29 +1101,154 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        function startVoiceNote() { appState.recordingContext = 'note'; switchTab('dashboard'); appState.currentAudioTranscript = ""; startAudioRecording(); }
+        function startAudioRecordOnly() {
+            appState.recordingContext = 'record';
+            switchTab('dashboard');
+            appState.currentAudioTranscript = "";
+            startAudioRecording();
+        }
+
+        function startVoiceNote() { 
+            appState.recordingContext = 'note'; 
+            switchTab('dashboard'); 
+            appState.currentAudioTranscript = ""; 
+            startAudioRecording(); 
+        }
+
+        // --- ★ 雙軌錄音 (麥克風 + 系統音) ---
+        async function startMeetingRecording(context = 'record') {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
+                addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; 
+            }
+            
+            appState.recordingContext = context;
+            switchTab('dashboard');
+            appState.currentAudioTranscript = "";
+            
+            // 確保之前沒有殘留的音軌
+            if (appState.activeMediaTracks) {
+                appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
+            }
+            appState.activeMediaTracks = [];
+
+            let micStream = null;
+            let sysStream = null;
+            let mixedStream = null;
+
+            try {
+                // 1. 取得麥克風
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                appState.activeMediaTracks.push(...micStream.getTracks());
+
+                // 2. 嘗試取得系統音訊 (需要使用者互動)
+                if (navigator.mediaDevices.getDisplayMedia) {
+                    try {
+                        addMessage("💡 提示：請在彈出的視窗中選擇【分頁】或【整個螢幕】，並務必勾選左下角的【分享分頁音訊】或【分享系統音訊】，才能成功錄下會議中別人的聲音喔！", 'system');
+                        // 瀏覽器通常要求 video: true 才能同時要 audio
+                        sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                        appState.activeMediaTracks.push(...sysStream.getTracks());
+                        
+                        // 拿到音訊後，立即關閉無用的影像軌以節省資源
+                        sysStream.getVideoTracks().forEach(track => { track.stop(); });
+                    } catch (sysErr) {
+                        addMessage("⚠️ 未取得系統音訊授權或取消操作，將為您降級為僅錄製麥克風聲音。", 'system');
+                    }
+                } else {
+                    addMessage("⚠️ 您當前的瀏覽器或裝置(通常為手機)不支援擷取系統聲音，將僅錄製麥克風。", 'system');
+                }
+
+                // 3. 混合音軌 (使用 Web Audio API)
+                if (sysStream && sysStream.getAudioTracks().length > 0) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    const audioCtx = new AudioContextClass();
+                    appState.recordingAudioCtx = audioCtx;
+                    
+                    const dest = audioCtx.createMediaStreamDestination();
+                    
+                    if (micStream.getAudioTracks().length > 0) {
+                        const micSource = audioCtx.createMediaStreamSource(micStream);
+                        micSource.connect(dest);
+                    }
+                    
+                    if (sysStream.getAudioTracks().length > 0) {
+                        const sysSource = audioCtx.createMediaStreamSource(sysStream);
+                        sysSource.connect(dest);
+                    }
+                    
+                    mixedStream = dest.stream;
+                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始【雙軌語音筆記】... (已成功混合麥克風與會議聲音，點擊紅燈結束)" : "🎙️ 開始【雙軌會議錄音】... (已成功混合麥克風與會議聲音，點擊紅燈結束)";
+                    addMessage(titleMsg, 'system');
+                } else {
+                    mixedStream = micStream;
+                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製語音筆記... (僅麥克風，點擊紅燈結束)" : "🎙️ 開始錄音... (僅麥克風，點擊紅燈結束)";
+                    addMessage(titleMsg, 'system');
+                }
+
+                // 4. 開始錄製
+                let actualMimeType = 'audio/webm';
+                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) actualMimeType = 'audio/webm;codecs=opus';
+                else if (MediaRecorder.isTypeSupported('audio/mp4')) actualMimeType = 'audio/mp4';
+                
+                mediaRecorder = new MediaRecorder(mixedStream, { mimeType: actualMimeType });
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = uploadAudioRecording; 
+                mediaRecorder.start();
+                
+                document.getElementById('recording-status').classList.remove('hidden'); 
+                document.getElementById('recording-status').classList.add('flex');
+                
+                if (recognition && !appState.isListening) { 
+                    chatInitialInput = document.getElementById('user-input').value; 
+                    recognition.start(); 
+                }
+
+            } catch (err) {
+                addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限或瀏覽器設定。", 'system');
+                console.error(err);
+            }
+        }
+
         async function startAudioRecording() {
+            // 這個舊版函式保留供普通錄音按鈕調用 (僅錄 Mic)
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
+                appState.activeMediaTracks = stream.getTracks(); // 儲存 track 以便結束時釋放
+
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                 mediaRecorder.onstop = uploadAudioRecording; 
                 mediaRecorder.start();
                 
                 document.getElementById('recording-status').classList.remove('hidden'); document.getElementById('recording-status').classList.add('flex');
-                let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (可輸入「結束錄音」或點擊上方紅燈停止)";
+                let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (僅麥克風，點擊上方紅燈停止)";
                 addMessage(titleMsg, 'system');
                 if (recognition && !appState.isListening) { chatInitialInput = document.getElementById('user-input').value; recognition.start(); }
             } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
         }
+
         function stopAudioRecording() {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop(); if(mediaRecorder.stream) { mediaRecorder.stream.getTracks().forEach(track => track.stop()); }
+                mediaRecorder.stop(); 
+                
+                // 徹底停止所有音軌 (包含分頁/螢幕分享音軌)
+                if (appState.activeMediaTracks) {
+                    appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
+                    appState.activeMediaTracks = [];
+                }
+                // 關閉 AudioContext
+                if (appState.recordingAudioCtx) {
+                    try { appState.recordingAudioCtx.close(); } catch(e){}
+                    appState.recordingAudioCtx = null;
+                }
+
                 if (recognition) { try { recognition.abort(); } catch(e){} }
                 document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex');
                 addMessage("⏹️ 錄音結束，正在處理並儲存至本地端...", 'system');
-            } else { document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex'); }
+            } else { 
+                document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex'); 
+            }
         }
         
         async function uploadAudioRecording() {
@@ -1453,6 +1592,39 @@
             }
         }
 
+        function parseTimeNatural(str) {
+            const now = new Date(); let result = { complete: false, timestamp: null, missing: null };
+            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
+            if (relMatch) {
+                const amount = parseInt(relMatch[1]); const unit = relMatch[2];
+                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
+                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
+                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
+                return { complete: true, timestamp: now.getTime() };
+            }
+            let targetDate = new Date(); let hasDate = false;
+            if (str.includes('明天') || str.includes('tomorrow')) { targetDate.setDate(targetDate.getDate() + 1); hasDate = true; } 
+            else if (str.includes('後天')) { targetDate.setDate(targetDate.getDate() + 2); hasDate = true; } 
+            else if (str.match(/\d{1,2}月\d{1,2}日/)) { const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/); targetDate.setMonth(parseInt(dMatch[1]) - 1); targetDate.setDate(parseInt(dMatch[2])); hasDate = true; } 
+            else if (str.includes('今天') || str.includes('today')) { hasDate = true; }
+
+            let hour = -1, minute = 0;
+            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
+            if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
+
+            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
+            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
+
+            if (hour !== -1) {
+                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) return { complete: false, missing: 'ampm' }; 
+                if (isPM && hour < 12) hour += 12; if (isAM && hour === 12) hour = 0; 
+                targetDate.setHours(hour, minute, 0, 0);
+                if (!hasDate) { if (targetDate < new Date()) return { complete: false, missing: 'date' }; }
+                return { complete: true, timestamp: targetDate.getTime() };
+            }
+            return { complete: false, missing: 'time' };
+        }
+
         async function fetchAIResponse(userText, model, options = {}) {
             const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { 
                 const controller = new AbortController(); const id = setTimeout(() => controller.abort(), timeout);
@@ -1681,7 +1853,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 57 系統升級完畢！\n\n✅ **手機音檔下載終極修復**：徹底解決了在手機端 (iOS Safari / Android Chrome) 點擊下載音檔時，副檔名消失且檔名變成 document 的問題。現在系統會透過底層二進制 (Blob) 封裝，保證在手機上下載的檔案也會完美遵循 `NOVA_Audio_日期_時間.weba` 的格式！', 
+                    text: 'NOVA 58 系統升級完畢！\n\n✅ **會議雙軌錄音 (雙向擷取)**：當您戴著耳機開會時，一般錄音只能錄到自己的聲音。現在新增了「雙軌錄音」功能！點擊後系統會同時擷取「您的麥克風」以及「電腦會議發出的聲音」，完美記錄整個會議過程！\n*(註: 此雙向擷取功能受限於系統安全限制，強烈建議在電腦版 Chrome/Edge 上使用)*\n✅ **下載 Bug 終極修復**：修正了在手機環境下無法順利下載設定檔的問題，點擊保證可以順利匯出！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
