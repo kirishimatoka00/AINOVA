@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 60</title>
+    <title>NOVA 59</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 60</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 59</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 60</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 59</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -373,7 +373,7 @@
 
             <!-- EDIT NOTE MODAL -->
             <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex-col max-h-[90vh]">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="text-xl font-bold text-white">編輯筆記</h3>
                         <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
@@ -401,6 +401,7 @@
         </main>
     </div>
     
+    <!-- 全域 Toast 提示框 -->
     <div id="toast">✅ 訊息提示</div>
 
     <script>
@@ -991,13 +992,9 @@
         function openTodoEdit(id) {
             const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
             document.getElementById('edit-todo-id').value = t.id; document.getElementById('edit-todo-text').value = t.text; document.getElementById('edit-todo-time').value = t.time !== '手動' ? t.time : '';
-            const modal = document.getElementById('todo-edit-modal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('todo-edit-modal').classList.remove('hidden');
         }
-        function closeTodoEdit() { 
-            const modal = document.getElementById('todo-edit-modal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-        }
+        function closeTodoEdit() { document.getElementById('todo-edit-modal').classList.add('hidden'); }
         function saveTodoEdit() {
             const id = document.getElementById('edit-todo-id').value; 
             const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
@@ -1012,13 +1009,9 @@
             const n = appState.notes.find(x => String(x.id) === String(id)); if(!n) return;
             document.getElementById('edit-note-id').value = n.id; document.getElementById('edit-note-title').value = n.title || ''; document.getElementById('edit-note-content').value = n.content || '';
             appState.editNoteImagesBase64 = n.images ? [...n.images] : (n.image ? [n.image] : []); renderNoteEditImages();
-            const modal = document.getElementById('note-edit-modal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('note-edit-modal').classList.remove('hidden');
         }
-        function closeNoteEdit() { 
-            const modal = document.getElementById('note-edit-modal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-        }
+        function closeNoteEdit() { document.getElementById('note-edit-modal').classList.add('hidden'); }
         async function handleNoteEditImage(e) {
             const files = Array.from(e.target.files); if (!files.length) return;
             const promises = files.map(file => new Promise(resolve => { const reader = new FileReader(); reader.onload = evt => resolve(evt.target.result); reader.readAsDataURL(file); }));
@@ -1100,7 +1093,6 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        // --- ★ 修復硬體鎖死與提示音 Bug 的安全錄音啟動邏輯 ---
         function startAudioRecordOnly() {
             appState.recordingContext = 'record';
             switchTab('dashboard');
@@ -1115,6 +1107,7 @@
             startAudioRecording(); 
         }
 
+        // --- ★ 雙軌錄音 (麥克風 + 系統音) ---
         async function startMeetingRecording(context = 'record') {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
                 addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; 
@@ -1124,6 +1117,7 @@
             switchTab('dashboard');
             appState.currentAudioTranscript = "";
             
+            // 確保之前沒有殘留的音軌
             if (appState.activeMediaTracks) {
                 appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
             }
@@ -1133,30 +1127,36 @@
             let sysStream = null;
             let mixedStream = null;
 
+            // ★ 偵測是否為手機或平板環境
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
             try {
-                // 1. 恢復預設音訊限制 (重要：解決關閉降噪導致的硬體崩潰與連續逼嗶聲)
-                const micConstraints = { audio: true };
+                // 1. 取得麥克風 (若是手機則強制關閉降噪等處理，追求極限環境收音)
+                const micConstraints = isMobile ? 
+                    { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } } : 
+                    { audio: true };
 
                 micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
                 appState.activeMediaTracks.push(...micStream.getTracks());
 
-                // 2. 系統音訊擷取
+                // 2. 嘗試取得系統音訊 (僅限電腦端)
                 if (!isMobile && navigator.mediaDevices.getDisplayMedia) {
                     try {
                         addMessage("💡 提示：請在彈出的視窗中選擇【分頁】或【整個螢幕】，並務必勾選左下角的【分享分頁音訊】或【分享系統音訊】，才能成功錄下會議中別人的聲音喔！", 'system');
                         sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                         appState.activeMediaTracks.push(...sysStream.getTracks());
+                        
+                        // 拿到音訊後，立即關閉無用的影像軌以節省資源
                         sysStream.getVideoTracks().forEach(track => { track.stop(); });
                     } catch (sysErr) {
                         addMessage("⚠️ 未取得系統音訊授權或取消操作，將為您降級為僅錄製麥克風聲音。", 'system');
                     }
                 } else if (isMobile) {
-                    addMessage("⚠️ **系統限制提醒**：手機瀏覽器基於隱私安全，禁止側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，請**拔下耳機，改用手機擴音播放**，系統會透過麥克風一併收錄會議聲音。為解決前版畫面卡頓與提示音干擾問題，已為您切換回標準穩定收音模式！", 'system');
+                    // ★ 手機環境的特別溫馨提示
+                    addMessage("⚠️ **系統限制提醒**：iOS 與 Android 手機「網頁端」基於隱私安全，嚴格禁止在戴耳機時側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，系統已自動為您切換為【高靈敏度環境收音模式】。請**拔下耳機，改用手機擴音播放**，讓麥克風同時收錄您的聲音與擴音器的聲音！", 'system');
                 }
 
-                // 3. 混合音軌
+                // 3. 混合音軌 (使用 Web Audio API)
                 if (sysStream && sysStream.getAudioTracks().length > 0) {
                     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                     const audioCtx = new AudioContextClass();
@@ -1209,12 +1209,12 @@
         }
 
         async function startAudioRecording() {
+            // 普通錄音按鈕調用 (僅錄 Mic)
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
-                // 恢復標準配置，解決硬體鎖死與畫面卡頓
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
-                appState.activeMediaTracks = stream.getTracks();
+                appState.activeMediaTracks = stream.getTracks(); // 儲存 track 以便結束時釋放
 
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                 mediaRecorder.onstop = uploadAudioRecording; 
@@ -1231,10 +1231,12 @@
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop(); 
                 
+                // 徹底停止所有音軌 (包含分頁/螢幕分享音軌)
                 if (appState.activeMediaTracks) {
                     appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
                     appState.activeMediaTracks = [];
                 }
+                // 關閉 AudioContext
                 if (appState.recordingAudioCtx) {
                     try { appState.recordingAudioCtx.close(); } catch(e){}
                     appState.recordingAudioCtx = null;
@@ -1329,6 +1331,500 @@
             appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
 
+        function summarizeAudioRecord(id) {
+            const r = appState.audioRecords.find(x => String(x.id) === String(id)); if (!r) return;
+            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+            
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'audioRecord';
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。`;
+            
+            if (r.audioData) {
+                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
+                appState.chatFile = { category: 'media', data: r.audioData, mime: r.mimeType || 'audio/webm', name: r.filename || 'audio.weba' };
+                showFilePreview(appState.chatFile.name, false, null); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+            } else {
+                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n請在接下來的視窗中，手動選取您的原始音檔 (.webm, .weba 等)。`)) return;
+                document.getElementById('audio-analyze-input').click();
+            }
+        }
+
+        function summarizeVoiceNote(id) {
+            const n = appState.notes.find(x => String(x.id) === String(id)); if (!n) return;
+            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+            
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'voiceNote';
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。`;
+            
+            if (n.audioData) {
+                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
+                appState.chatFile = { category: 'media', data: n.audioData, mime: n.mimeType || 'audio/webm', name: n.filename || 'audio.weba' };
+                showFilePreview(appState.chatFile.name, false, null); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+            } else {
+                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n請在接下來的視窗中，選取該語音筆記的原始音檔。`)) return;
+                document.getElementById('audio-analyze-input').click();
+            }
+        }
+
+        // --- WEB SCRAPER & SEARCH ---
+        async function fetchUrlViaGas(url) {
+            if (!appState.docMonitorUrl) return null;
+            try { const res = await fetch(appState.docMonitorUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'scrape_and_log', url: url }) }); const text = await res.text(); return (text && !text.startsWith("Error")) ? text : null; } catch (e) { return null; }
+        }
+        async function searchViaSerpApi(query) {
+            if (!appState.keys.serpapi) return null;
+            const targetUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${appState.keys.serpapi}&engine=google&gl=tw&hl=zh-tw`;
+            const proxies = [`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`];
+            let serpData = null, lastErrorMsg = "";
+            for (const proxy of proxies) {
+                try { const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); const res = await fetch(proxy, { signal: controller.signal }); clearTimeout(timeoutId); if (!res.ok) { lastErrorMsg = `HTTP ${res.status}`; continue; } const data = await res.json(); if (data.error) throw new Error(data.error); serpData = data; break; } 
+                catch (err) { lastErrorMsg = err.name === 'AbortError' ? '連線逾時' : err.message; if (err.message.toLowerCase().includes("invalid api key")) throw new Error("SerpApi 金鑰無效"); }
+            }
+            if (!serpData) throw new Error(`SerpApi 連線皆失敗 (${lastErrorMsg})`);
+            let resultText = "【SerpApi 搜尋結果】\n";
+            if (serpData.organic_results?.length > 0) { serpData.organic_results.slice(0, 5).forEach((item, i) => resultText += `${i + 1}. [${item.title}](${item.link})\n   ${item.snippet || ''}\n`); } 
+            else resultText += "未找到相關結果。";
+            return resultText;
+        }
+
+        async function checkDeepLinkIntent(text) {
+            const key = appState.keys.gemini;
+            if(!key) return null;
+            
+            const systemInstruction = `你是一個手機作業系統的智慧助手。任務是辨識使用者的自然語言指令，轉換為對應的 App 喚醒連結。
+常見格式：
+- 電話：tel:{電話號碼}
+- 簡訊：sms:{電話號碼}?body={URL編碼}
+- Email：mailto:{信箱}?subject={URL編碼}&body={URL編碼}
+- Line 傳訊/開啟：https://line.me/R/msg/text/?{URL編碼(若無指定內容請填寫"你好")}
+- YouTube 搜尋：https://www.youtube.com/results?search_query={URL編碼}
+- Facebook：https://www.facebook.com/
+- Instagram：https://www.instagram.com/
+- Google 地圖：https://www.google.com/maps/search/?api=1&query={URL編碼}
+- 網頁搜尋：https://www.google.com/search?q={URL編碼}
+- 台灣高鐵/T-EX行動購票：tex:// 或 https://tex.thsrc.com.tw/
+- 蝦皮購物：shopee://tw 或 https://shopee.tw/
+- 其他各式 APP (如銀行、訂票、社群)：請盡全力判斷並使用其專屬的 Custom Scheme (例如 appname://)；若不確定 Scheme，請輸出該 APP 的官方 HTTPS 網址 (現代手機會透過 Universal Link 自動攔截)。
+注意：所有中文或特殊符號請務必 URL Encoding。只要判斷是開啟 APP，intentFound 就必須為 true。你必須嚴格遵守 JSON 格式。`;
+
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    intentFound: { type: "BOOLEAN", description: "是否成功辨識為應用程式開啟或系統動作指令" },
+                    appName: { type: "STRING", description: "目標應用程式的名稱" },
+                    actionDescription: { type: "STRING", description: "即將執行的動作描述" },
+                    deepLinkUrl: { type: "STRING", description: "轉換後的跳轉網址(Universal Link 或 Custom Scheme)" },
+                    replyMessage: { type: "STRING", description: "給使用者的友善回覆" }
+                },
+                required: ["intentFound", "appName", "actionDescription", "deepLinkUrl", "replyMessage"]
+            };
+
+            const payload = {
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                contents: [{ role: "user", parts: [{ text: text }] }],
+                generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.2 }
+            };
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(data.candidates && data.candidates[0].content.parts[0].text) {
+                    return JSON.parse(data.candidates[0].content.parts[0].text);
+                }
+                return null;
+            } catch (e) {
+                console.error("Deep Link 解析失敗", e);
+                return null;
+            }
+        }
+
+        async function handleSendMessage() {
+            if(appState.isThinking) return;
+            const input = document.getElementById('user-input'); let text = input.value.trim(); const hasChatFile = appState.chatFile !== null;
+            if (text.length >= 4 && text.length % 2 === 0) { const mid = text.length / 2; if (text.substring(0, mid) === text.substring(mid)) { text = text.substring(0, mid); } }
+            if(!text && !hasChatFile) return;
+
+            if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; chatInitialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
+            if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; chatInitialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
+
+            const actionKeywords = ['打開', '開啟', 'open', '播放', '傳', '發', '發送', '導航', '帶我', '撥打', 'call', '打給', '幫我'];
+            const isAction = actionKeywords.some(kw => text.toLowerCase().startsWith(kw));
+
+            const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(text.trim());
+
+            if (isAction && !isImageIntent && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile) {
+                appState.isThinking = true; updateSendButtonState(true);
+                
+                const sysMsgId = Date.now();
+                appState.messages.push({id: sysMsgId, text: `🔄 正在辨識您的操作意圖...`, sender: 'system', time: getTime()});
+                renderMessages();
+                
+                const intentData = await checkDeepLinkIntent(text);
+                
+                appState.isThinking = false; updateSendButtonState(false);
+                appState.messages = appState.messages.filter(m => m.id !== sysMsgId); 
+                
+                if (intentData && intentData.intentFound) {
+                    addMessage(text, 'user');
+                    addMessage(intentData.replyMessage, 'ai', 'gemini', [], null, intentData);
+                    
+                    setTimeout(() => { window.location.href = intentData.deepLinkUrl; }, 1500);
+                    input.value = ''; input.style.height = '44px'; chatInitialInput = '';
+                    if (recognition) { try { recognition.abort(); } catch(e){} }
+                    return;
+                } else {
+                    renderMessages(); 
+                }
+            }
+
+            appState.isThinking = true; updateSendButtonState(true);
+            
+            try {
+                const fileDataToPass = hasChatFile ? { ...appState.chatFile } : null;
+                let displayMessage = text;
+                if (!text && fileDataToPass) { displayMessage = `請分析這份檔案: ${fileDataToPass.name}`; }
+                
+                addMessage(displayMessage, 'user', null, [], fileDataToPass);
+                
+                input.value = ''; input.style.height = '44px'; chatInitialInput = ''; clearChatFile(); 
+                
+                if (!appState.isContinuous && appState.isVoiceActive) {
+                    appState.isVoiceActive = false;
+                    updateVoiceUI();
+                    if (recognition) { try { recognition.abort(); } catch(e){} }
+                } else if (appState.isContinuous) {
+                    if (recognition) { try { recognition.abort(); } catch(e){} }
+                }
+                
+                renderThinkingState(true);
+
+                if (appState.pendingReminder && appState.reminderStage > 0) {
+                     const todo = appState.todos.find(t => t.id === appState.pendingReminder);
+                     if (todo) {
+                         let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text; const timeInfo = parseTimeNatural(combinedText);
+                         if (timeInfo.complete) { todo.time = new Date(timeInfo.timestamp).toLocaleString(); todo.alertTime = timeInfo.timestamp; todo.alerted = false; delete todo.tempTimeStr; appState.pendingReminder = null; appState.reminderStage = 0; addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system'); } 
+                         else if (timeInfo.missing === 'date') { todo.tempTimeStr = combinedText; addMessage(`請問是「今天」、「明天」還是哪一天？`, 'system'); appState.reminderStage = 2; } 
+                         else if (timeInfo.missing === 'ampm') { todo.tempTimeStr = combinedText; addMessage(`請問是「上午」還是「下午」？`, 'system'); appState.reminderStage = 2; } 
+                         else { addMessage(`無法識別時間，請重試 (例如: 明天下午3點)`, 'system'); }
+                         saveToDB('todos', todo); renderTodos();
+                     }
+                     return;
+                }
+                const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
+                if (reminderMatch) {
+                    const content = reminderMatch[1].trim() || "未命名事項"; const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false, alertEnabled: true };
+                    appState.todos.push(newTodo); saveToDB('todos', newTodo); appState.pendingReminder = newTodo.id; appState.reminderStage = 1; renderTodos();
+                    addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？`, 'system');
+                    return;
+                }
+
+                let systemPromptAddon = ""; let injectedContext = ""; let modelToUse = appState.currentModel; let enableSearchTool = appState.isSearchEnabled;
+                if (appState.weather && appState.weather.loc && appState.weather.loc !== '未定位') {
+                    systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
+                }
+
+                if (fileDataToPass) {
+                    if (fileDataToPass.category === 'text') {
+                        injectedContext += `\n\n[附檔內容 - ${fileDataToPass.name}]:\n${fileDataToPass.data}\n\n`;
+                        if (!text) text = `請分析這份名為 ${fileDataToPass.name} 的檔案內容。`;
+                    } else if (fileDataToPass.category === 'image') { if (!text) text = "請詳細分析這張圖片的內容"; }
+                    else if (fileDataToPass.category === 'media') { if (!text) text = `請詳細分析這份名為 ${fileDataToPass.name} 的檔案內容`; }
+                } 
+                else {
+                    const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
+                    if (searchMatch) {
+                        const searchKeyword = searchMatch[1].trim() || "今日新聞"; addMessage(`🔍 正在搜尋：${searchKeyword}...`, 'system'); let searchResultText = "";
+                        if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(searchKeyword); } catch (e) { addMessage(`⚠️ ${e.message}`, 'system'); } }
+                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(searchKeyword);
+                        else if (!searchResultText && appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請使用 Search 工具)`; }
+                        if (searchResultText) { text = `請根據以下搜尋結果摘要回答：\n\n${searchResultText}`; injectedContext = ""; systemPromptAddon = ""; enableSearchTool = false; }
+                    } else {
+                        const urlMatch = text.match(/https?:\/\/[^\s]+/);
+                        if (urlMatch) {
+                            const url = urlMatch[0];
+                            if (!url.includes('youtube') && !url.includes('twitter')) { addMessage(`🔍 抓取網頁中...`, 'system'); const content = await fetchUrlViaGas(url); if (content) injectedContext = `\n\n[網頁內容]:\n${content}\n\n`; } 
+                            else if (appState.keys.gemini && modelToUse === 'gemini') { enableSearchTool = true; systemPromptAddon += `(請搜尋此連結)`; }
+                        }
+                    }
+
+                    if (enableSearchTool && modelToUse !== 'gemini' && !searchMatch) {
+                        addMessage(`🌐 (代理連網) 正在透過網路搜尋相關資訊...`, 'system'); let searchResultText = "";
+                        if (appState.keys.serpapi) { try { searchResultText = await searchViaSerpApi(text); } catch (e) {} }
+                        if (!searchResultText && appState.docMonitorUrl) searchResultText = await searchViaGas(text);
+                        if (searchResultText) { injectedContext += `\n\n[系統自動連網搜尋結果，請參考此最新資訊來回答使用者的問題]:\n${searchResultText}\n\n`; } 
+                        else { addMessage(`⚠️ 代理搜尋失敗，將以原始知識庫回答。`, 'system'); }
+                    }
+                }
+
+                const promptToSent = `${text}\n${systemPromptAddon}\n${injectedContext}`;
+                let finalRes = await fetchAIResponse(promptToSent, modelToUse, { 
+                    enableSearch: enableSearchTool, 
+                    disableSearch: !enableSearchTool && injectedContext !== "",
+                    file: fileDataToPass 
+                });
+                
+                if(typeof finalRes === 'string') addMessage(finalRes, 'ai', modelToUse);
+                else addMessage(finalRes.text, 'ai', modelToUse, finalRes.sources, finalRes.file);
+
+                if (appState.pendingAnalyzeContextId) {
+                    if (appState.pendingAnalyzeType === 'voiceNote') {
+                        const n = appState.notes.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
+                        if (n) { n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${finalRes.text||finalRes}`; saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system'); }
+                    } else if (appState.pendingAnalyzeType === 'audioRecord') {
+                        const r = appState.audioRecords.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
+                        if (r) { r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析]\n${finalRes.text||finalRes}`; saveToDB('audioRecords', r); renderAudioRecords(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system'); }
+                    }
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ""; appState.pendingAnalyzePrompt = "";
+                }
+
+            } catch (error) {
+                console.error("Handler Error:", error);
+                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援此格式或伺服器壅塞，請稍後再試。)\n`, 'system');
+                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = "";
+            } finally {
+                appState.isThinking = false; updateSendButtonState(false); renderThinkingState(false);
+            }
+        }
+
+        function parseTimeNatural(str) {
+            const now = new Date(); let result = { complete: false, timestamp: null, missing: null };
+            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
+            if (relMatch) {
+                const amount = parseInt(relMatch[1]); const unit = relMatch[2];
+                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
+                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
+                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
+                return { complete: true, timestamp: now.getTime() };
+            }
+            let targetDate = new Date(); let hasDate = false;
+            if (str.includes('明天') || str.includes('tomorrow')) { targetDate.setDate(targetDate.getDate() + 1); hasDate = true; } 
+            else if (str.includes('後天')) { targetDate.setDate(targetDate.getDate() + 2); hasDate = true; } 
+            else if (str.match(/\d{1,2}月\d{1,2}日/)) { const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/); targetDate.setMonth(parseInt(dMatch[1]) - 1); targetDate.setDate(parseInt(dMatch[2])); hasDate = true; } 
+            else if (str.includes('今天') || str.includes('today')) { hasDate = true; }
+
+            let hour = -1, minute = 0;
+            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
+            if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
+
+            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
+            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
+
+            if (hour !== -1) {
+                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) return { complete: false, missing: 'ampm' }; 
+                if (isPM && hour < 12) hour += 12; if (isAM && hour === 12) hour = 0; 
+                targetDate.setHours(hour, minute, 0, 0);
+                if (!hasDate) { if (targetDate < new Date()) return { complete: false, missing: 'date' }; }
+                return { complete: true, timestamp: targetDate.getTime() };
+            }
+            return { complete: false, missing: 'time' };
+        }
+
+        async function fetchAIResponse(userText, model, options = {}) {
+            const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { 
+                const controller = new AbortController(); const id = setTimeout(() => controller.abort(), timeout);
+                try { const response = await fetch(url, { ...fetchOpts, signal: controller.signal }); clearTimeout(id); return response; } 
+                catch (error) { clearTimeout(id); throw new Error(error.name === 'AbortError' ? '連線逾時，檔案可能過大或處理過久 (60s)' : error.message); }
+            };
+
+            try {
+                const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
+                const chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
+
+                const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim());
+
+                if(model === 'gemini') {
+                    let selectedModelName = appState.geminiModel;
+                    let isAutoRouted = false;
+
+                    if (isImageIntent && !selectedModelName.includes('imagen') && !selectedModelName.includes('image')) {
+                        selectedModelName = 'imagen-4.0-generate-001'; 
+                        isAutoRouted = true;
+                    } 
+                    else if (selectedModelName === 'gemini-multi') {
+                        isAutoRouted = true;
+                        selectedModelName = 'gemini-3.0-flash'; 
+                        if (userText.length > 500 || /(深入|詳細|分析|總結|論文|報告|程式碼|複雜|重點摘要|結構化)/.test(userText) || (options.file && options.file.category === 'media')) {
+                            selectedModelName = 'gemini-3.1-pro'; 
+                        }
+                    }
+
+                    if (selectedModelName.includes('imagen')) {
+                        let apiVersion = selectedModelName.includes('4.0') ? 'v1alpha' : 'v1beta';
+                        let url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:predict?key=${key}`;
+                        
+                        const payload = { instances: [{ prompt: userText }], parameters: { sampleCount: 1 } };
+                        let res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        let data = await res.json();
+                        
+                        if (!res.ok && data.error && data.error.code === 404 && selectedModelName.includes('4.0')) {
+                            console.warn("Imagen 4.0 failed, falling back to 3.0");
+                            selectedModelName = 'imagen-3.0-generate-001';
+                            url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModelName}:predict?key=${key}`;
+                            res = await fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                            data = await res.json();
+                            isAutoRouted = true;
+                        }
+
+                        if (!res.ok) throw new Error(data.error?.message || '圖像生成失敗，請檢查提示詞或API權限。');
+                        
+                        if (!data.predictions || data.predictions.length === 0 || !data.predictions[0].bytesBase64Encoded) {
+                            throw new Error("無法生成圖片。這通常是因為提示詞 (Prompt) 觸發了 AI 的安全審查機制 (Safety Filter) 而遭到阻擋。請嘗試修改您的描述。");
+                        }
+                        
+                        const base64Image = data.predictions[0].bytesBase64Encoded;
+                        const fileObj = { category: 'image', data: `data:image/png;base64,${base64Image}`, name: 'Imagen_Generated.png' };
+                        let resTxt = `✨ 圖片生成成功！已為您附在下方。`;
+                        if(isAutoRouted) resTxt += `\n\n*(系統提示：已自動為您調配至 **${selectedModelName}** 執行繪圖任務)*`;
+                        return { text: resTxt, sources: [], file: fileObj };
+                    }
+
+                    let apiVersion = 'v1beta';
+                    if (selectedModelName.includes('preview') || selectedModelName.includes('gemini-3') || selectedModelName.includes('thinking') || selectedModelName.includes('research') || selectedModelName.includes('computer')) {
+                        apiVersion = 'v1alpha'; 
+                    }
+
+                    const allMessages = [...chatHistory, { sender: 'user', text: userText, file: options.file }];
+                    const contents = []; let currentRole = null; let currentParts = [];
+
+                    for (const m of allMessages) {
+                        const role = m.sender === 'user' ? 'user' : 'model';
+                        let partsToAdd = [];
+                        if (m.text) partsToAdd.push({ text: m.text }); 
+                        else if (!m.file) partsToAdd.push({ text: "[沒有文字]" });
+
+                        if (m === allMessages[allMessages.length - 1] && m.file && m.file.category !== 'text') {
+                             const base64Data = m.file.data.split(',')[1];
+                             partsToAdd.push({ inlineData: { mimeType: m.file.mime, data: base64Data } });
+                        }
+                        if (role === currentRole) currentParts.push(...partsToAdd); 
+                        else {
+                            if (currentRole) contents.push({ role: currentRole, parts: currentParts });
+                            currentRole = role; currentParts = [...partsToAdd];
+                        }
+                    }
+                    if (currentRole) contents.push({ role: currentRole, parts: currentParts });
+
+                    const payload = { contents: contents, generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } };
+                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) { payload.tools = [{ google_search: {} }]; }
+                    
+                    let endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:generateContent?key=${key}`;
+                    let res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    let data = await res.json();
+                    
+                    if (!res.ok && data.error && data.error.code === 404 && (selectedModelName.includes('preview') || selectedModelName.includes('3.'))) {
+                        console.warn(`[Auto-Fallback] Model ${selectedModelName} not found, retrying with 2.5 series.`);
+                        let fallbackModel = 'gemini-2.5-flash';
+                        if (selectedModelName.includes('pro')) fallbackModel = 'gemini-2.5-pro';
+                        selectedModelName = fallbackModel;
+                        apiVersion = 'v1beta';
+                        endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:generateContent?key=${key}`;
+                        res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        data = await res.json();
+                        isAutoRouted = true;
+                    }
+
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
+
+                    const candidate = data.candidates?.[0]; if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
+                    
+                    let outputText = "";
+                    let responseImageFile = null;
+
+                    if (candidate.content && candidate.content.parts) {
+                        outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join("");
+                        const imgPart = candidate.content.parts.find(p => p.inlineData);
+                        if (imgPart) {
+                            responseImageFile = {
+                                category: 'image',
+                                data: `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`,
+                                name: 'AI_Generated_Image.png'
+                            };
+                        }
+                    }
+
+                    let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
+                    if (!outputText && !responseImageFile && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。"; 
+                    if (isAutoRouted) { outputText += `\n\n*(系統提示：已為您動態調配至 **${selectedModelName}** 執行此任務)*`; }
+
+                    return { text: outputText || (responseImageFile ? "✨ 圖片生成成功！已為您附在下方。" : "(無回傳文字)"), sources: sources, file: responseImageFile };
+                    
+                } else if (model === 'groq' || model === 'gpt') {
+                    const messagesPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text || "[附檔]" }));
+                    let finalUserContent = userText;
+                    if (options.file && options.file.category === 'image') {
+                        const base64Data = options.file.data.split(',')[1];
+                        finalUserContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
+                    }
+                    messagesPayload.push({ role: 'user', content: finalUserContent });
+
+                    let ep = '', mName = '';
+                    if(model === 'groq') { ep = 'https://api.groq.com/openai/v1/chat/completions'; mName = 'llama-3.3-70b-versatile'; }
+                    else { ep = 'https://api.openai.com/v1/chat/completions'; mName = 'gpt-4o-mini'; }
+
+                    const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages: messagesPayload}) });
+                    const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
+                    if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
+                } else if (model === 'cohere') {
+                    const chatHistoryPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'USER' : 'CHATBOT', message: m.text || "[附檔]" }));
+                    const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText, chat_history: chatHistoryPayload }) });
+                    const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
+                    if (!res.ok) throw new Error(`${data.message || res.status}`); return data.text || "無回應";
+                } else if (model === 'grok') {
+                    const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
+                    let mName = appState.grokModel || 'grok-multi'; 
+                    let isGrokAutoRouted = false;
+
+                    if (isImageIntent && !mName.includes('imagine')) {
+                        mName = 'grok-imagine-image-pro';
+                        isGrokAutoRouted = true;
+                    } else if (mName === 'grok-multi') {
+                        mName = 'grok-4-1-fast-reasoning';
+                        isGrokAutoRouted = true;
+                    }
+
+                    let apiUrl, payload;
+                    if (mName.includes('imagine')) {
+                        apiUrl = 'https://api.x.ai/v1/images/generations'; payload = { model: mName, prompt: userText };
+                    } else {
+                        apiUrl = 'https://api.x.ai/v1/chat/completions';
+                        const messagesPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text || "[附檔]" }));
+                        let finalUserContent = userText;
+                        if (options.file && options.file.category === 'image') {
+                            const base64Data = options.file.data.split(',')[1];
+                            finalUserContent = [ { type: "text", text: userText }, { type: "image_url", image_url: { url: `data:${options.file.mime};base64,${base64Data}` } } ];
+                        }
+                        messagesPayload.push({role: "user", content: finalUserContent});
+                        payload = { model: mName, messages: messagesPayload, temperature: 0.7 };
+                    }
+                    const fullUrl = `${myProxy}?url=${encodeURIComponent(apiUrl)}`;
+                    const res = await fetchWithTimeout(fullUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const resText = await res.text();
+                    if (!res.ok) throw new Error(`${resText}`);
+                    const data = JSON.parse(resText);
+                    
+                    if (mName.includes('imagine')) {
+                        let successTxt = `✨ 圖片生成成功！已為您附在下方。`;
+                        if (isGrokAutoRouted) successTxt += `\n\n*(系統提示：Grok Multi 已自動為您調配至 **${mName}** 執行繪圖任務)*`;
+                        
+                        if (data.data && data.data[0]) {
+                            if (data.data[0].url) return { text: successTxt, sources: [], file: { category: 'image', data: data.data[0].url, name: 'Grok_Image.png' } };
+                            else if (data.data[0].b64_json) return { text: successTxt, sources: [], file: { category: 'image', data: `data:image/png;base64,${data.data[0].b64_json}`, name: 'Grok_Image.png' } };
+                        }
+                        return `生成任務已處理，回傳內容：\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
+                    }
+
+                    let outputText = data.choices?.[0]?.message?.content || "無回應";
+                    if (isGrokAutoRouted) outputText += `\n\n*(系統提示：Grok Multi 已自動為您調配至 **${mName}** 執行此任務)*`;
+                    return outputText;
+                }
+            } catch(e) { throw e; }
+        }
+
         // --- INIT ---
         window.onload = async () => {
             try {
@@ -1356,7 +1852,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 60 系統穩定升級完畢！\n\n✅ **終結無限逼嗶聲與卡頓**：已徹底解決了上一版本在手機端點擊雙軌錄音時，因強行關閉硬體降噪所導致的麥克風衝突與當機迴圈。現在系統會使用穩定通道，確保錄音平順！\n✅ **手機會議收音溫馨提醒**：當您在手機使用「雙軌錄音」時，系統會自動切換回標準收音模式，並建議您**拔下耳機、使用擴音**，即可安全且完美地收錄會議全場聲音！\n✅ **持續強化錯誤捕捉**：即使背景有其他視訊軟體佔用麥克風，系統也會優雅地給予提示，不再會死當。', 
+                    text: 'NOVA 59 系統升級完畢！\n\n✅ **手機會議收音突破方案**：解決了手機瀏覽器「戴耳機無法擷取系統音效」的硬體限制。當您在手機使用「雙軌錄音」時，系統會啟動【高靈敏度環境收音模式】。只需**拔下耳機、使用擴音**，即可完美收錄會議全場聲音！\n✅ **精準相容性優化**：移除了不穩定的實驗性模型，保障連線速度；修復了 Imagen 4.0 的安全審查錯誤，讓每一次畫圖都能優雅給出提示而不崩潰；同時下調了連續對話的等待時間至 **5 秒**！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1381,18 +1877,12 @@
                     updateVoiceUI(); 
                 };
                 
-                // ★ 增加安全緩衝，避免 100ms 重啟造成的死鎖與逼嗶聲狂響
                 recognition.onend = () => { 
                     if (appState.isContinuous || appState.isVoiceActive || (mediaRecorder && mediaRecorder.state === 'recording')) { 
-                        setTimeout(() => { try { recognition.start(); } catch(e){} }, 300); 
+                        setTimeout(() => { try { recognition.start(); } catch(e){} }, 100); 
                     } else {
                         updateVoiceUI();
                     }
-                };
-                
-                // ★ 攔截硬體獨佔衝突錯誤，不讓它陷入無窮重啟地獄
-                recognition.onerror = (e) => {
-                    console.warn("Speech Recognition Error:", e.error);
                 };
                 
                 recognition.onresult = (e) => {
@@ -1436,13 +1926,11 @@
                 noteRecognition.onstart = () => { updateNoteVoiceUI(); };
                 noteRecognition.onend = () => { 
                     if (appState.noteVoiceActive) { 
-                        setTimeout(() => { try { noteRecognition.start(); } catch(e){} }, 300); 
+                        setTimeout(() => { try { noteRecognition.start(); } catch(e){} }, 100); 
                     } else {
                         updateNoteVoiceUI();
                     }
                 };
-                noteRecognition.onerror = (e) => { console.warn("Note Speech Error:", e.error); };
-
                 noteRecognition.onresult = (e) => {
                     let finalT = "";
                     let interimT = "";
@@ -1500,4 +1988,4 @@
         };
     </script>
 </body>
-</html>
+                                                                                                         </html>
