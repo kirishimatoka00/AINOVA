@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 62</title>
+    <title>NOVA 63</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +25,10 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        
         .dot-flashing {
             position: relative; width: 6px; height: 6px; border-radius: 5px; background-color: #9880ff; color: #9880ff;
             animation: dot-flashing 1s infinite linear alternate; animation-delay: 0.5s;
@@ -38,21 +41,15 @@
         @keyframes dot-flashing { 0% { background-color: #9880ff; } 50%, 100% { background-color: rgba(152, 128, 255, 0.2); } }
         .msg-content a, #doc-content-area a { color: #60a5fa; text-decoration: underline; word-break: break-all; cursor: pointer; }
         .msg-content p, #doc-content-area div { margin-bottom: 0.5em; line-height: 1.6; }
-        .slide-in { animation: slideIn 0.3s ease-out; }
-        .msg-group:hover .msg-actions { opacity: 1; }
-        .msg-actions { opacity: 0; transition: opacity 0.2s; }
-        @keyframes recordPulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
-        .recording-dot { animation: recordPulse 1.5s infinite; }
-
+        
         /* Toast Alert */
         #toast {
             visibility: hidden; min-width: 250px; background-color: #334155; color: #fff; text-align: center;
             border-radius: 8px; padding: 12px; position: fixed; z-index: 100; left: 50%; transform: translateX(-50%);
             bottom: 30px; font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
         }
-        #toast.show { visibility: visible; opacity: 1; bottom: 120px; }
+        #toast.show { visibility: visible; opacity: 1; bottom: 100px; }
         
-        /* Audio Player Styling */
         audio { outline: none; border-radius: 8px; }
         audio::-webkit-media-controls-panel { background-color: #1e293b; color: #fff; }
         audio::-webkit-media-controls-current-time-display, audio::-webkit-media-controls-time-remaining-display { color: #fff; }
@@ -61,13 +58,14 @@
 <body class="bg-slate-950 text-slate-100 font-sans overflow-hidden selection:bg-blue-500/30">
 
     <div class="flex h-[100dvh] w-full relative">
+        <!-- Sidebar -->
         <aside class="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 p-6 flex-shrink-0 z-10">
             <div class="flex items-center space-x-3 mb-10 px-2">
                 <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 62</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 63</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -87,8 +85,9 @@
         </aside>
 
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
+            <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 62</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 63</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -98,6 +97,7 @@
                 </div>
             </div>
 
+            <!-- Mobile Menu -->
             <div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-40 bg-slate-950/95 pt-20 px-6 backdrop-blur-md">
                 <nav class="space-y-4">
                     <button onclick="switchTab('dashboard'); toggleMobileMenu()" class="flex items-center space-x-3 w-full p-4 rounded-xl bg-slate-800 text-white"><i class="ph ph-chats-circle text-xl"></i><span>助理對話</span></button>
@@ -107,6 +107,7 @@
                 </nav>
             </div>
 
+            <!-- Settings Modal -->
             <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-bold text-white">設定</h3><button onclick="closeSettings()"><i class="ph ph-x text-2xl text-slate-400"></i></button></div>
@@ -151,6 +152,7 @@
                 </div>
             </div>
 
+            <!-- ALARM MODAL -->
             <div id="alarm-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6">
                 <div class="bg-slate-900 border border-red-500/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.3)] animate-pulse">
                     <i class="ph-fill ph-alarm text-6xl text-red-500 mb-4 inline-block animate-bounce"></i>
@@ -162,6 +164,7 @@
                 </div>
             </div>
 
+            <!-- DASHBOARD VIEW -->
             <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
                 <div class="flex-1 flex flex-col h-full min-w-0 relative">
                     <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar">
@@ -174,6 +177,7 @@
                             <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
                          </div>
                          
+                         <!-- Dropdown Model Selection -->
                          <div class="flex space-x-2 ml-auto shrink-0">
                              <select id="gemini-sub-model-select" onchange="setGeminiModel(this.value)" class="bg-blue-900 border border-blue-500/50 text-blue-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="gemini-multi">⚡ 智慧切換 (Auto)</option>
@@ -220,60 +224,84 @@
                          </div>
                     </div>
                     
-                    <div id="live-video-container" class="hidden absolute top-16 right-4 w-32 h-44 bg-slate-900 rounded-xl border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] z-30 overflow-hidden flex flex-col">
-                        <div class="bg-red-600 text-white text-[10px] font-bold text-center py-0.5 tracking-wider flex items-center justify-center gap-1">
-                            <div class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div> LIVE
+                    <!-- ★ 超大 LIVE MODE 視窗 (2/3 畫面佔比) -->
+                    <div id="live-video-container" class="hidden absolute top-0 left-0 right-0 h-[65vh] bg-slate-950 rounded-b-3xl border-b-2 border-red-500 shadow-[0_10px_40px_rgba(239,68,68,0.2)] z-30 overflow-hidden flex-col fade-in">
+                        <div class="bg-red-600 text-white text-xs font-bold text-center py-2 tracking-widest flex items-center justify-center gap-2 relative">
+                            <div class="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div> LIVE 影像解析模式
+                            <button onclick="toggleLiveMode(true)" class="absolute right-4 p-1 bg-red-800 rounded-full hover:bg-red-700 transition"><i class="ph-bold ph-x"></i></button>
                         </div>
                         <video id="live-video-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
                     </div>
 
-                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
+                    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 pt-6"></div>
                     
-                    <div class="p-3 bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex flex-col gap-2 relative">
+                    <!-- ★ Chat Input Area (LINE-Style Re-layout) -->
+                    <div class="p-3 bg-slate-900 border-t border-slate-800 shrink-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom))] relative">
                         
-                        <div id="chat-file-preview-container" class="hidden relative inline-flex items-center bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-md self-start">
-                            <img id="chat-image-preview" src="" class="h-12 w-auto rounded hidden mr-2">
-                            <div id="chat-file-icon-wrapper" class="hidden flex items-center justify-center bg-blue-900/50 w-12 h-12 rounded mr-2"><i class="ph-fill ph-file text-2xl text-blue-400"></i></div>
+                        <!-- File/Image Preview Container -->
+                        <div id="chat-file-preview-container" class="hidden absolute -top-16 left-4 inline-flex items-center bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-md">
+                            <img id="chat-image-preview" src="" class="h-10 w-auto rounded hidden mr-2">
+                            <div id="chat-file-icon-wrapper" class="hidden flex items-center justify-center bg-blue-900/50 w-10 h-10 rounded mr-2"><i class="ph-fill ph-file text-xl text-blue-400"></i></div>
                             <span id="chat-file-name" class="text-xs text-slate-300 max-w-[150px] truncate">filename</span>
-                            <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
+                            <button onclick="clearChatFile()" class="absolute -top-2 -right-2 bg-slate-700 border border-slate-600 text-slate-300 hover:text-red-400 rounded-full p-1 shadow-lg transition-colors"><i class="ph-bold ph-x text-[10px]"></i></button>
                         </div>
                         <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
-                        
-                        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 w-full shrink-0">
-                            <label for="chat-file-input" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-emerald-400 hover:bg-slate-700 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 text-xs" title="上傳檔案或圖片">
-                                <i class="ph-bold ph-paperclip text-lg"></i><span class="hidden sm:inline">附件</span>
-                            </label>
-                            <input type="file" id="chat-file-input" accept="*/*" class="hidden" onchange="handleChatFileSelect(event)">
-                            
-                            <button id="live-btn" onclick="toggleLiveMode()" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-1 text-xs" title="LIVE 影像對話模式">
-                                <i id="live-icon" class="ph-bold ph-camera text-lg"></i><span class="hidden sm:inline">LIVE</span>
-                            </button>
-                            
-                            <button id="translate-btn" onclick="toggleTranslateMode()" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-1 text-xs" title="即時口譯模式 (中/英/日/韓)">
-                                <i id="translate-icon" class="ph-bold ph-translate text-lg"></i><span class="hidden sm:inline">口譯</span>
-                            </button>
+                        <input type="file" id="chat-file-input" accept="*/*" class="hidden" onchange="handleChatFileSelect(event); document.getElementById('plus-menu').classList.add('hidden');">
 
-                            <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-1 text-xs" title="連續語音對話">
-                                <i id="continuous-icon" class="ph-bold ph-infinity text-lg"></i><span class="hidden sm:inline">連續語音</span>
-                            </button>
-                            
-                            <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 hover:bg-slate-700 transition-all whitespace-nowrap flex items-center gap-1 text-xs" title="開關連網搜尋">
-                                <i id="search-icon" class="ph-bold ph-globe text-lg"></i><span class="hidden sm:inline">連網</span>
-                            </button>
-                            
-                            <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0 flex items-center gap-1 text-xs">
-                                <i id="voice-icon" class="ph-bold ph-microphone text-lg"></i><span class="hidden sm:inline">單次語音</span>
-                            </button>
+                        <!-- Floating Plus Menu -->
+                        <div id="plus-menu" class="hidden absolute bottom-16 left-2 w-[calc(100%-16px)] max-w-sm bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-2xl z-50 slide-up origin-bottom-left">
+                            <div class="grid grid-cols-4 gap-4 text-center">
+                                <label for="chat-file-input" class="flex flex-col items-center gap-2 cursor-pointer group">
+                                    <div class="w-14 h-14 rounded-2xl bg-slate-700 flex items-center justify-center text-emerald-400 group-active:scale-95 transition-transform"><i class="ph-bold ph-image text-3xl"></i></div>
+                                    <span class="text-xs text-slate-300 font-medium">附件</span>
+                                </label>
+                                <button id="live-menu-btn" onclick="toggleLiveMode(); togglePlusMenu();" class="flex flex-col items-center gap-2 group text-slate-300">
+                                    <div class="w-14 h-14 rounded-2xl bg-slate-700 flex items-center justify-center group-active:scale-95 transition-transform"><i class="ph-bold ph-camera text-3xl"></i></div>
+                                    <span class="text-xs font-medium">LIVE 影像</span>
+                                </button>
+                                <button id="translate-menu-btn" onclick="toggleTranslateMode(); togglePlusMenu();" class="flex flex-col items-center gap-2 group text-slate-300">
+                                    <div class="w-14 h-14 rounded-2xl bg-slate-700 flex items-center justify-center group-active:scale-95 transition-transform"><i class="ph-bold ph-translate text-3xl"></i></div>
+                                    <span class="text-xs font-medium">即時口譯</span>
+                                </button>
+                                <button id="search-menu-btn" onclick="toggleSearch(); togglePlusMenu();" class="flex flex-col items-center gap-2 group text-slate-300">
+                                    <div class="w-14 h-14 rounded-2xl bg-slate-700 flex items-center justify-center group-active:scale-95 transition-transform"><i class="ph-bold ph-globe text-3xl"></i></div>
+                                    <span class="text-xs font-medium">連網搜尋</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-1.5 border border-slate-700 focus-within:border-blue-500 transition-colors w-full">
-                            <textarea id="user-input" rows="1" placeholder="對話、搜尋、打開APP..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-1.5 leading-relaxed scrollbar-none text-base" style="min-height: 38px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
-                            <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-2 px-3 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all shadow"><i id="send-icon" class="ph-bold ph-paper-plane-right text-lg"></i></button>
+                        <!-- Single Row Input Interface -->
+                        <div class="flex items-end gap-2 w-full">
+                            <!-- Plus Button -->
+                            <button id="plus-btn" onclick="togglePlusMenu()" class="p-2 text-slate-400 hover:text-white transition-all shrink-0 mb-0.5 rounded-full hover:bg-slate-800 focus:outline-none">
+                                <i class="ph-bold ph-plus-circle text-3xl"></i>
+                            </button>
+
+                            <!-- Input Box Area -->
+                            <div id="input-wrapper" class="flex-1 flex items-end bg-slate-950 rounded-2xl px-2 py-1.5 border border-slate-700 focus-within:border-blue-500 transition-colors relative">
+                                <textarea id="user-input" rows="1" placeholder="對話、搜尋、打開APP..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-2 px-1 leading-relaxed scrollbar-none text-base" style="min-height: 40px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
+                                
+                                <!-- Voice Controls inside Input -->
+                                <div class="flex items-center shrink-0 mb-1">
+                                    <button id="voice-btn" onclick="toggleVoice()" class="p-1.5 text-slate-400 hover:text-white transition-all rounded-lg hover:bg-slate-800" title="單次麥克風">
+                                        <i id="voice-icon" class="ph-bold ph-microphone text-[22px]"></i>
+                                    </button>
+                                    <button id="continuous-btn" onclick="toggleContinuous()" class="p-1.5 text-slate-400 hover:text-red-500 transition-all rounded-lg hover:bg-slate-800" title="連續語音通話">
+                                        <i id="continuous-icon" class="ph-bold ph-infinity text-[22px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Send Button -->
+                            <button onclick="handleSendMessage()" id="send-btn" class="mb-1 p-3 rounded-full text-white bg-blue-600 hover:bg-blue-500 shrink-0 transition-transform active:scale-95 shadow-lg">
+                                <i id="send-icon" class="ph-bold ph-paper-plane-right text-xl translate-x-px"></i>
+                            </button>
                         </div>
-                        <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden mt-1">🌐 已開啟連網搜尋 (支援各模型)</div>
+                        <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden mt-1">🌐 已開啟連網搜尋模式</div>
                     </div>
                 </div>
                 
+                <!-- Right Sidebar -->
                 <div class="hidden lg:flex w-80 bg-slate-900 flex-col p-6 space-y-6 border-l border-slate-800 overflow-y-auto shrink-0">
                     <div class="bg-gradient-to-br from-indigo-900 to-slate-800 rounded-3xl p-6 text-white shadow-lg border border-slate-700 relative overflow-hidden group">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
@@ -295,6 +323,7 @@
                 </div>
             </div>
 
+            <!-- SCHEDULE VIEW -->
             <div id="view-schedule" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-3xl mx-auto w-full">
                     <header class="flex justify-between items-center mb-6">
@@ -305,6 +334,7 @@
                 </div>
             </div>
             
+            <!-- NOTES VIEW -->
             <div id="view-notes" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-5xl mx-auto w-full">
                     <div class="bg-gradient-to-r from-blue-900/40 to-slate-900 border border-blue-500/30 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-lg">
@@ -352,6 +382,7 @@
                 </div>
             </div>
 
+            <!-- AUDIO RECORDS VIEW -->
             <div id="view-audio" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-4xl mx-auto w-full">
                     <header class="flex justify-between items-center mb-6">
@@ -365,6 +396,7 @@
                 </div>
             </div>
             
+            <!-- DOC VIEWER MODAL -->
             <div id="doc-viewer-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/95 backdrop-blur-md flex flex-col p-4">
                 <div class="flex justify-between items-center mb-4 shrink-0">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-fill ph-book-open text-blue-400"></i> 文件瀏覽器</h3>
@@ -378,8 +410,9 @@
                 </div>
             </div>
 
+            <!-- EDIT TODO MODAL -->
             <div id="todo-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex-col">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="text-xl font-bold text-white">編輯行程</h3>
                         <button onclick="closeTodoEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
@@ -396,6 +429,7 @@
                 </div>
             </div>
 
+            <!-- EDIT NOTE MODAL -->
             <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-4 shrink-0">
@@ -425,6 +459,7 @@
         </main>
     </div>
     
+    <!-- 全域 Toast 提示框 -->
     <div id="toast">✅ 訊息提示</div>
 
     <script>
@@ -507,17 +542,14 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        // ★ NEW: TTS 語音朗讀系統
+        // ★ TTS 語音朗讀系統
         function speakText(text) {
             if (!appState.isLiveMode && !appState.isTranslateMode) return; 
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-                // 移除 Markdown 符號讓朗讀更平順
                 let cleanText = text.replace(/[*_#`\[\]]/g, '').replace(/(https?:\/\/[^\s]+)/g, "網址連結");
                 let utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'zh-TW';
-                
-                // 口譯模式下簡單判斷，如果是大量英文則切換語系
                 if (appState.isTranslateMode) {
                     if (/^[a-zA-Z\s.,?!'"]+$/.test(cleanText.substring(0, 30))) {
                         utterance.lang = 'en-US';
@@ -724,22 +756,38 @@
             const geminiSelect = document.getElementById('gemini-sub-model-select');
             if(geminiSelect) { if (appState.currentModel === 'gemini') { geminiSelect.classList.remove('hidden'); geminiSelect.value = appState.geminiModel; } else { geminiSelect.classList.add('hidden'); } }
 
-            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-1.5 py-1.5 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500 w-full`; 
-            const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
+            const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-menu-btn'); const hint=document.getElementById('search-hint'); 
             if(searchBtn) {
-                if(appState.isSearchEnabled){ searchBtn.classList.add('text-blue-400','bg-blue-900/30'); searchBtn.classList.remove('text-slate-500'); if(badge)badge.classList.remove('hidden'); if(hint)hint.classList.remove('hidden'); }
-                else{ searchBtn.classList.remove('text-blue-400','bg-blue-900/30'); searchBtn.classList.add('text-slate-500'); if(badge)badge.classList.add('hidden'); if(hint)hint.classList.add('hidden'); }
+                if(appState.isSearchEnabled){ searchBtn.classList.add('text-blue-400'); searchBtn.classList.remove('text-slate-300'); if(badge)badge.classList.remove('hidden'); if(hint)hint.classList.remove('hidden'); }
+                else{ searchBtn.classList.remove('text-blue-400'); searchBtn.classList.add('text-slate-300'); if(badge)badge.classList.add('hidden'); if(hint)hint.classList.add('hidden'); }
             }
         }
         
+        // ★ 核心修復：語音按鈕狀態連動
         function updateVoiceUI() {
-            const btn = document.getElementById('voice-btn'); const icon = document.getElementById('voice-icon');
-            if (appState.isVoiceActive || appState.isContinuous) { 
-                btn.classList.add('text-red-400', 'bg-red-900/30'); btn.classList.remove('text-slate-400'); 
-                icon.classList.add('animate-pulse'); 
-            } else { 
-                btn.classList.remove('text-red-400', 'bg-red-900/30'); btn.classList.add('text-slate-400'); 
-                icon.classList.remove('animate-pulse'); 
+            const voiceBtn = document.getElementById('voice-btn'); const voiceIcon = document.getElementById('voice-icon');
+            const contBtn = document.getElementById('continuous-btn'); const contIcon = document.getElementById('continuous-icon');
+
+            // Reset UI
+            voiceBtn.classList.remove('text-red-500'); voiceBtn.classList.add('text-slate-400'); voiceIcon.classList.remove('animate-pulse');
+            contBtn.classList.remove('text-red-500'); contBtn.classList.add('text-slate-400'); contIcon.classList.remove('animate-pulse');
+
+            if (appState.isContinuous) {
+                contBtn.classList.remove('text-slate-400'); contBtn.classList.add('text-red-500'); contIcon.classList.add('animate-pulse');
+            } else if (appState.isVoiceActive) {
+                voiceBtn.classList.remove('text-slate-400'); voiceBtn.classList.add('text-red-500'); voiceIcon.classList.add('animate-pulse');
+            }
+
+            // 更新選單按鈕顏色
+            const liveBtn = document.getElementById('live-menu-btn');
+            if (liveBtn) {
+                if (appState.isLiveMode) { liveBtn.classList.add('text-red-500'); liveBtn.classList.remove('text-slate-300'); }
+                else { liveBtn.classList.remove('text-red-500'); liveBtn.classList.add('text-slate-300'); }
+            }
+            const transBtn = document.getElementById('translate-menu-btn');
+            if (transBtn) {
+                if (appState.isTranslateMode) { transBtn.classList.add('text-blue-400'); transBtn.classList.remove('text-slate-300'); }
+                else { transBtn.classList.remove('text-blue-400'); transBtn.classList.add('text-slate-300'); }
             }
         }
 
@@ -754,235 +802,85 @@
             }
         }
 
-        async function toggleLiveMode() {
-            appState.isLiveMode = !appState.isLiveMode;
+        // ★ NEW: 彈出 + 選單控制
+        function togglePlusMenu() {
+            const menu = document.getElementById('plus-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('plus-menu');
+            const plusBtn = document.getElementById('plus-btn');
+            if (menu && !menu.classList.contains('hidden') && !menu.contains(event.target) && !plusBtn.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // ★ NEW: LIVE 模式與翻譯模式 UI 控制
+        async function toggleLiveMode(forceOff = false) {
+            if (forceOff) appState.isLiveMode = false;
+            else appState.isLiveMode = !appState.isLiveMode;
+
             const videoEl = document.getElementById('live-video-preview');
             const containerEl = document.getElementById('live-video-container');
-            const btn = document.getElementById('live-btn');
             
             if (appState.isLiveMode) {
                 try {
-                    // 先關閉原本的翻譯模式
-                    if (appState.isTranslateMode) toggleTranslateMode();
+                    if (appState.isTranslateMode) toggleTranslateMode(true); 
 
                     liveVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                     videoEl.srcObject = liveVideoStream;
                     containerEl.classList.remove('hidden');
-                    btn.classList.add('text-red-400', 'bg-red-900/30');
-                    btn.classList.remove('text-slate-500');
                     
-                    // 加速 LIVE 互動，暫時縮短等待時間
-                    appState.voiceTimeout = 1.5;
+                    appState.voiceTimeout = 2; 
 
                     addMessage("📸 **LIVE 影像模式已啟動！**\nAI 現在可以看見您的鏡頭畫面了。請用語音對著系統說話，系統會在發送時自動擷取當前畫面給 AI 判斷。", 'system');
                     if (!appState.isContinuous) toggleContinuous();
                 } catch (e) {
                     alert("無法存取相機：" + e.message);
                     appState.isLiveMode = false;
-                    btn.classList.remove('text-red-400', 'bg-red-900/30');
-                    btn.classList.add('text-slate-500');
+                    containerEl.classList.add('hidden');
+                    updateVoiceUI();
                 }
             } else {
-                if (liveVideoStream) {
-                    liveVideoStream.getTracks().forEach(t => t.stop());
-                    liveVideoStream = null;
-                }
+                if (liveVideoStream) { liveVideoStream.getTracks().forEach(t => t.stop()); liveVideoStream = null; }
                 containerEl.classList.add('hidden');
-                btn.classList.remove('text-red-400', 'bg-red-900/30');
-                btn.classList.add('text-slate-500');
                 
-                // 恢復使用者原本設定的等待時間
                 appState.voiceTimeout = parseInt(localStorage.getItem('nova_voice_timeout')) || 5;
-
+                if (!forceOff && appState.isContinuous) toggleContinuous();
+                
                 addMessage("📸 LIVE 影像模式已關閉。", 'system');
                 window.speechSynthesis.cancel();
             }
+            updateVoiceUI();
         }
 
-        function toggleTranslateMode() {
-            appState.isTranslateMode = !appState.isTranslateMode;
-            const btn = document.getElementById('translate-btn');
+        function toggleTranslateMode(forceOff = false) {
+            if (forceOff) appState.isTranslateMode = false;
+            else appState.isTranslateMode = !appState.isTranslateMode;
+            
             if (appState.isTranslateMode) {
-                // 先關閉 LIVE 模式避免衝突
-                if (appState.isLiveMode) toggleLiveMode();
+                if (appState.isLiveMode) toggleLiveMode(true);
 
-                btn.classList.add('text-blue-400', 'bg-blue-900/30');
-                btn.classList.remove('text-slate-500');
-                
-                // 加速翻譯互動
                 appState.voiceTimeout = 2;
-
                 addMessage("🌐 **即時口譯模式已啟動！**\n請直接對著麥克風說話。\n系統會自動將「中文」直譯為外文，或將「外文(英日韓)」直譯為中文，並自動為您語音播報。", 'system');
                 if (!appState.isContinuous) toggleContinuous(); 
             } else {
-                btn.classList.remove('text-blue-400', 'bg-blue-900/30');
-                btn.classList.add('text-slate-500');
-                
                 appState.voiceTimeout = parseInt(localStorage.getItem('nova_voice_timeout')) || 5;
-
+                if (!forceOff && appState.isContinuous) toggleContinuous();
                 addMessage("🌐 即時口譯模式已關閉。", 'system');
                 window.speechSynthesis.cancel();
             }
-        }
-
-        function addMessage(text, sender, model=null, sources=[], file=null, actionData=null) { 
-            const newMsg = {id:Date.now(), text, sender, model, sources, file, actionData, time:getTime()};
-            appState.messages.push(newMsg); saveToDB('messages', newMsg); renderMessages(); 
-        }
-
-        function deleteMessage(id) { appState.messages = appState.messages.filter(m => String(m.id) !== String(id)); deleteFromDB('messages', id); renderMessages(); }
-        function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; clearStoreDB('messages'); renderMessages(); } }
-        function favoriteMessage(id) {
-            const msg = appState.messages.find(m => String(m.id) === String(id)); if (!msg) return;
-            let senderName = msg.sender === 'user' ? '你' : (msg.sender === 'system' ? '系統提示' : (MODEL_CONFIG[msg.model]?.name || '系統'));
-            let content = `[${senderName} 的對話紀錄]\n${msg.text}`;
-            if (msg.sources && msg.sources.length > 0) content += `\n\n[參考來源]\n` + msg.sources.map((s,i) => `${i+1}. ${s.title} - ${s.uri}`).join('\n');
-            let imagesArray = []; if (msg.file && msg.file.category === 'image' && msg.file.data) imagesArray.push(msg.file.data);
-            const newNote = { id: Date.now(), title: `⭐ 收藏對話 - ${msg.time}`, content: content, date: new Date().toLocaleString(), type: 'text', images: imagesArray, image: imagesArray.length > 0 ? imagesArray[0] : null };
-            appState.notes.unshift(newNote); saveToDB('notes', newNote); renderNotes(); addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
-        }
-
-        function toggleTodo(id){ const t=appState.todos.find(x=>String(x.id)===String(id)); if(t){t.done=!t.done;saveToDB('todos', t);renderTodos();} }
-        function deleteTodo(id){ appState.todos=appState.todos.filter(x=>String(x.id)!==String(id)); deleteFromDB('todos', id); renderTodos(); }
-        function deleteNote(id){ appState.notes=appState.notes.filter(x=>String(x.id)!==String(id)); deleteFromDB('notes', id); renderNotes(); }
-        function deleteAudioRecord(id) { appState.audioRecords = appState.audioRecords.filter(r => String(r.id) !== String(id)); deleteFromDB('audioRecords', id); renderAudioRecords(); }
-        
-        function addTodoManually(){ const t=prompt("任務"); if(t){const n={id:Date.now(),text:t,done:false,time:'手動', alertEnabled: true}; appState.todos.push(n);saveToDB('todos', n);renderTodos();} }
-        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){const n={id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString(), type: 'text', images: []}; appState.notes.push(n);saveToDB('notes', n);renderNotes();} }
-        
-        function switchTab(id){ 
-            ['dashboard','schedule','notes','audio'].forEach(t=>document.getElementById(`view-${t}`)?.classList.add('hidden')); 
-            document.getElementById(`view-${id}`)?.classList.remove('hidden'); document.getElementById(`view-${id}`)?.classList.add('flex'); 
-            document.querySelectorAll('.nav-item').forEach(b=>{b.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all';}); 
-            const active=document.getElementById(`nav-${id}`); if(active)active.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all'; 
-        }
-        function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
-        function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
-        function toggleMobileMenu(){document.getElementById('mobile-menu').classList.toggle('hidden');}
-
-        function saveKeys(){ 
-            const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-            appState.keys.gemini = safeGetVal('key-gemini'); appState.keys.groq = safeGetVal('key-groq'); appState.keys.cohere = safeGetVal('key-cohere'); appState.keys.openai = safeGetVal('key-openai'); appState.keys.grok = safeGetVal('key-grok'); appState.keys.serpapi = safeGetVal('key-serpapi'); 
-            appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.noteDocUrl = safeGetVal('key-note-doc-url'); appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); appState.driveUrl = safeGetVal('key-drive-url'); 
-            
-            appState.voiceTimeout = parseInt(safeGetVal('key-voice-timeout')) || 5;
-
-            localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', appState.keys.openai); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
-            localStorage.setItem('nova_doc_url', appState.docMonitorUrl); localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); localStorage.setItem('nova_drive_url', appState.driveUrl); 
-            localStorage.setItem('nova_voice_timeout', appState.voiceTimeout);
-
-            updateModelUI(); closeSettings(); addMessage("✅ 設定已儲存", 'system'); 
-        }
-
-        function testDocConnection() {
-            const url = document.getElementById('key-doc-url').value.trim(); const statusEl = document.getElementById('doc-monitor-status');
-            if(!url) return alert("請輸入系統代理 Google Doc URL");
-            statusEl.innerText = "測試中..."; statusEl.className = "text-[10px] text-blue-400 font-bold animate-pulse";
-            fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'test_connection' }) })
-            .then(res => res.text()).then(text => { alert("測試成功！伺服器已回應連線。"); statusEl.innerText = "連線成功"; statusEl.className = "text-[10px] text-green-400 font-bold"; })
-            .catch(e => {
-                fetch(url, { mode: 'no-cors' }).then(() => { alert("測試請求已送出！若 Apps Script 設置正確即代表連線成功。"); statusEl.innerText = "連線成功 (無CORS回傳)"; statusEl.className = "text-[10px] text-yellow-400 font-bold"; })
-                .catch(err => { alert("連線失敗：" + err.message); statusEl.innerText = "測試失敗"; statusEl.className = "text-[10px] text-red-400 font-bold"; });
-            });
-        }
-        
-        function exportSettings() {
-            const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl }, settings: { voiceTimeout: appState.voiceTimeout } };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); 
-            a.style.display = 'none';
-            a.href = url; 
-            a.download = `NOVA_Settings_${new Date().toISOString().split('T')[0]}.json`; 
-            document.body.appendChild(a); 
-            a.click(); 
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 2000);
-        }
-        
-        function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
-        function importSettings(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    if (data.keys) { appState.keys.gemini = data.keys.gemini || ''; appState.keys.groq = data.keys.groq || ''; appState.keys.cohere = data.keys.cohere || ''; appState.keys.openai = data.keys.openai || ''; appState.keys.grok = data.keys.grok || ''; appState.keys.serpapi = data.keys.serpapi || ''; }
-                    if (data.urls) { appState.docMonitorUrl = data.urls.docMonitorUrl || ''; appState.noteDocUrl = data.urls.noteDocUrl || ''; appState.noteDocUrl2 = data.urls.noteDocUrl2 || ''; appState.driveUrl = data.urls.driveUrl || ''; }
-                    if (data.settings) { appState.voiceTimeout = data.settings.voiceTimeout || 5; }
-
-                    const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-                    safeSet('key-gemini', appState.keys.gemini); safeSet('key-groq', appState.keys.groq); safeSet('key-cohere', appState.keys.cohere); safeSet('key-openai', appState.keys.openai); safeSet('key-grok', appState.keys.grok); safeSet('key-serpapi', appState.keys.serpapi);
-                    safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-note-doc-url', appState.noteDocUrl); safeSet('key-note-doc-url-2', appState.noteDocUrl2); safeSet('key-drive-url', appState.driveUrl);
-                    safeSet('key-voice-timeout', appState.voiceTimeout);
-
-                    alert("設定匯入成功！請點擊右下角「儲存」按鈕來套用設定。");
-                } catch(err) { alert("設定檔解析失敗：" + err.message); }
-                e.target.value = ''; 
-            };
-            reader.readAsText(file);
-        }
-
-        function setModel(m){ appState.currentModel=m; updateModelUI(); }
-        function setGrokModel(m) { appState.grokModel = m; }
-        function setGeminiModel(m) { appState.geminiModel = m; }
-        
-        function updateSendButtonState(isLoading) { 
-            const btn = document.getElementById('send-btn'); const icon = document.getElementById('send-icon'); 
-            if(isLoading){ btn.classList.add('cursor-not-allowed','opacity-70'); icon.classList.remove('ph-paper-plane-right'); icon.classList.add('ph-spinner','animate-spin');
-            }else{ btn.classList.remove('cursor-not-allowed','opacity-70'); icon.classList.remove('ph-spinner','animate-spin'); icon.classList.add('ph-paper-plane-right'); } 
-        }
-        function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
-        function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手掌握)", false); }
-        
-        function toggleVoice() {
-            appState.isVoiceActive = !appState.isVoiceActive;
-            if (appState.isVoiceActive) {
-                appState.isContinuous = false; 
-                document.getElementById('continuous-btn').classList.remove('text-emerald-400', 'bg-emerald-900/30'); 
-                document.getElementById('continuous-btn').classList.add('text-slate-500');
-                
-                chatInitialInput = document.getElementById('user-input').value;
-                try { recognition.start(); } catch(e){}
-            } else {
-                recognition.stop();
-            }
             updateVoiceUI();
         }
 
-        function toggleContinuous() {
-            appState.isContinuous = !appState.isContinuous;
-            const btn = document.getElementById('continuous-btn');
-            if (appState.isContinuous) { 
-                appState.isVoiceActive = true; 
-                chatInitialInput = document.getElementById('user-input').value;
-                try { recognition.start(); } catch(e){}
-                btn.classList.add('text-emerald-400', 'bg-emerald-900/30'); 
-                btn.classList.remove('text-slate-500'); 
-            } else { 
-                appState.isVoiceActive = false;
-                recognition.stop();
-                btn.classList.remove('text-emerald-400', 'bg-emerald-900/30'); 
-                btn.classList.add('text-slate-500'); 
-            }
-            updateVoiceUI();
-        }
-
-        function toggleNoteVoice() { 
-            appState.noteVoiceActive = !appState.noteVoiceActive; 
-            if (appState.noteVoiceActive) {
-                noteInitialInput = document.getElementById('doc-input-main').value;
-                try { noteRecognition.start(); } catch(e){}
-            } else {
-                noteRecognition.stop();
-            }
-            updateNoteVoiceUI();
+        function toggleSearch() { 
+            appState.isSearchEnabled = !appState.isSearchEnabled; 
+            updateModelUI(); 
         }
 
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
-        function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; if(el.value === '') el.style.height = '38px'; }
+        function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; if(el.value === '') el.style.height = '40px'; }
         
         function triggerChatImageUpload() { document.getElementById('chat-file-input').click(); }
         function handleChatFileSelect(e) {
@@ -1113,6 +1011,7 @@
             try { const res = await fetch(targetUrl); const text = await res.text(); area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>'; } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
         }
 
+        // --- Note Edit Actions ---
         function openTodoEdit(id) {
             const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
             document.getElementById('edit-todo-id').value = t.id; document.getElementById('edit-todo-text').value = t.text; document.getElementById('edit-todo-time').value = t.time !== '手動' ? t.time : '';
@@ -1217,288 +1116,6 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
-        function startAudioRecordOnly() {
-            appState.recordingContext = 'record';
-            switchTab('dashboard');
-            appState.currentAudioTranscript = "";
-            startAudioRecording();
-        }
-
-        function startVoiceNote() { 
-            appState.recordingContext = 'note'; 
-            switchTab('dashboard'); 
-            appState.currentAudioTranscript = ""; 
-            startAudioRecording(); 
-        }
-
-        async function startMeetingRecording(context = 'record') {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
-                addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; 
-            }
-            
-            appState.recordingContext = context;
-            switchTab('dashboard');
-            appState.currentAudioTranscript = "";
-            
-            if (appState.activeMediaTracks) {
-                appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
-            }
-            appState.activeMediaTracks = [];
-
-            let micStream = null;
-            let sysStream = null;
-            let mixedStream = null;
-
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-            try {
-                const micConstraints = { audio: true };
-
-                micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
-                appState.activeMediaTracks.push(...micStream.getTracks());
-
-                if (!isMobile && navigator.mediaDevices.getDisplayMedia) {
-                    try {
-                        addMessage("💡 提示：請在彈出的視窗中選擇【分頁】或【整個螢幕】，並務必勾選左下角的【分享分頁音訊】或【分享系統音訊】，才能成功錄下會議中別人的聲音喔！", 'system');
-                        sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                        appState.activeMediaTracks.push(...sysStream.getTracks());
-                        sysStream.getVideoTracks().forEach(track => { track.stop(); });
-                    } catch (sysErr) {
-                        addMessage("⚠️ 未取得系統音訊授權或取消操作，將為您降級為僅錄製麥克風聲音。", 'system');
-                    }
-                } else if (isMobile) {
-                    addMessage("⚠️ **系統限制提醒**：手機瀏覽器基於隱私安全，禁止側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，請**拔下耳機，改用手機擴音播放**，系統會透過麥克風一併收錄會議聲音。為解決前版畫面卡頓與提示音干擾問題，已為您切換回標準穩定收音模式！", 'system');
-                }
-
-                if (sysStream && sysStream.getAudioTracks().length > 0) {
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    const audioCtx = new AudioContextClass();
-                    appState.recordingAudioCtx = audioCtx;
-                    
-                    const dest = audioCtx.createMediaStreamDestination();
-                    
-                    if (micStream.getAudioTracks().length > 0) {
-                        const micSource = audioCtx.createMediaStreamSource(micStream);
-                        micSource.connect(dest);
-                    }
-                    
-                    if (sysStream.getAudioTracks().length > 0) {
-                        const sysSource = audioCtx.createMediaStreamSource(sysStream);
-                        sysSource.connect(dest);
-                    }
-                    
-                    mixedStream = dest.stream;
-                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始【雙軌語音筆記】... (已成功混合麥克風與系統聲音，點擊紅燈結束)" : "🎙️ 開始【雙軌會議錄音】... (已成功混合麥克風與系統聲音，點擊紅燈結束)";
-                    addMessage(titleMsg, 'system');
-                } else {
-                    mixedStream = micStream;
-                    let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製語音筆記... (僅麥克風環境音，點擊紅燈結束)" : "🎙️ 開始錄音... (僅麥克風環境音，點擊紅燈結束)";
-                    addMessage(titleMsg, 'system');
-                }
-
-                let actualMimeType = 'audio/webm';
-                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) actualMimeType = 'audio/webm;codecs=opus';
-                else if (MediaRecorder.isTypeSupported('audio/mp4')) actualMimeType = 'audio/mp4';
-                
-                mediaRecorder = new MediaRecorder(mixedStream, { mimeType: actualMimeType });
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = uploadAudioRecording; 
-                mediaRecorder.start();
-                
-                document.getElementById('recording-status').classList.remove('hidden'); 
-                document.getElementById('recording-status').classList.add('flex');
-                
-                if (recognition && !appState.isListening) { 
-                    chatInitialInput = document.getElementById('user-input').value; 
-                    recognition.start(); 
-                }
-
-            } catch (err) {
-                addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限或瀏覽器設定。", 'system');
-                console.error(err);
-            }
-        }
-
-        async function startAudioRecording() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
-                appState.activeMediaTracks = stream.getTracks();
-
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = uploadAudioRecording; 
-                mediaRecorder.start();
-                
-                document.getElementById('recording-status').classList.remove('hidden'); document.getElementById('recording-status').classList.add('flex');
-                let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (僅麥克風，點擊上方紅燈停止)";
-                addMessage(titleMsg, 'system');
-                if (recognition && !appState.isListening) { chatInitialInput = document.getElementById('user-input').value; recognition.start(); }
-            } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
-        }
-
-        function stopAudioRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop(); 
-                
-                if (appState.activeMediaTracks) {
-                    appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
-                    appState.activeMediaTracks = [];
-                }
-                if (appState.recordingAudioCtx) {
-                    try { appState.recordingAudioCtx.close(); } catch(e){}
-                    appState.recordingAudioCtx = null;
-                }
-
-                if (recognition) { try { recognition.abort(); } catch(e){} }
-                document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex');
-                addMessage("⏹️ 錄音結束，正在處理並儲存至本地端...", 'system');
-            } else { 
-                document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex'); 
-            }
-        }
-        
-        async function uploadAudioRecording() {
-            if (audioChunks.length === 0) {
-                addMessage(`⚠️ 錄音失敗：未擷取到音訊內容`, 'system');
-                appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
-                return;
-            }
-
-            const actualMimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
-            const audioBlob = new Blob(audioChunks, { type: actualMimeType });
-            
-            const dateObj = new Date();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
-            
-            const filename = `NOVA_Audio_${month}${day}${year}_${timeStr}.weba`; 
-            const displayDate = dateObj.toLocaleString();
-            const recordId = Date.now();
-            
-            let finalDriveUrl = "";
-
-            const reader = new FileReader();
-            reader.readAsDataURL(audioBlob);
-            const base64dataWithPrefix = await new Promise((resolve, reject) => { 
-                reader.onloadend = () => resolve(reader.result); 
-                reader.onerror = reject;
-            });
-
-            const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
-            
-            if (appState.recordingContext === 'note') {
-                const newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript, audioData: base64dataWithPrefix, mimeType: actualMimeType, filename: filename, images: [], image: null };
-                appState.notes.unshift(newNote); saveToDB('notes', newNote);
-                addMessage(`📝 語音筆記已安全儲存至本地「筆記/文件」分頁。`, 'system'); renderNotes();
-            } else {
-                const newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: "", transcript: capturedTranscript, audioData: base64dataWithPrefix, mimeType: actualMimeType };
-                appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
-                addMessage(`📼 錄音已安全儲存至本地「錄音紀錄」分頁。`, 'system'); renderAudioRecords();
-            }
-
-            if (appState.driveUrl) {
-                addMessage(`☁️ 正在與 Google Drive 同步中，請稍候...`, 'system');
-                try {
-                    const base64data = base64dataWithPrefix.split(',')[1];
-                    const payload = JSON.stringify({ filename: filename, mimeType: actualMimeType, data: base64data });
-                    
-                    const res = await fetch(appState.driveUrl, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'text/plain' },
-                        body: payload 
-                    });
-                    
-                    if (res.ok) {
-                        const resText = await res.text();
-                        try { 
-                            const resJson = JSON.parse(resText); 
-                            finalDriveUrl = resJson.url || resJson.link || resText; 
-                        } catch(e) { finalDriveUrl = resText; }
-                        
-                        addMessage(`✅ **雲端同步成功！** 檔案已確實存入 Google Drive。\n連結: ${finalDriveUrl}`, 'system');
-                        if(appState.recordingContext === 'note'){ const n = appState.notes.find(x => String(x.id) === String(recordId)); if(n) { n.driveUrl = finalDriveUrl; saveToDB('notes', n); renderNotes(); } } 
-                        else { const r = appState.audioRecords.find(x => String(x.id) === String(recordId)); if(r) { r.driveUrl = finalDriveUrl; saveToDB('audioRecords', r); renderAudioRecords(); } }
-                    } else {
-                        throw new Error('伺服器回傳狀態異常: HTTP ' + res.status);
-                    }
-                } catch (e) { 
-                    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-                        finalDriveUrl = "https://drive.google.com/";
-                        addMessage(`✅ **雲端同步成功！** \n*(註: 由於瀏覽器安全攔截，無法取得直接連結，但檔案已成功送達您的 Google Drive)*`, 'system');
-                        if(appState.recordingContext === 'note'){ const n = appState.notes.find(x => String(x.id) === String(recordId)); if(n) { n.driveUrl = finalDriveUrl; saveToDB('notes', n); renderNotes(); } } 
-                        else { const r = appState.audioRecords.find(x => String(x.id) === String(recordId)); if(r) { r.driveUrl = finalDriveUrl; saveToDB('audioRecords', r); renderAudioRecords(); } }
-                    } else {
-                        addMessage(`❌ **雲端同步失敗**：${e.message}\n請確認您的 Apps Script 權限有設為「所有人」。`, 'system');
-                    }
-                }
-            }
-
-            appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
-        }
-
-        function summarizeAudioRecord(id) {
-            const r = appState.audioRecords.find(x => String(x.id) === String(id)); if (!r) return;
-            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
-            
-            appState.pendingAnalyzeContextId = id;
-            appState.pendingAnalyzeType = 'audioRecord';
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。`;
-            
-            if (r.audioData) {
-                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
-                appState.chatFile = { category: 'media', data: r.audioData, mime: r.mimeType || 'audio/webm', name: r.filename || 'audio.weba' };
-                showFilePreview(appState.chatFile.name, false, null); switchTab('dashboard');
-                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
-            } else {
-                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n請在接下來的視窗中，手動選取您的原始音檔 (.webm, .weba 等)。`)) return;
-                document.getElementById('audio-analyze-input').click();
-            }
-        }
-
-        function summarizeVoiceNote(id) {
-            const n = appState.notes.find(x => String(x.id) === String(id)); if (!n) return;
-            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
-            
-            appState.pendingAnalyzeContextId = id;
-            appState.pendingAnalyzeType = 'voiceNote';
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。`;
-            
-            if (n.audioData) {
-                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
-                appState.chatFile = { category: 'media', data: n.audioData, mime: n.mimeType || 'audio/webm', name: n.filename || 'audio.weba' };
-                showFilePreview(appState.chatFile.name, false, null); switchTab('dashboard');
-                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
-            } else {
-                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n請在接下來的視窗中，選取該語音筆記的原始音檔。`)) return;
-                document.getElementById('audio-analyze-input').click();
-            }
-        }
-
-        // --- WEB SCRAPER & SEARCH ---
-        async function fetchUrlViaGas(url) {
-            if (!appState.docMonitorUrl) return null;
-            try { const res = await fetch(appState.docMonitorUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'scrape_and_log', url: url }) }); const text = await res.text(); return (text && !text.startsWith("Error")) ? text : null; } catch (e) { return null; }
-        }
-        async function searchViaSerpApi(query) {
-            if (!appState.keys.serpapi) return null;
-            const targetUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${appState.keys.serpapi}&engine=google&gl=tw&hl=zh-tw`;
-            const proxies = [`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`];
-            let serpData = null, lastErrorMsg = "";
-            for (const proxy of proxies) {
-                try { const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000); const res = await fetch(proxy, { signal: controller.signal }); clearTimeout(timeoutId); if (!res.ok) { lastErrorMsg = `HTTP ${res.status}`; continue; } const data = await res.json(); if (data.error) throw new Error(data.error); serpData = data; break; } 
-                catch (err) { lastErrorMsg = err.name === 'AbortError' ? '連線逾時' : err.message; if (err.message.toLowerCase().includes("invalid api key")) throw new Error("SerpApi 金鑰無效"); }
-            }
-            if (!serpData) throw new Error(`SerpApi 連線皆失敗 (${lastErrorMsg})`);
-            let resultText = "【SerpApi 搜尋結果】\n";
-            if (serpData.organic_results?.length > 0) { serpData.organic_results.slice(0, 5).forEach((item, i) => resultText += `${i + 1}. [${item.title}](${item.link})\n   ${item.snippet || ''}\n`); } 
-            else resultText += "未找到相關結果。";
-            return resultText;
-        }
-
         async function checkDeepLinkIntent(text) {
             const key = appState.keys.gemini;
             if(!key) return null;
@@ -1559,7 +1176,6 @@
             }
         }
 
-        // --- ★ 終極安全防禦版 handleSendMessage ---
         async function handleSendMessage() {
             if(appState.isThinking) return;
             
@@ -1573,9 +1189,6 @@
             }
             
             if(!text && !hasChatFile && !appState.isLiveMode) return;
-
-            if (text.includes("開始錄音")) { input.value = ''; input.style.height = '38px'; chatInitialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
-            if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '38px'; chatInitialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
 
             appState.isThinking = true; 
             updateSendButtonState(true);
@@ -1599,7 +1212,7 @@
                         addMessage(intentData.replyMessage, 'ai', 'gemini', [], null, intentData);
                         
                         setTimeout(() => { window.location.href = intentData.deepLinkUrl; }, 1500);
-                        input.value = ''; input.style.height = '38px'; chatInitialInput = '';
+                        input.value = ''; input.style.height = '40px'; chatInitialInput = '';
                         if (recognition) { try { recognition.abort(); } catch(e){} }
                         return; 
                     } else {
@@ -1632,7 +1245,7 @@
                 
                 addMessage(displayMessage, 'user', null, [], fileDataToPass);
                 
-                input.value = ''; input.style.height = '38px'; chatInitialInput = ''; clearChatFile(); 
+                input.value = ''; input.style.height = '40px'; chatInitialInput = ''; clearChatFile(); 
                 
                 if (!appState.isContinuous && appState.isVoiceActive) {
                     appState.isVoiceActive = false;
@@ -1645,7 +1258,7 @@
                 renderThinkingState(true);
 
                 if (appState.pendingReminder && appState.reminderStage > 0) {
-                     const todo = appState.todos.find(t => t.id === appState.pendingReminder);
+                     const todo = appState.todos.find(t => String(t.id) === String(appState.pendingReminder));
                      if (todo) {
                          let combinedText = todo.tempTimeStr ? `${todo.tempTimeStr} ${text}` : text; const timeInfo = parseTimeNatural(combinedText);
                          if (timeInfo.complete) { todo.time = new Date(timeInfo.timestamp).toLocaleString(); todo.alertTime = timeInfo.timestamp; todo.alerted = false; delete todo.tempTimeStr; appState.pendingReminder = null; appState.reminderStage = 0; addMessage(`👌 已設定提醒：${todo.text} 於 ${todo.time}`, 'system'); speakText(`已設定提醒：${todo.text} 於 ${todo.time}`); } 
@@ -1670,7 +1283,6 @@
                     systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
                 }
 
-                // ★ NEW: 翻譯模式系統指令
                 if (appState.isTranslateMode && modelToUse === 'gemini') {
                     systemPromptAddon += `\n\n【強制執行：即時同步口譯模式】\n你現在是一位專業、精準的口譯員。請對使用者的輸入進行直譯。\n規則：\n1. 若判定輸入為「中文」，請將其翻譯為最流暢的「英文」(若對話前後文有提及日韓則翻譯為對應語言)。\n2. 若判定輸入為「外文 (如英、日、韓等)」，請一律翻譯為「繁體中文」。\n3. 你的回應『只能』包含翻譯後的最終結果，絕對不允許加入任何解釋、引言、拼音標註或聊天回覆內容。`;
                 }
@@ -1713,28 +1325,15 @@
                     file: fileDataToPass 
                 });
                 
-                // 回傳到聊天室並語音播報 (如果開啟LIVE或口譯)
                 let finalOutputText = typeof finalRes === 'string' ? finalRes : (finalRes.text || "(無文字)");
                 if(typeof finalRes === 'string') addMessage(finalOutputText, 'ai', modelToUse);
                 else addMessage(finalOutputText, 'ai', modelToUse, finalRes.sources, finalRes.file);
 
                 speakText(finalOutputText);
 
-                if (appState.pendingAnalyzeContextId) {
-                    if (appState.pendingAnalyzeType === 'voiceNote') {
-                        const n = appState.notes.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
-                        if (n) { n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${finalRes.text||finalRes}`; saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system'); speakText(`分析完成，已儲存至筆記。`); }
-                    } else if (appState.pendingAnalyzeType === 'audioRecord') {
-                        const r = appState.audioRecords.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
-                        if (r) { r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析]\n${finalRes.text||finalRes}`; saveToDB('audioRecords', r); renderAudioRecords(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system'); speakText(`分析完成，已儲存至錄音紀錄。`); }
-                    }
-                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ""; appState.pendingAnalyzePrompt = "";
-                }
-
             } catch (error) {
                 console.error("Handler Error:", error);
-                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援此格式或伺服器壅塞，請稍後再試。)\n`, 'system');
-                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = "";
+                addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援此格式或網路連線不穩，請稍後再試。)\n`, 'system');
             } finally {
                 appState.isThinking = false; 
                 updateSendButtonState(false); 
@@ -2003,7 +1602,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 62 系統升級完畢！\n\n✅ **📸 LIVE 影像對話模式**：點擊輸入框左側的 LIVE 按鈕，AI 就能透過手機鏡頭「看見」眼前的畫面！系統會縮短反應時間並自動開啟**語音播報(TTS)**，讓您能直接跟它對話交流。\n✅ **🌐 即時口譯員模式**：點擊口譯按鈕，系統會化身為專屬口譯員，支援中、英、日、韓語音直譯與播報！\n✅ **📱 介面動線優化**：功能列與輸入框現在改為雙層設計，讓您在手機上擁有最大的打字視野！', 
+                    text: 'NOVA 63 系統大改版完畢！\n\n✅ **LINE 雙層介面革新**：重構了對話區的排版。現在點選左下角的「＋」號可以展開所有功能，而打字框佔用的空間被最大化，讓您在手機上輸入更加從容！\n✅ **語音燈號明確化**：啟動連續語音或口譯模式時，按鈕會立刻閃爍高亮，再點一下即可瞬間關閉語音通道，狀態一目了然！\n✅ **劇院級 LIVE 影像模式**：打開相機 (LIVE) 後，視訊預覽框會放大佔據上方畫面，同時保留底下充裕的文字輸入空間。讓您真正能看著鏡頭與 AI 「邊看邊聊」！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
