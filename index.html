@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 60</title>
+    <title>NOVA 61</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 60</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 61</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- Mobile Header -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 60</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 61</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -223,6 +223,10 @@
                              </select>
                          </div>
                     </div>
+                    
+                    <!-- LIVE MODE VIDEO PREVIEW (Hidden by default) -->
+                    <video id="live-video-preview" autoplay playsinline muted class="hidden absolute top-4 right-4 w-28 h-40 object-cover rounded-xl border border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] z-40 transition-all"></video>
+
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700"></div>
                     
                     <!-- Chat Input Area -->
@@ -235,14 +239,22 @@
                         </div>
                         <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
                         
-                        <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-2 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
+                        <div id="input-wrapper" class="flex items-end bg-slate-950 rounded-xl px-1.5 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
                             <label for="chat-file-input" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0 cursor-pointer" title="上傳檔案或圖片"><i class="ph-bold ph-paperclip text-xl"></i></label>
                             <input type="file" id="chat-file-input" accept="*/*" class="hidden" onchange="handleChatFileSelect(event)">
+                            
+                            <!-- ★ NEW: 即時口譯模式按鈕 -->
+                            <button id="translate-btn" onclick="toggleTranslateMode()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0" title="即時口譯模式 (中/英/日/韓)"><i id="translate-icon" class="ph-bold ph-translate text-xl"></i></button>
+                            
+                            <!-- ★ NEW: LIVE 影像模式按鈕 -->
+                            <button id="live-btn" onclick="toggleLiveMode()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-all flex-shrink-0" title="LIVE 影像對話模式"><i id="live-icon" class="ph-bold ph-camera text-xl"></i></button>
+
                             <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-800 transition-all flex-shrink-0" title="連續語音對話"><i id="continuous-icon" class="ph-bold ph-infinity text-xl"></i></button>
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 mb-1 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-all flex-shrink-0" title="開關連網搜尋"><i id="search-icon" class="ph-bold ph-globe text-xl"></i></button>
-                            <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
+                            <button id="voice-btn" onclick="toggleVoice()" class="p-2 mb-1 mr-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95 flex-shrink-0"><i id="voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
+                            
                             <textarea id="user-input" rows="1" placeholder="對話、搜尋、打開APP..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-2.5 my-0.5 leading-relaxed scrollbar-none" style="min-height: 44px; max-height: 120px; overflow-y: auto;" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
-                            <button onclick="handleSendMessage()" id="send-btn" class="ml-2 p-2 px-3 mb-1 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
+                            <button onclick="handleSendMessage()" id="send-btn" class="ml-1 p-2 px-3 mb-1 rounded-lg text-white bg-blue-600 hover:opacity-90 flex-shrink-0 transition-all"><i id="send-icon" class="ph-bold ph-paper-plane-right"></i></button>
                         </div>
                         <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden">🌐 已開啟連網搜尋 (支援各模型)</div>
                     </div>
@@ -378,7 +390,7 @@
 
             <!-- EDIT NOTE MODAL -->
             <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex-col max-h-[90vh]">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="text-xl font-bold text-white">編輯筆記</h3>
                         <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
@@ -413,6 +425,7 @@
         let recognition = null; let noteRecognition = null; let voiceTimer = null; 
         let chatInitialInput = ""; let noteInitialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
+        let liveVideoStream = null; // ★ 供 LIVE 模式使用
 
         // --- IndexedDB 全面初始化 ---
         const DB_NAME = 'NovaDB'; const DB_VERSION = 2; let db;
@@ -446,12 +459,13 @@
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
             keys: { gemini: localStorage.getItem('nova_key_gemini')||'', groq: localStorage.getItem('nova_key_groq')||'', cohere: localStorage.getItem('nova_key_cohere')||'', openai: localStorage.getItem('nova_key_openai')||'', grok: localStorage.getItem('nova_key_grok')||'', serpapi: localStorage.getItem('nova_key_serpapi')||'' },
             isThinking: false, isListening: false, isVoiceActive: false, isNoteListening: false, noteVoiceActive: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
+            isLiveMode: false, isTranslateMode: false, // ★ 新增：LIVE影像 與 即時口譯 狀態
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
             recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null,
             pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "",
             activeMediaTracks: [], recordingAudioCtx: null,
-            voiceTimeout: parseInt(localStorage.getItem('nova_voice_timeout')) || 5 // ★ 新增：語音等待秒數變數
+            voiceTimeout: parseInt(localStorage.getItem('nova_voice_timeout')) || 5
         };
         
         const MODEL_CONFIG = {
@@ -460,6 +474,7 @@
 
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
+        // --- Markdown 與 Azure Blob 圖片防失真解析器 ---
         function formatMessage(text) { 
             if (!text) return ''; 
             let images = [];
@@ -516,7 +531,6 @@
             const day = String(dateObj.getDate()).padStart(2, '0');
             const year = dateObj.getFullYear();
             const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
-            
             const finalFilename = `NOVA_Audio_${month}${day}${year}_${timeStr}.weba`;
 
             try {
@@ -684,7 +698,7 @@
             const geminiSelect = document.getElementById('gemini-sub-model-select');
             if(geminiSelect) { if (appState.currentModel === 'gemini') { geminiSelect.classList.remove('hidden'); geminiSelect.value = appState.geminiModel; } else { geminiSelect.classList.add('hidden'); } }
 
-            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-2 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
+            const wrap = document.getElementById('input-wrapper'); if(wrap) wrap.className = `flex items-end bg-slate-950 rounded-xl px-1.5 py-2 border transition-colors border-slate-700 focus-within:border-${appState.currentModel==='gemini'?'blue':appState.currentModel==='groq'?'rose':appState.currentModel==='cohere'?'violet':appState.currentModel==='gpt'?'emerald':'slate'}-500`; 
             const badge=document.getElementById('web-search-badge'); const searchBtn=document.getElementById('search-toggle-btn'); const hint=document.getElementById('search-hint'); 
             if(searchBtn) {
                 if(appState.isSearchEnabled){ searchBtn.classList.add('text-blue-400','bg-blue-900/30'); searchBtn.classList.remove('text-slate-500'); if(badge)badge.classList.remove('hidden'); if(hint)hint.classList.remove('hidden'); }
@@ -711,6 +725,54 @@
             } else { 
                 btn.classList.remove('text-red-400'); btn.classList.add('text-slate-500'); 
                 icon.classList.remove('animate-pulse'); 
+            }
+        }
+
+        // --- ★ NEW: LIVE 模式與翻譯模式 UI 控制 ---
+        async function toggleLiveMode() {
+            appState.isLiveMode = !appState.isLiveMode;
+            const videoEl = document.getElementById('live-video-preview');
+            const btn = document.getElementById('live-btn');
+            
+            if (appState.isLiveMode) {
+                try {
+                    liveVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    videoEl.srcObject = liveVideoStream;
+                    videoEl.classList.remove('hidden');
+                    btn.classList.add('text-red-400', 'bg-red-900/30');
+                    btn.classList.remove('text-slate-500');
+                    addMessage("📸 **LIVE 影像模式已啟動！**\nAI 現在可以看見您的鏡頭畫面了。請直接用語音對著系統說話（建議開啟「連續語音」），系統會在發送對話時自動擷取當前畫面給 AI 判斷。", 'system');
+                    if (!appState.isContinuous) toggleContinuous();
+                } catch (e) {
+                    alert("無法存取相機：" + e.message);
+                    appState.isLiveMode = false;
+                    btn.classList.remove('text-red-400', 'bg-red-900/30');
+                    btn.classList.add('text-slate-500');
+                }
+            } else {
+                if (liveVideoStream) {
+                    liveVideoStream.getTracks().forEach(t => t.stop());
+                    liveVideoStream = null;
+                }
+                videoEl.classList.add('hidden');
+                btn.classList.remove('text-red-400', 'bg-red-900/30');
+                btn.classList.add('text-slate-500');
+                addMessage("📸 LIVE 影像模式已關閉。", 'system');
+            }
+        }
+
+        function toggleTranslateMode() {
+            appState.isTranslateMode = !appState.isTranslateMode;
+            const btn = document.getElementById('translate-btn');
+            if (appState.isTranslateMode) {
+                btn.classList.add('text-blue-400', 'bg-blue-900/30');
+                btn.classList.remove('text-slate-500');
+                addMessage("🌐 **即時口譯模式已啟動！**\n請直接對著麥克風說話。\n系統會自動將「中文」直譯為「外文」，或將「外文(英日韓等)」直譯為「中文」。", 'system');
+                if (!appState.isContinuous) toggleContinuous(); 
+            } else {
+                btn.classList.remove('text-blue-400', 'bg-blue-900/30');
+                btn.classList.add('text-slate-500');
+                addMessage("🌐 即時口譯模式已關閉。", 'system');
             }
         }
 
@@ -754,7 +816,6 @@
             appState.keys.gemini = safeGetVal('key-gemini'); appState.keys.groq = safeGetVal('key-groq'); appState.keys.cohere = safeGetVal('key-cohere'); appState.keys.openai = safeGetVal('key-openai'); appState.keys.grok = safeGetVal('key-grok'); appState.keys.serpapi = safeGetVal('key-serpapi'); 
             appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.noteDocUrl = safeGetVal('key-note-doc-url'); appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); appState.driveUrl = safeGetVal('key-drive-url'); 
             
-            // ★ 新增：儲存語音等待秒數
             appState.voiceTimeout = parseInt(safeGetVal('key-voice-timeout')) || 5;
 
             localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', appState.keys.openai); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
@@ -1108,6 +1169,7 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
+        // --- ★ NEW: AI DEEP LINK INTENT CHECKER ---
         async function checkDeepLinkIntent(text) {
             const key = appState.keys.gemini;
             if(!key) return null;
@@ -1181,7 +1243,7 @@
                 if (text.substring(0, mid) === text.substring(mid)) text = text.substring(0, mid); 
             }
             
-            if(!text && !hasChatFile) return;
+            if(!text && !hasChatFile && !appState.isLiveMode) return;
 
             if (text.includes("開始錄音")) { input.value = ''; input.style.height = '44px'; chatInitialInput = ''; addMessage(text, 'user'); startAudioRecording(); return; }
             if (text.includes("停止錄音") || text.includes("結束錄音")) { input.value = ''; input.style.height = '44px'; chatInitialInput = ''; addMessage(text, 'user'); stopAudioRecording(); return; }
@@ -1194,7 +1256,7 @@
                 const isAction = actionKeywords.some(kw => text.toLowerCase().startsWith(kw));
                 const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(text.trim());
 
-                if (isAction && !isImageIntent && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile) {
+                if (isAction && !isImageIntent && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile && !appState.isLiveMode && !appState.isTranslateMode) {
                     const sysMsgId = Date.now();
                     appState.messages.push({id: sysMsgId, text: `🔄 正在辨識您的操作意圖...`, sender: 'system', time: getTime()});
                     renderMessages();
@@ -1216,9 +1278,29 @@
                     }
                 }
 
-                const fileDataToPass = hasChatFile ? { ...appState.chatFile } : null;
+                let fileDataToPass = hasChatFile ? { ...appState.chatFile } : null;
+                
+                // ★ NEW: LIVE 模式動態擷取畫面
+                if (!fileDataToPass && appState.isLiveMode && liveVideoStream) {
+                    try {
+                        const videoEl = document.getElementById('live-video-preview');
+                        const canvas = document.createElement('canvas');
+                        // 使用固定壓縮尺寸以加快傳輸
+                        canvas.width = videoEl.videoWidth || 480;
+                        canvas.height = videoEl.videoHeight || 640;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        fileDataToPass = { category: 'image', data: dataUrl, mime: 'image/jpeg', name: 'Live_Capture.jpg' };
+                        
+                        if (!text) text = "請詳細描述畫面中的內容。";
+                    } catch(err) {
+                        console.warn("擷取 LIVE 畫面失敗", err);
+                    }
+                }
+
                 let displayMessage = text;
-                if (!text && fileDataToPass) { displayMessage = `請分析這份檔案: ${fileDataToPass.name}`; }
+                if (!text && fileDataToPass) { displayMessage = `[夾帶檔案/畫面: ${fileDataToPass.name}]`; }
                 
                 addMessage(displayMessage, 'user', null, [], fileDataToPass);
                 
@@ -1259,14 +1341,17 @@
                     systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
                 }
 
+                // ★ NEW: 翻譯模式系統指令
+                if (appState.isTranslateMode && modelToUse === 'gemini') {
+                    systemPromptAddon += `\n\n【強制執行：即時同步口譯模式】\n你現在是一位專業、精準的口譯員。請對使用者的輸入進行直譯。\n規則：\n1. 若判定輸入為「中文」，請將其翻譯為最流暢的「英文」(若對話前後文有提及日韓則翻譯為對應語言)。\n2. 若判定輸入為「外文 (如英、日、韓等)」，請一律翻譯為「繁體中文」。\n3. 你的回應『只能』包含翻譯後的最終結果，絕對不允許加入任何解釋、引言、拼音標註或聊天回覆內容。`;
+                }
+
                 if (fileDataToPass) {
                     if (fileDataToPass.category === 'text') {
                         injectedContext += `\n\n[附檔內容 - ${fileDataToPass.name}]:\n${fileDataToPass.data}\n\n`;
-                        if (!text) text = `請分析這份名為 ${fileDataToPass.name} 的檔案內容。`;
-                    } else if (fileDataToPass.category === 'image') { if (!text) text = "請詳細分析這張圖片的內容"; }
-                    else if (fileDataToPass.category === 'media') { if (!text) text = `請詳細分析這份名為 ${fileDataToPass.name} 的檔案內容`; }
+                    }
                 } 
-                else {
+                else if (!appState.isTranslateMode) {
                     const searchMatch = text.match(/^(?:搜尋|search)(.*)$/i);
                     if (searchMatch) {
                         const searchKeyword = searchMatch[1].trim() || "今日新聞"; addMessage(`🔍 正在搜尋：${searchKeyword}...`, 'system'); let searchResultText = "";
@@ -1318,7 +1403,6 @@
                 addMessage(`⚠️ [系統提示] ${error.message || '未知錯誤'}\n(可能是當前模型不支援此格式或伺服器壅塞，請稍後再試。)\n`, 'system');
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = "";
             } finally {
-                // ★ 強制解鎖按鈕與思考狀態
                 appState.isThinking = false; 
                 updateSendButtonState(false); 
                 renderThinkingState(false);
@@ -1483,7 +1567,7 @@
 
                     let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
                     if (!outputText && !responseImageFile && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。"; 
-                    if (isAutoRouted) { outputText += `\n\n*(系統提示：已為您動態調配至 **${selectedModelName}** 執行此任務)*`; }
+                    if (isAutoRouted && !appState.isTranslateMode) { outputText += `\n\n*(系統提示：已為您動態調配至 **${selectedModelName}** 執行此任務)*`; }
 
                     return { text: outputText || (responseImageFile ? "✨ 圖片生成成功！已為您附在下方。" : "(無回傳文字)"), sources: sources, file: responseImageFile };
                     
@@ -1586,7 +1670,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 60 系統設定升級完畢！\n\n✅ **自訂連續語音等待秒數**：您現在可以在「設定 & API」視窗中，自由設定連續語音模式下「無聲等待幾秒後自動送出」的時間 (預設為 5 秒)！\n這能讓您根據講話習慣，打造最適合自己的連續對話體驗！', 
+                    text: 'NOVA 61 系統升級完畢！\n\n✅ **📸 LIVE 影像對話模式**：點擊輸入框左側的相機按鈕，AI 就能透過手機鏡頭「看見」眼前的畫面！搭配語音對話，您可以隨時問它：「畫面上這個東西怎麼用？」\n✅ **🌐 即時口譯員模式**：點擊翻譯按鈕，系統會化身為您的專屬口譯員。對著它說中文，它會直譯成外文；說外文(英日韓)，它會直譯成中文，且不會摻雜多餘對話！\n✅ **發送鈕卡死修復**：徹底修復了網路不穩或解析失敗時，對話框會永遠卡在「讀取中」的嚴重 Bug！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -1612,7 +1696,6 @@
                     updateVoiceUI(); 
                 };
                 
-                // ★ 增加安全緩衝，避免 100ms 重啟造成的死鎖與逼嗶聲狂響
                 recognition.onend = () => { 
                     if (appState.isContinuous || appState.isVoiceActive || (mediaRecorder && mediaRecorder.state === 'recording')) { 
                         setTimeout(() => { try { recognition.start(); } catch(e){} }, 300); 
@@ -1621,7 +1704,6 @@
                     }
                 };
                 
-                // ★ 攔截硬體獨佔衝突錯誤，不讓它陷入無窮重啟地獄
                 recognition.onerror = (e) => {
                     console.warn("Speech Recognition Error:", e.error);
                 };
@@ -1731,4 +1813,4 @@
         };
     </script>
 </body>
-</html>
+    </html>
