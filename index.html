@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 74</title>
+    <title>NOVA 75</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 74</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 75</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -96,7 +96,7 @@
 
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 74</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 75</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -199,7 +199,7 @@
 
             <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
                 <div class="flex-1 flex flex-col h-full min-w-0 relative">
-                    <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar">
+                    <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar relative z-10">
                          <div class="flex items-center space-x-2 mr-4 shrink-0">
                             <span id="web-search-badge" class="hidden md:flex items-center space-x-1 text-[10px] bg-blue-900/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full"><i class="ph-bold ph-globe"></i><span>連網搜尋</span></span>
                             <div id="recording-status" onclick="stopAudioRecording()" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2 cursor-pointer hover:bg-red-800/50 transition-colors" title="點擊停止錄音">
@@ -255,13 +255,22 @@
                          </div>
                     </div>
                     
-                    <div id="live-video-container" class="hidden absolute top-16 left-1/2 -translate-x-1/2 w-[90%] h-[45%] bg-slate-900 rounded-2xl border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)] z-30 overflow-hidden flex-col">
-                        <div class="bg-red-600 text-white text-xs font-bold text-center py-1 tracking-widest flex items-center justify-center gap-2">
+                    <!-- 分層：上半部視訊 -->
+                    <div id="live-video-container" class="hidden w-full h-[45%] bg-slate-900 border-b-2 border-red-500/50 shadow-xl z-20 overflow-hidden flex-col relative shrink-0 transition-all duration-300">
+                        <div class="absolute top-2 right-2 z-40">
+                            <select id="camera-select" onchange="switchCamera(this.value)" class="bg-slate-900/80 text-white text-xs rounded-lg px-3 py-1.5 outline-none border border-red-500/50 backdrop-blur-md shadow-lg cursor-pointer">
+                                <option value="environment">後鏡頭 (1倍)</option>
+                                <option value="wide">後鏡頭 (廣角)</option>
+                                <option value="user">前鏡頭 (自拍)</option>
+                            </select>
+                        </div>
+                        <div class="bg-red-600 text-white text-xs font-bold text-center py-1 tracking-widest flex items-center justify-center gap-2 shrink-0">
                             <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div> LIVE AI VISION
                         </div>
                         <video id="live-video-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
                     </div>
 
+                    <!-- 分層：下半部對話 -->
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 relative"></div>
                     
                     <!-- Line Style Bottom Input Area -->
@@ -516,7 +525,7 @@
 
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-multi', geminiModel: 'gemini-multi',
-            chatFile: null, 
+            chatFile: null, cameraMode: 'environment',
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
             messages: [], notes: [], todos: [], audioRecords: [], 
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
@@ -581,12 +590,10 @@
                 let cleanText = text.replace(/[*_#`\[\]]/g, '').replace(/(https?:\/\/[^\s]+)/g, "網址連結");
                 let utterance = new SpeechSynthesisUtterance(cleanText);
                 
-                // ★ AI 朗讀智慧語言判定
                 let lang = 'zh-TW'; 
                 let testChunk = cleanText.substring(0, 100);
                 
                 if (appState.isTranslateMode && appState.translateTargetLang) {
-                    // 若當下聽取的是中文，AI回答就強制唸外文；若聽取的是外文，AI回答就強制唸中文
                     lang = (appState.currentListenLang === 'zh-TW') ? appState.translateTargetLang : 'zh-TW';
                 } else {
                     if (/[\u3040-\u309F\u30A0-\u30FF]/.test(testChunk)) {
@@ -600,7 +607,6 @@
                 
                 utterance.lang = lang;
                 
-                // ★ 語音防迴音機制：強制切斷麥克風
                 utterance.onstart = () => {
                     appState.isTTSPlaying = true;
                     if (recognition) { try { recognition.abort(); } catch(e){} }
@@ -753,7 +759,7 @@
                             <div class="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0"><i class="ph-fill ${iconClass} text-xl"></i></div>
                             <div class="flex flex-col truncate w-full pr-2">
                                 <span class="text-sm font-bold text-white truncate">${escapeHtml(ad.appName || '應用程式')}</span>
-                                <span class="text-xs text-slate-400 truncate w-full block">${escapeHtml(ad.actionDescription || '即遇到這類操作')}</span>
+                                <span class="text-xs text-slate-400 truncate w-full block">${escapeHtml(ad.actionDescription || '即將執行此操作')}</span>
                             </div>
                         </div>
                         <div class="flex gap-2 w-full">
@@ -893,7 +899,6 @@
             }
         }
 
-        // ★ STT 語言切換邏輯
         window.toggleListenLang = function() {
             if(!appState.isTranslateMode || appState.translateSetupStage === 1) return;
             
@@ -915,22 +920,45 @@
             }
         };
 
-        async function getStandardBackCamera() {
+        async function getCameraConstraints(mode) {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (mode === 'user') {
+                    return { video: { facingMode: "user" } };
+                }
+                
                 let backCameras = videoDevices.filter(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('環境') || d.label.toLowerCase().includes('rear'));
                 
-                let standardCam = backCameras.find(d => !d.label.toLowerCase().includes('wide') && !d.label.toLowerCase().includes('廣角'));
-                
-                if (standardCam) {
-                    return { video: { deviceId: { exact: standardCam.deviceId } } };
+                if (mode === 'wide') {
+                    let wideCam = backCameras.find(d => d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('廣角') || d.label.toLowerCase().includes('0.5'));
+                    if (wideCam) return { video: { deviceId: { exact: wideCam.deviceId } } };
+                    return { video: { facingMode: "environment" } };
                 }
+                
+                let standardCam = backCameras.find(d => !d.label.toLowerCase().includes('wide') && !d.label.toLowerCase().includes('廣角'));
+                if (standardCam) return { video: { deviceId: { exact: standardCam.deviceId } } };
+                
                 return { video: { facingMode: "environment" } };
             } catch(e) {
-                return { video: { facingMode: "environment" } };
+                return { video: { facingMode: mode === 'user' ? "user" : "environment" } };
             }
         }
+
+        window.switchCamera = async function(mode) {
+            appState.cameraMode = mode;
+            if (appState.isLiveMode && liveVideoStream) {
+                liveVideoStream.getTracks().forEach(t => t.stop());
+                try {
+                    const constraints = await getCameraConstraints(mode);
+                    liveVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    document.getElementById('live-video-preview').srcObject = liveVideoStream;
+                } catch(e) {
+                    alert("切換鏡頭失敗：" + e.message);
+                }
+            }
+        };
 
         async function toggleLiveMode(forceClose = false) {
             const btn = document.getElementById('live-btn');
@@ -946,7 +974,8 @@
                 try {
                     if (appState.isTranslateMode) toggleTranslateMode(true);
                     
-                    const constraints = await getStandardBackCamera();
+                    const cameraSelect = document.getElementById('camera-select');
+                    const constraints = await getCameraConstraints(cameraSelect ? cameraSelect.value : 'environment');
                     liveVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
                     
                     videoEl.srcObject = liveVideoStream;
@@ -1321,27 +1350,23 @@
             reader.readAsDataURL(file);
         }
 
-        // ★ 核心修復：隨手筆記本的 Paste 攔截
+        // ★ 核心修復：統一攔截所有地方的純圖檔貼上
         window.handlePaste = function(e) {
-            if (e.target.id === 'user-input') {
-                const items = (e.clipboardData || window.clipboardData).items; if (!items) return;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf("image") !== -1) {
-                        const blob = items[i].getAsFile(); const reader = new FileReader();
-                        reader.onload = function(evt) { appState.chatFile = { category: 'image', data: evt.target.result, mime: blob.type, name: '剪貼簿圖片.png' }; showFilePreview('剪貼簿圖片', true, evt.target.result); };
-                        reader.readAsDataURL(blob); e.preventDefault(); return;
-                    }
-                }
-                return;
-            } else if (e.target.id === 'doc-input-main') {
+            if (e.target.id === 'user-input' || e.target.id === 'doc-input-main' || e.target.closest('#doc-input-main')) {
                 const items = (e.clipboardData || window.clipboardData).items; if (!items) return;
                 for (let i = 0; i < items.length; i++) {
                     if (items[i].type.indexOf("image") !== -1) {
                         const blob = items[i].getAsFile(); const reader = new FileReader();
                         reader.onload = function(event) {
-                            appState.pastedImageBase64 = event.target.result;
-                            const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.remove('hidden');
-                            e.target.value = "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]";
+                            if (e.target.id === 'user-input') {
+                                appState.chatFile = { category: 'image', data: event.target.result, mime: blob.type, name: '剪貼簿圖片.png' }; 
+                                showFilePreview('剪貼簿圖片', true, event.target.result);
+                            } else {
+                                appState.pastedImageBase64 = event.target.result;
+                                const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.remove('hidden');
+                                const docInput = document.getElementById('doc-input-main');
+                                if(docInput) docInput.value = "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]";
+                            }
                         };
                         reader.readAsDataURL(blob); e.preventDefault(); return;
                     }
@@ -2419,7 +2444,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 74 系統升級完畢！\n\n✅ **🔇 絕對防迴音機制**：修復了語音朗讀時可能干擾麥克風的問題，AI 講話時麥克風將強制關閉。\n✅ **🗣️ 智慧雙向語音引擎**：口譯模式中，點擊輸入框上方可「手動切換聽取語言」，AI 回答將根據您選擇的語系自動反向朗讀，完美解決漢字與日韓文口音混淆的問題！\n✅ **📋 圖文剪貼徹底修復**：無論是「隨手筆記本」還是「本地富文本筆記」，現在皆已完美支援網頁圖文排版穿透，以及純截圖檔案的直接貼上！', 
+                    text: 'NOVA 75 系統升級完畢！\n\n✅ **📸 LIVE 鏡頭視覺分層**：LIVE 畫面現在獨立佔據上半屏，且右上角支援即時切換 1倍/廣角/前鏡頭。AI 回覆不重疊，對話依然清晰可見！\n✅ **📝 隨手筆記貼圖修復**：徹底修復隨手筆記本的 `Ctrl+V` 貼圖功能，同時保留了本地筆記本無敵的網頁圖文排版剪貼！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2434,7 +2459,6 @@
             const hideLiveCaptureEl = document.getElementById('key-hide-live-capture');
             if (hideLiveCaptureEl) hideLiveCaptureEl.checked = appState.hideLiveCapture;
             
-            // ★ 富文本與純圖檔雙支援 Paste 攔截
             const editNoteEl = document.getElementById('edit-note-content');
             if (editNoteEl) {
                 editNoteEl.addEventListener('paste', function(e) {
@@ -2446,7 +2470,6 @@
                         if (types[i] === 'text/html' || types[i] === 'text/plain') hasHtmlOrText = true;
                     }
 
-                    // 如果沒有富文本/純文字，但有圖片 (例如單純使用截圖快捷鍵)，則讀取 base64 插入
                     if (!hasHtmlOrText) {
                         const items = clipboardData.items;
                         for (let i = 0; i < items.length; i++) {
@@ -2462,7 +2485,6 @@
                             }
                         }
                     }
-                    // 若有富文本或文字，則直接放行，讓瀏覽器原生貼上保留圖文排版
                 });
             }
 
@@ -2484,7 +2506,6 @@
                 };
                 
                 recognition.onresult = (e) => {
-                    // ★ 嚴格防迴音機制：只要正在播放語音，就拒絕接收任何聲音
                     if (appState.isTTSPlaying) return;
 
                     let finalT = "";
