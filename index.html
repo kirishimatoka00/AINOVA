@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 69</title>
+    <title>NOVA 70</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -67,7 +67,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 69</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 70</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -88,7 +88,7 @@
 
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 69</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 70</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -463,7 +463,20 @@
         }
         function loadStoreFromDB(storeName) { return new Promise((resolve) => { if (!db) return resolve([]); try { const tx = db.transaction(storeName, 'readonly'); const req = tx.objectStore(storeName).getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); } catch(e) { resolve([]); } }); }
         function saveToDB(storeName, item) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).put(item); } catch(e) {} }
-        function deleteFromDB(storeName, id) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).delete(id); } catch(e) {} }
+        
+        // ★ 核心修復：IndexedDB 的資料型別問題，這會保證即使傳入字串也能成功刪除數字ID的資料庫紀錄
+        function deleteFromDB(storeName, id) { 
+            if (!db) return; 
+            try { 
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                store.delete(id); // 嘗試以字串刪除
+                if (typeof id === 'string' && !isNaN(Number(id))) {
+                    store.delete(Number(id)); // 嘗試以數字型別刪除 (解決幽靈復活問題)
+                }
+            } catch(e) { console.warn("Delete DB Error:", e); } 
+        }
+
         function clearStoreDB(storeName) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).clear(); } catch(e) {} }
 
         // --- 應用程式狀態 ---
@@ -763,20 +776,17 @@
             }
         }
 
-        // 嘗試取得主鏡頭(不含廣角)
         async function getStandardBackCamera() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 let backCameras = videoDevices.filter(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('環境') || d.label.toLowerCase().includes('rear'));
                 
-                // 過濾掉名稱中有 wide/ultrawide/廣角 的鏡頭
                 let standardCam = backCameras.find(d => !d.label.toLowerCase().includes('wide') && !d.label.toLowerCase().includes('廣角'));
                 
                 if (standardCam) {
                     return { video: { deviceId: { exact: standardCam.deviceId } } };
                 }
-                // fallback
                 return { video: { facingMode: "environment" } };
             } catch(e) {
                 return { video: { facingMode: "environment" } };
@@ -811,10 +821,7 @@
                     appState.voiceTimeout = 1.5;
                     addMessage("📸 **LIVE 影像模式已啟動！**\nAI 現在可以看見您的鏡頭畫面了。請用語音對著系統說話。", 'system');
                     
-                    // 確保麥克風開啟
                     if (!appState.isContinuous) toggleContinuous();
-
-                    // 收起+選單
                     togglePlusMenu();
                 } catch (e) {
                     alert("無法存取相機或找不到合適鏡頭：" + e.message);
@@ -860,7 +867,6 @@
                 addMessage("🌐 **即時口譯模式已啟動！**\n請直接對著麥克風說話。\n系統會自動雙向翻譯並語音播報。", 'system');
                 
                 if (!appState.isContinuous) toggleContinuous(); 
-                
                 togglePlusMenu();
             } else {
                 btn.classList.remove('text-blue-400');
@@ -891,7 +897,6 @@
                 btn.classList.add('bg-slate-800', 'text-slate-400'); 
                 icon.classList.remove('animate-pulse');
                 
-                // ★ 關閉麥克風時，確實關閉LIVE與翻譯
                 if (appState.isLiveMode) toggleLiveMode(true);
                 if (appState.isTranslateMode) toggleTranslateMode(true);
             }
@@ -1022,7 +1027,6 @@
 
         function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
         
-        // 輸入框文字改變時，動態顯示/隱藏發送鈕或麥克風
         function autoResizeInput(el) { 
             el.style.height = 'auto'; 
             el.style.height = (el.scrollHeight) + 'px'; 
@@ -1066,7 +1070,7 @@
             reader.onload = function(evt) { 
                 appState.chatFile = { category: category, data: evt.target.result, mime: mimeType, name: file.name }; 
                 showFilePreview(file.name, isImage, evt.target.result); 
-                togglePlusMenu(); // 收起選單
+                togglePlusMenu(); 
             };
             if (category === 'text') reader.readAsText(file); else reader.readAsDataURL(file);
             e.target.value = ''; 
@@ -1078,7 +1082,6 @@
             if (isImage && dataUrl) { imgEl.src = dataUrl; imgEl.classList.remove('hidden'); iconEl.classList.add('hidden'); iconEl.classList.remove('flex'); } 
             else { imgEl.classList.add('hidden'); imgEl.src = ''; iconEl.classList.remove('hidden'); iconEl.classList.add('flex'); }
             
-            // 強制顯示發送鈕
             document.getElementById('send-btn').classList.remove('hidden');
             document.getElementById('send-btn').classList.add('flex');
             document.getElementById('continuous-btn').classList.add('hidden');
@@ -1090,7 +1093,7 @@
             appState.chatFile = null; 
             document.getElementById('chat-file-preview-container').classList.add('hidden'); 
             document.getElementById('chat-image-preview').src = ''; 
-            autoResizeInput(document.getElementById('user-input')); // 恢復按鈕狀態
+            autoResizeInput(document.getElementById('user-input')); 
         }
 
         function handleAudioAnalyzeSelect(e) {
@@ -1341,7 +1344,7 @@
                         addMessage("⚠️ 未取得系統音訊授權或取消操作，將為您降級為僅錄製麥克風聲音。", 'system');
                     }
                 } else if (isMobile) {
-                    addMessage("⚠️ **系統限制提醒**：手機瀏覽器基於隱私安全，禁止側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，請**拔下耳機，改用手機擴音播放**，系統會透過麥克風一併收錄會議聲音。為解決前版畫面卡頓與提示音干擾問題，已為您切換回標準穩定收音模式！", 'system');
+                    addMessage("⚠️ **系統限制提醒**：手機瀏覽器基於隱私安全，禁止側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，請**拔下耳機，改用手機擴音播放**，系統會透過麥克風一併收錄會議聲音。", 'system');
                 }
 
                 if (sysStream && sysStream.getAudioTracks().length > 0) {
@@ -1739,7 +1742,8 @@
                 }
 
                 if (appState.isTranslateMode && modelToUse === 'gemini') {
-                    systemPromptAddon += `\n\n【強制執行：即時同步口譯模式】\n你現在是一位專業、精準的口譯員。請對使用者的輸入進行直譯。\n規則：\n1. 若判定輸入為「中文」，請將其翻譯為最流暢的「英文」(若對話前後文有提及日韓則翻譯為對應語言)。\n2. 若判定輸入為「外文 (如英、日、韓等)」，請一律翻譯為「繁體中文」。\n3. 你的回應『只能』包含翻譯後的最終結果，絕對不允許加入任何解釋、引言、拼音標註或聊天回覆內容。`;
+                    // ★ 核心修復：翻譯模式增加極端嚴格的不重複指令
+                    systemPromptAddon += `\n\n【強制執行：即時同步口譯模式】\n你現在是一位專業、精準的口譯員。請對使用者的輸入進行直譯。\n規則：\n1. 若判定輸入為「中文」，請將其翻譯為最流暢的「英文」(若對話前後文有提及日韓則翻譯為對應語言)。\n2. 若判定輸入為「外文 (如英、日、韓等)」，請一律翻譯為「繁體中文」。\n3. 你的回應『只能』包含翻譯後的最終結果，絕對不允許加入任何解釋、引言、拼音標註或聊天回覆內容。\n4. 嚴格禁止重複輸出翻譯內容，翻譯結果僅能輸出一次，也絕對不可輸出原文。`;
                 }
 
                 if (fileDataToPass) {
@@ -1850,7 +1854,12 @@
 
             try {
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
-                const chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
+                
+                // ★ 核心修復：翻譯模式中斷歷史記憶上下文，避免將前文混淆並產生重複對話或翻譯循環
+                let chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
+                if (appState.isTranslateMode) {
+                    chatHistory = []; // 清空上下文，確保每次翻譯都是全新無狀態
+                }
 
                 const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim());
 
@@ -2069,7 +2078,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 69 系統升級完畢！\n\n✅ **📱 全新 Line 風格介面**：底部輸入框全新改版，點擊左側「+」號可展開 LIVE 影像、口譯模式與檔案上傳。\n✅ **🎙️ 全局語音控制**：語音功能已徹底整合為「連續語音」模式。啟動時按鈕會明顯閃爍，再次點擊即可徹底關閉麥克風，同時一併解除 LIVE 與翻譯模式。\n✅ **📸 劇院級 LIVE 影像**：視訊畫面大幅升級！現已調整為佔據 1/2 手機螢幕，並強化鎖定您的「後置主鏡頭」，不再看錯對象！', 
+                    text: 'NOVA 70 系統升級完畢！\n\n✅ **🌐 翻譯模式核心優化**：修復了因歷史對話干擾導致的文字重複輸出問題，現在口譯會維持全新狀態，翻譯更加純粹、精準！\n✅ **💾 資料庫刪除修復**：徹底解決了刪除筆記或行程後，重開 App 會再度出現的「幽靈復活」資料庫型別問題。\n✅ **🎙️ 延續全局語音與 Line 風格**：請繼續享有單手極簡操作的「連續語音」按鈕與 1/2 大螢幕的 LIVE 視覺體驗！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2130,7 +2139,8 @@
                     if (document.getElementById('recording-status').classList.contains('hidden')) { 
                         if (voiceTimer) clearTimeout(voiceTimer); 
                         voiceTimer = setTimeout(() => { 
-                            if(input.value.trim() !== '') handleSendMessage(); 
+                            // 加上 !appState.isThinking 的保護機制
+                            if(input.value.trim() !== '' && !appState.isThinking) handleSendMessage(); 
                         }, appState.voiceTimeout * 1000); 
                     }
                 };
