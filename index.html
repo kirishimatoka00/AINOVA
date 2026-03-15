@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 70</title>
+    <title>NOVA 71</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -56,6 +56,14 @@
         audio { outline: none; border-radius: 8px; }
         audio::-webkit-media-controls-panel { background-color: #1e293b; color: #fff; }
         audio::-webkit-media-controls-current-time-display, audio::-webkit-media-controls-time-remaining-display { color: #fff; }
+
+        /* Rich Text Editor Overrides to fit Dark Mode */
+        .note-html-content, .note-html-content * { color: inherit !important; background-color: transparent !important; font-family: inherit !important; }
+        .note-html-content img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 0.5rem 0; background-color: #f8fafc; }
+        .note-html-content a { color: #60a5fa !important; text-decoration: underline !important; }
+        .note-html-content ul { list-style-type: disc; margin-left: 1.5rem; }
+        .note-html-content ol { list-style-type: decimal; margin-left: 1.5rem; }
+        [contenteditable]:empty:before { content: attr(placeholder); color: #64748b; pointer-events: none; display: block; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans overflow-hidden selection:bg-blue-500/30">
@@ -67,7 +75,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 70</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 71</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -78,7 +86,7 @@
                 <button onclick="switchTab('audio')" id="nav-audio" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i class="ph ph-waveform text-xl"></i><span class="font-medium">錄音紀錄</span></button>
             </nav>
             <div class="mt-auto space-y-3">
-                <button onclick="openSettings()" class="flex items-center space-x-2 text-xs text-slate-500 hover:text-slate-300 w-full px-2"><i class="ph ph-gear"></i><span>設定 & API</span></button>
+                <button onclick="openSettings()" class="flex items-center space-x-2 text-xs text-slate-500 hover:text-slate-300 w-full px-2"><i class="ph ph-gear"></i><span>設定 & 備份</span></button>
                 <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                     <div class="flex items-center space-x-2"><i id="status-icon" class="ph-fill ph-globe text-blue-400 text-lg"></i><span id="status-name" class="font-bold text-sm">Gemini</span></div>
                     <p id="model-version-display" class="text-[10px] text-slate-500 mt-1">Ready</p>
@@ -88,7 +96,7 @@
 
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 70</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 71</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -142,8 +150,8 @@
                     </div>
                     <div class="mt-4 pt-2 flex justify-between items-center shrink-0">
                         <div class="flex space-x-2">
-                            <button onclick="exportSettings()" class="flex items-center gap-1 text-xs text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-download-simple"></i> 匯出設定</button>
-                            <label for="import-settings-input" class="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-2 rounded-lg hover:bg-emerald-800/50 transition-colors cursor-pointer"><i class="ph-bold ph-upload-simple"></i> 匯入設定</label>
+                            <button onclick="exportSettings()" class="flex items-center gap-1 text-[11px] text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors" title="包含所有設定、對話、筆記、錄音"><i class="ph-bold ph-download-simple"></i> 完整備份</button>
+                            <label for="import-settings-input" class="flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-900/30 border border-emerald-500/30 px-3 py-2 rounded-lg hover:bg-emerald-800/50 transition-colors cursor-pointer" title="還原備份資料檔"><i class="ph-bold ph-upload-simple"></i> 還原備份</label>
                             <input type="file" id="import-settings-input" accept=".json" class="hidden" onchange="importSettings(event)">
                         </div>
                         <div class="flex space-x-3"><button onclick="closeSettings()" class="px-4 py-2 text-slate-400 text-sm">取消</button><button onclick="saveKeys()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500">儲存</button></div>
@@ -159,6 +167,22 @@
                     <button onclick="stopAlarm()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-transform active:scale-95">
                         <i class="ph-bold ph-check-circle mr-2"></i> 確 定 (停止)
                     </button>
+                </div>
+            </div>
+
+            <!-- 時間選擇專用 Modal -->
+            <div id="todo-time-modal" class="hidden fixed inset-0 z-[70] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl flex-col">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="ph-bold ph-bell text-yellow-500"></i> 設定提醒時間</h3>
+                    <input type="hidden" id="picker-todo-id">
+                    <input type="datetime-local" id="todo-native-picker" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none mb-6 shadow-inner" style="color-scheme: dark;">
+                    <div class="flex justify-between items-center mt-2">
+                        <button onclick="clearTodoAlarm()" class="px-3 py-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors text-sm flex items-center gap-1"><i class="ph-bold ph-bell-slash"></i> 關閉提醒</button>
+                        <div class="flex space-x-2">
+                            <button onclick="closeTodoPicker()" class="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm">取消</button>
+                            <button onclick="saveTodoPicker()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-bold">儲存</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -220,7 +244,6 @@
                          </div>
                     </div>
                     
-                    <!-- 放大至 1/2 的 LIVE 視訊區塊 -->
                     <div id="live-video-container" class="hidden absolute top-16 left-1/2 -translate-x-1/2 w-[90%] h-[45%] bg-slate-900 rounded-2xl border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)] z-30 overflow-hidden flex-col">
                         <div class="bg-red-600 text-white text-xs font-bold text-center py-1 tracking-widest flex items-center justify-center gap-2">
                             <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div> LIVE AI VISION
@@ -243,7 +266,6 @@
                         
                         <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden mt-1 absolute -top-5 w-full">🌐 已開啟連網搜尋 (支援各模型)</div>
                         
-                        <!-- 隱藏的 [+] 擴充選單 -->
                         <div id="plus-menu" class="hidden absolute bottom-full left-0 mb-1 w-full bg-slate-900 border-t border-slate-800 p-4 grid grid-cols-4 gap-4 z-40 rounded-t-2xl shadow-[0_-10px_20px_rgba(0,0,0,0.5)] transition-all">
                             <label for="chat-file-input" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 cursor-pointer text-slate-300 transition-colors active:scale-95">
                                 <i class="ph-bold ph-paperclip text-2xl text-emerald-400"></i><span class="text-[10px] font-bold">上傳檔案</span>
@@ -259,7 +281,7 @@
                             </button>
                         </div>
 
-                        <!-- 主輸入列 (Line Style) -->
+                        <!-- 主輸入列 -->
                         <div class="flex items-end gap-2 w-full relative z-50 p-2">
                             <button onclick="togglePlusMenu()" class="p-2 mb-1 rounded-full bg-slate-800 text-slate-300 hover:text-white shrink-0 transition-transform flex items-center justify-center active:scale-90 h-[40px] w-[40px]">
                                 <i class="ph-bold ph-plus text-xl transition-transform" id="plus-icon"></i>
@@ -355,7 +377,7 @@
                         <div class="flex space-x-2">
                             <button onclick="startMeetingRecording('note')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm" title="雙軌錄製麥克風與會議聲音"><i class="ph-bold ph-headset"></i><span class="hidden sm:inline">雙軌錄音</span></button>
                             <button onclick="startVoiceNote()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-microphone"></i><span class="hidden sm:inline">一般錄音</span></button>
-                            <button onclick="addNoteManually()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm"><i class="ph-bold ph-plus"></i><span class="hidden sm:inline">新增</span></button>
+                            <button onclick="addNoteManually()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors text-sm" title="開啟編輯器"><i class="ph-bold ph-pencil-simple"></i><span class="hidden sm:inline">新增圖文筆記</span></button>
                         </div>
                     </header>
                     <div id="full-note-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -397,7 +419,7 @@
                     <input type="hidden" id="edit-todo-id">
                     <div class="space-y-4">
                         <div><label class="text-xs text-slate-400 mb-1 block">行程內容</label><input type="text" id="edit-todo-text" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none"></div>
-                        <div><label class="text-xs text-slate-400 mb-1 block">提醒時間 (如: 明天下午三點)</label><input type="text" id="edit-todo-time" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none"></div>
+                        <div><label class="text-xs text-slate-400 mb-1 block">提醒時間</label><input type="datetime-local" id="edit-todo-time" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-blue-500 outline-none" style="color-scheme: dark;"></div>
                     </div>
                     <div class="flex justify-end space-x-3 mt-6">
                         <button onclick="closeTodoEdit()" class="px-4 py-2 text-slate-400 hover:text-white transition-colors">取消</button>
@@ -406,23 +428,25 @@
                 </div>
             </div>
 
+            <!-- 富文本筆記編輯器 -->
             <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-4 shrink-0">
-                        <h3 class="text-xl font-bold text-white">編輯筆記</h3>
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-bold ph-pencil-simple text-emerald-400"></i> <span id="note-modal-title-text">編輯筆記</span></h3>
                         <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
                     <input type="hidden" id="edit-note-id">
-                    <div class="space-y-4 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
-                        <div><label class="text-xs text-slate-400 mb-1 block">標題</label><input type="text" id="edit-note-title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 outline-none"></div>
-                        <div>
-                            <label class="text-xs text-slate-400 mb-1 flex justify-between">
-                                內文
-                                <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1"><i class="ph-bold ph-image"></i> 加入圖片 (支援多張)</label>
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700 flex flex-col min-h-0">
+                        <div class="shrink-0"><label class="text-xs text-slate-400 mb-1 block">標題</label><input type="text" id="edit-note-title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 outline-none"></div>
+                        <div class="flex-1 flex flex-col min-h-0">
+                            <label class="text-xs text-slate-400 mb-1 flex justify-between shrink-0">
+                                內文 (支援網頁圖文完整複製貼上)
+                                <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1"><i class="ph-bold ph-image"></i> 加入圖片</label>
                                 <input type="file" id="edit-note-img-upload" accept="image/*" multiple class="hidden" onchange="handleNoteEditImage(event)">
                             </label>
-                            <textarea id="edit-note-content" rows="10" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 outline-none resize-none"></textarea>
-                            <div id="edit-note-img-preview-container" class="hidden mt-3 flex-wrap gap-2"></div>
+                            <!-- Content Editable Div for Rich Text -->
+                            <div id="edit-note-content" contenteditable="true" placeholder="在這裡輸入文字，或直接貼上網頁上的圖文內容..." class="note-html-content flex-1 w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-sm text-white focus:border-emerald-500 outline-none overflow-y-auto min-h-[150px]"></div>
+                            <div id="edit-note-img-preview-container" class="hidden mt-3 flex-wrap gap-2 shrink-0"></div>
                         </div>
                     </div>
                     <div class="flex justify-end space-x-3 mt-4 shrink-0 pt-4 border-t border-slate-800">
@@ -443,7 +467,6 @@
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
         let liveVideoStream = null; 
 
-        // --- IndexedDB 全面初始化 ---
         const DB_NAME = 'NovaDB'; const DB_VERSION = 2; let db;
 
         function initDB() {
@@ -464,22 +487,18 @@
         function loadStoreFromDB(storeName) { return new Promise((resolve) => { if (!db) return resolve([]); try { const tx = db.transaction(storeName, 'readonly'); const req = tx.objectStore(storeName).getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); } catch(e) { resolve([]); } }); }
         function saveToDB(storeName, item) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).put(item); } catch(e) {} }
         
-        // ★ 核心修復：IndexedDB 的資料型別問題，這會保證即使傳入字串也能成功刪除數字ID的資料庫紀錄
         function deleteFromDB(storeName, id) { 
             if (!db) return; 
             try { 
                 const tx = db.transaction(storeName, 'readwrite');
                 const store = tx.objectStore(storeName);
-                store.delete(id); // 嘗試以字串刪除
-                if (typeof id === 'string' && !isNaN(Number(id))) {
-                    store.delete(Number(id)); // 嘗試以數字型別刪除 (解決幽靈復活問題)
-                }
+                store.delete(id); 
+                if (typeof id === 'string' && !isNaN(Number(id))) store.delete(Number(id)); 
             } catch(e) { console.warn("Delete DB Error:", e); } 
         }
 
         function clearStoreDB(storeName) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).clear(); } catch(e) {} }
 
-        // --- 應用程式狀態 ---
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-multi', geminiModel: 'gemini-multi',
             chatFile: null, 
@@ -503,7 +522,6 @@
 
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
-        // --- Markdown 與 Azure Blob 圖片防失真解析器 ---
         function formatMessage(text) { 
             if (!text) return ''; 
             let images = [];
@@ -530,7 +548,6 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        // TTS 語音朗讀系統
         function speakText(text) {
             if (!appState.isLiveMode && !appState.isTranslateMode) return; 
             if ('speechSynthesis' in window) {
@@ -557,6 +574,18 @@
             document.body.removeChild(textArea);
         };
         
+        function copyMessageText(id) {
+            const msg = appState.messages.find(m => String(m.id) === String(id));
+            if (!msg) return;
+            const textArea = document.createElement("textarea");
+            textArea.value = msg.text;
+            textArea.style.top = "0"; textArea.style.left = "0"; textArea.style.position = "fixed";
+            document.body.appendChild(textArea); textArea.focus(); textArea.select();
+            try { document.execCommand('copy'); showToast("✅ 訊息已複製到剪貼簿！"); } 
+            catch (err) { showToast("❌ 複製失敗"); }
+            document.body.removeChild(textArea);
+        }
+
         function base64ToBlob(base64URI) {
             const splitIndex = base64URI.indexOf(',');
             const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
@@ -667,8 +696,9 @@
                         ${mediaHTML} <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div> ${actionCardHtml} ${sourcesHTML}
                         <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
                         <div class="msg-actions absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="favoriteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-yellow-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm" title="收藏至筆記"><i class="ph-bold ph-star text-xs"></i></button>
-                            <button onclick="deleteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm" title="刪除"><i class="ph-bold ph-trash text-xs"></i></button>
+                            <button onclick="copyMessageText(${msg.id})" class="p-1.5 text-slate-500 hover:text-white transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm shadow" title="複製文字"><i class="ph-bold ph-copy text-xs"></i></button>
+                            <button onclick="favoriteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-yellow-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm shadow" title="收藏至筆記"><i class="ph-bold ph-star text-xs"></i></button>
+                            <button onclick="deleteMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm shadow" title="刪除"><i class="ph-bold ph-trash text-xs"></i></button>
                         </div>
                     </div></div>`; 
             }).join(''); 
@@ -683,7 +713,7 @@
 
         function renderTodos() { 
             const el = document.getElementById('full-todo-list'); const mini = document.getElementById('mini-todo-list');
-            if(el) el.innerHTML=appState.todos.map(t=>`<div class="group bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-slate-600 transition-all slide-in"><div class="flex items-center space-x-4"><button onclick="toggleTodo(${t.id})" class="text-slate-500 hover:text-blue-400"><i class="ph${t.done?'-fill ph-check-circle text-green-500':' ph-circle'} text-2xl"></i></button><div><p class="text-base ${t.done?'line-through text-slate-600':'text-slate-200'}">${escapeHtml(t.text)}</p><span class="text-xs text-slate-500">${t.time}</span></div></div><div class="flex items-center space-x-2"><button onclick="toggleTodoAlarm(${t.id})" class="${t.alertEnabled !== false ? 'text-yellow-500' : 'text-slate-600'} hover:text-yellow-400 p-2" title="${t.alertEnabled !== false ? '關閉提醒' : '開啟提醒'}"><i class="ph-bold ${t.alertEnabled !== false ? 'ph-bell-ringing' : 'ph-bell-slash'}"></i></button><button onclick="openTodoEdit('${t.id}')" class="text-slate-500 hover:text-blue-400 p-2" title="編輯"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTodo('${t.id}')" class="text-slate-500 hover:text-red-400 p-2" title="刪除"><i class="ph-bold ph-trash"></i></button></div></div>`).join('')||'<p class="text-slate-500 text-center mt-10">無任務</p>'; 
+            if(el) el.innerHTML=appState.todos.map(t=>`<div class="group bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-slate-600 transition-all slide-in"><div class="flex items-center space-x-4"><button onclick="toggleTodo(${t.id})" class="text-slate-500 hover:text-blue-400"><i class="ph${t.done?'-fill ph-check-circle text-green-500':' ph-circle'} text-2xl"></i></button><div><p class="text-base ${t.done?'line-through text-slate-600':'text-slate-200'}">${escapeHtml(t.text)}</p><span class="text-xs text-slate-500">${t.time}</span></div></div><div class="flex items-center space-x-2"><button onclick="openTodoDatePicker(${t.id})" class="${t.alertEnabled !== false ? 'text-yellow-500' : 'text-slate-600'} hover:text-yellow-400 p-2" title="${t.alertEnabled !== false ? '修改提醒' : '開啟提醒'}"><i class="ph-bold ${t.alertEnabled !== false ? 'ph-bell-ringing' : 'ph-bell-slash'}"></i></button><button onclick="openTodoEdit('${t.id}')" class="text-slate-500 hover:text-blue-400 p-2" title="編輯"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTodo('${t.id}')" class="text-slate-500 hover:text-red-400 p-2" title="刪除"><i class="ph-bold ph-trash"></i></button></div></div>`).join('')||'<p class="text-slate-500 text-center mt-10">無任務</p>'; 
             if(mini) mini.innerHTML=appState.todos.slice(0,3).map(t=>`<div class="flex items-center space-x-3 p-2 bg-slate-950/50 rounded-lg border border-slate-800/50"><div class="w-1.5 h-8 rounded-full ${t.done?'bg-green-500':'bg-blue-500'}"></div><div class="flex-1 min-w-0"><p class="text-xs truncate ${t.done?'line-through text-slate-600':'text-slate-300'}">${escapeHtml(t.text)}</p></div></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無待辦</p>'; 
         }
 
@@ -707,9 +737,17 @@
                 let audioPlayerHtml = n.audioData ? `<div class="mt-3 mb-2"><audio controls src="${n.audioData}" class="w-full h-10 rounded-lg bg-slate-800 shadow-inner"></audio></div>` : '';
                 let linkHtml = (n.driveUrl && !n.driveUrl.startsWith('blob:')) ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-cloud"></i> 雲端備份音檔</a></div>` : '';
                 
-                return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit('${n.id}')" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteNote('${n.id}')" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}${audioPlayerHtml}<div class="text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin whitespace-pre-wrap">${formatMessage(n.content)}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${actionButtons}</div></div>`;
+                // Rich Text support check
+                let renderedContent = n.isHtml ? n.content : formatMessage(n.content);
+                
+                return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit('${n.id}')" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteNote('${n.id}')" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}${audioPlayerHtml}<div class="note-html-content text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin ${n.isHtml ? 'whitespace-normal' : 'whitespace-pre-wrap'}">${renderedContent}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${actionButtons}</div></div>`;
             }).join('')||'<p class="text-slate-500 text-center col-span-3 mt-10">無筆記</p>'; 
-            if(mini) mini.innerHTML=appState.notes.slice(0,2).map(n=>`<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 cursor-pointer hover:border-slate-700" onclick="switchTab('notes')"><h4 class="text-slate-300 text-xs font-bold mb-1 truncate flex items-center gap-1">${n.type==='audio'?'<i class="ph-fill ph-microphone text-purple-400"></i>':''}${escapeHtml(n.title)}</h4><p class="text-slate-500 text-[10px] line-clamp-1">${escapeHtml(n.content)}</p></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無筆記</p>'; 
+            
+            if(mini) mini.innerHTML=appState.notes.slice(0,2).map(n=>{
+                // Strip HTML for mini view if rich text
+                let plainText = n.isHtml ? n.content.replace(/<[^>]+>/g, ' ') : n.content;
+                return `<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 cursor-pointer hover:border-slate-700" onclick="switchTab('notes')"><h4 class="text-slate-300 text-xs font-bold mb-1 truncate flex items-center gap-1">${n.type==='audio'?'<i class="ph-fill ph-microphone text-purple-400"></i>':''}${escapeHtml(n.title)}</h4><p class="text-slate-500 text-[10px] line-clamp-1">${escapeHtml(plainText)}</p></div>`;
+            }).join('')||'<p class="text-xs text-slate-500 text-center">無筆記</p>'; 
         }
 
         function renderAudioRecords() {
@@ -912,10 +950,10 @@
         function favoriteMessage(id) {
             const msg = appState.messages.find(m => String(m.id) === String(id)); if (!msg) return;
             let senderName = msg.sender === 'user' ? '你' : (msg.sender === 'system' ? '系統提示' : (MODEL_CONFIG[msg.model]?.name || '系統'));
-            let content = `[${senderName} 的對話紀錄]\n${msg.text}`;
-            if (msg.sources && msg.sources.length > 0) content += `\n\n[參考來源]\n` + msg.sources.map((s,i) => `${i+1}. ${s.title} - ${s.uri}`).join('\n');
+            let content = `[${senderName} 的對話紀錄]<br><br>${msg.text.replace(/\n/g, '<br>')}`;
+            if (msg.sources && msg.sources.length > 0) content += `<br><br>[參考來源]<br>` + msg.sources.map((s,i) => `${i+1}. <a href="${s.uri}">${s.title}</a>`).join('<br>');
             let imagesArray = []; if (msg.file && msg.file.category === 'image' && msg.file.data) imagesArray.push(msg.file.data);
-            const newNote = { id: Date.now(), title: `⭐ 收藏對話 - ${msg.time}`, content: content, date: new Date().toLocaleString(), type: 'text', images: imagesArray, image: imagesArray.length > 0 ? imagesArray[0] : null };
+            const newNote = { id: Date.now(), title: `⭐ 收藏對話 - ${msg.time}`, content: content, date: new Date().toLocaleString(), type: 'text', images: imagesArray, image: imagesArray.length > 0 ? imagesArray[0] : null, isHtml: true };
             appState.notes.unshift(newNote); saveToDB('notes', newNote); renderNotes(); addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
         }
 
@@ -925,7 +963,17 @@
         function deleteAudioRecord(id) { appState.audioRecords = appState.audioRecords.filter(r => String(r.id) !== String(id)); deleteFromDB('audioRecords', id); renderAudioRecords(); }
         
         function addTodoManually(){ const t=prompt("任務"); if(t){const n={id:Date.now(),text:t,done:false,time:'手動', alertEnabled: true}; appState.todos.push(n);saveToDB('todos', n);renderTodos();} }
-        function addNoteManually(){ const t=prompt("標題"),c=prompt("內容"); if(t&&c){const n={id:Date.now(),title:t,content:c,date:new Date().toLocaleDateString(), type: 'text', images: []}; appState.notes.push(n);saveToDB('notes', n);renderNotes();} }
+        
+        // ★ 富文本新增筆記入口
+        function addNoteManually() {
+            document.getElementById('edit-note-id').value = Date.now();
+            document.getElementById('edit-note-title').value = '新圖文筆記';
+            document.getElementById('edit-note-content').innerHTML = '';
+            document.getElementById('note-modal-title-text').innerText = '新增圖文筆記';
+            appState.editNoteImagesBase64 = [];
+            renderNoteEditImages();
+            document.getElementById('note-edit-modal').classList.remove('hidden');
+        }
         
         function switchTab(id){ 
             ['dashboard','schedule','notes','audio'].forEach(t=>document.getElementById(`view-${t}`)?.classList.add('hidden')); 
@@ -963,29 +1011,43 @@
             });
         }
         
-        function exportSettings() {
-            const data = { keys: appState.keys, urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl }, settings: { voiceTimeout: appState.voiceTimeout } };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}); 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); 
-            a.style.display = 'none';
-            a.href = url; 
-            a.download = `NOVA_Settings_${new Date().toISOString().split('T')[0]}.json`; 
-            document.body.appendChild(a); 
-            a.click(); 
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 2000);
+        // ★ 核心升級：全系統完整備份導出
+        async function exportSettings() {
+            addMessage("⏳ 正在打包所有系統資料與設定，這可能需要幾秒鐘...", "system");
+            try {
+                const data = { 
+                    keys: appState.keys, 
+                    urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl }, 
+                    settings: { voiceTimeout: appState.voiceTimeout },
+                    messages: await loadStoreFromDB('messages'),
+                    notes: await loadStoreFromDB('notes'),
+                    todos: await loadStoreFromDB('todos'),
+                    audioRecords: await loadStoreFromDB('audioRecords')
+                };
+                const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); 
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); 
+                a.style.display = 'none';
+                a.href = url; 
+                a.download = `NOVA_Full_Backup_${new Date().toISOString().split('T')[0]}.json`; 
+                document.body.appendChild(a); 
+                a.click(); 
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
+                showToast("✅ 完整備份檔已成功匯出");
+            } catch (err) {
+                alert("備份導出失敗：" + err.message);
+            }
         }
         
-        function triggerImportSettings() { document.getElementById('import-settings-input').click(); }
-        function importSettings(e) {
+        // ★ 核心升級：全系統完整備份匯入
+        async function importSettings(e) {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            addMessage("⏳ 正在讀取備份檔並還原系統，請勿關閉視窗...", "system");
+            reader.onload = async function(evt) {
                 try {
                     const data = JSON.parse(evt.target.result);
+                    
                     if (data.keys) { appState.keys.gemini = data.keys.gemini || ''; appState.keys.groq = data.keys.groq || ''; appState.keys.cohere = data.keys.cohere || ''; appState.keys.openai = data.keys.openai || ''; appState.keys.grok = data.keys.grok || ''; appState.keys.serpapi = data.keys.serpapi || ''; }
                     if (data.urls) { appState.docMonitorUrl = data.urls.docMonitorUrl || ''; appState.noteDocUrl = data.urls.noteDocUrl || ''; appState.noteDocUrl2 = data.urls.noteDocUrl2 || ''; appState.driveUrl = data.urls.driveUrl || ''; }
                     if (data.settings) { appState.voiceTimeout = data.settings.voiceTimeout || 5; }
@@ -995,8 +1057,28 @@
                     safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-note-doc-url', appState.noteDocUrl); safeSet('key-note-doc-url-2', appState.noteDocUrl2); safeSet('key-drive-url', appState.driveUrl);
                     safeSet('key-voice-timeout', appState.voiceTimeout);
 
-                    alert("設定匯入成功！請點擊右下角「儲存」按鈕來套用設定。");
-                } catch(err) { alert("設定檔解析失敗：" + err.message); }
+                    // Restore IndexedDB Data
+                    if (data.messages && Array.isArray(data.messages)) {
+                        clearStoreDB('messages'); appState.messages = data.messages;
+                        for (const item of data.messages) saveToDB('messages', item);
+                    }
+                    if (data.notes && Array.isArray(data.notes)) {
+                        clearStoreDB('notes'); appState.notes = data.notes;
+                        for (const item of data.notes) saveToDB('notes', item);
+                    }
+                    if (data.todos && Array.isArray(data.todos)) {
+                        clearStoreDB('todos'); appState.todos = data.todos;
+                        for (const item of data.todos) saveToDB('todos', item);
+                    }
+                    if (data.audioRecords && Array.isArray(data.audioRecords)) {
+                        clearStoreDB('audioRecords'); appState.audioRecords = data.audioRecords;
+                        for (const item of data.audioRecords) saveToDB('audioRecords', item);
+                    }
+
+                    renderAll();
+                    updateModelUI();
+                    alert("✨ 備份還原成功！系統已恢復到備份當時的狀態。請點擊右下角「儲存」按鈕套用API設定。");
+                } catch(err) { alert("備份檔解析或還原失敗：" + err.message); }
                 e.target.value = ''; 
             };
             reader.readAsText(file);
@@ -1190,25 +1272,86 @@
             try { const res = await fetch(targetUrl); const text = await res.text(); area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>'; } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
         }
 
+        // Helper for formatting local date to datetime-local picker string
+        function formatDateForPicker(d) {
+            const tzOffset = d.getTimezoneOffset() * 60000;
+            return (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 16);
+        }
+
+        // ★ 時間選擇器專用 Modal 操作
+        function openTodoDatePicker(id) {
+            const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
+            document.getElementById('picker-todo-id').value = id;
+            const picker = document.getElementById('todo-native-picker');
+            
+            if(t.alertTime) {
+                picker.value = formatDateForPicker(new Date(t.alertTime));
+            } else {
+                picker.value = "";
+            }
+            document.getElementById('todo-time-modal').classList.remove('hidden');
+        }
+        function closeTodoPicker() { document.getElementById('todo-time-modal').classList.add('hidden'); }
+        function saveTodoPicker() {
+            const id = document.getElementById('picker-todo-id').value;
+            const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
+            const pickerVal = document.getElementById('todo-native-picker').value;
+            if(pickerVal) {
+                const d = new Date(pickerVal);
+                t.alertTime = d.getTime();
+                t.time = d.toLocaleString();
+                t.alerted = false;
+                t.alertEnabled = true;
+            }
+            saveToDB('todos', t); renderTodos(); closeTodoPicker();
+        }
+        function clearTodoAlarm() {
+            const id = document.getElementById('picker-todo-id').value;
+            const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
+            t.alertEnabled = false;
+            saveToDB('todos', t); renderTodos(); closeTodoPicker();
+        }
+
         function openTodoEdit(id) {
             const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
-            document.getElementById('edit-todo-id').value = t.id; document.getElementById('edit-todo-text').value = t.text; document.getElementById('edit-todo-time').value = t.time !== '手動' ? t.time : '';
+            document.getElementById('edit-todo-id').value = t.id; 
+            document.getElementById('edit-todo-text').value = t.text; 
+            const timeInput = document.getElementById('edit-todo-time');
+            if (t.alertTime) {
+                timeInput.value = formatDateForPicker(new Date(t.alertTime));
+            } else {
+                timeInput.value = "";
+            }
             document.getElementById('todo-edit-modal').classList.remove('hidden');
         }
         function closeTodoEdit() { document.getElementById('todo-edit-modal').classList.add('hidden'); }
         function saveTodoEdit() {
             const id = document.getElementById('edit-todo-id').value; 
             const t = appState.todos.find(x => String(x.id) === String(id)); if(!t) return;
-            const newText = document.getElementById('edit-todo-text').value.trim(); const newTimeStr = document.getElementById('edit-todo-time').value.trim();
+            const newText = document.getElementById('edit-todo-text').value.trim(); 
+            const newTimeStr = document.getElementById('edit-todo-time').value; // datetime-local format
             if(newText) t.text = newText;
-            if (newTimeStr && newTimeStr !== t.time) { const timeInfo = parseTimeNatural(newTimeStr); if (timeInfo.complete) { t.time = new Date(timeInfo.timestamp).toLocaleString(); t.alertTime = timeInfo.timestamp; t.alerted = false; } else { t.time = newTimeStr; t.alerted = true; } }
+            
+            if (newTimeStr) {
+                const d = new Date(newTimeStr);
+                t.time = d.toLocaleString(); 
+                t.alertTime = d.getTime(); 
+                t.alerted = false; 
+                t.alertEnabled = true;
+            }
             saveToDB('todos', t); renderTodos(); closeTodoEdit();
         }
-        function toggleTodoAlarm(id) { const t = appState.todos.find(x => String(x.id) === String(id)); if(t) { t.alertEnabled = t.alertEnabled === false ? true : false; saveToDB('todos', t); renderTodos(); } }
 
         function openNoteEdit(id) {
             const n = appState.notes.find(x => String(x.id) === String(id)); if(!n) return;
-            document.getElementById('edit-note-id').value = n.id; document.getElementById('edit-note-title').value = n.title || ''; document.getElementById('edit-note-content').value = n.content || '';
+            document.getElementById('edit-note-id').value = n.id; 
+            document.getElementById('edit-note-title').value = n.title || ''; 
+            document.getElementById('note-modal-title-text').innerText = '編輯筆記';
+            
+            // ★ 富文本支援：讀取 HTML 或是將舊文字轉換為 HTML
+            const editorContent = n.isHtml ? (n.content || '') : escapeHtml(n.content || '').replace(/\n/g, '<br>');
+            document.getElementById('edit-note-content').innerHTML = editorContent;
+            
             appState.editNoteImagesBase64 = n.images ? [...n.images] : (n.image ? [n.image] : []); renderNoteEditImages();
             document.getElementById('note-edit-modal').classList.remove('hidden');
         }
@@ -1228,18 +1371,39 @@
             `).join('');
         }
         function removeNoteEditImage(idx) { appState.editNoteImagesBase64.splice(idx, 1); renderNoteEditImages(); }
+        
         function saveNoteEdit() {
             const id = document.getElementById('edit-note-id').value; 
-            const n = appState.notes.find(x => String(x.id) === String(id)); if(!n) return;
-            n.title = document.getElementById('edit-note-title').value.trim() || '未命名'; n.content = document.getElementById('edit-note-content').value; 
+            let n = appState.notes.find(x => String(x.id) === String(id)); 
+            let isNew = false;
+            if(!n) {
+                // 如果是透過「新增圖文筆記」建立的
+                n = { id: id || Date.now(), type: 'text', date: new Date().toLocaleDateString() };
+                isNew = true;
+            }
+            n.title = document.getElementById('edit-note-title').value.trim() || '未命名'; 
+            
+            // ★ 富文本支援：儲存 HTML
+            n.content = document.getElementById('edit-note-content').innerHTML; 
+            n.isHtml = true; 
+            
             n.images = [...appState.editNoteImagesBase64]; n.image = n.images.length > 0 ? n.images[0] : null;
-            saveToDB('notes', n); renderNotes(); closeNoteEdit();
+            
+            if(isNew) appState.notes.unshift(n);
+            saveToDB('notes', n); 
+            renderNotes(); 
+            closeNoteEdit();
         }
+        
         function exportNoteWord(id) {
             const n = appState.notes.find(x=>String(x.id)===String(id)); if(!n) return;
             let imgTags = ''; const displayImages = n.images || (n.image ? [n.image] : []);
             if (displayImages.length > 0) imgTags = displayImages.map(img => `<br><br><img src="${img}" style="max-width: 100%;">`).join('');
-            let htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${n.title}</title></head><body><h1>${n.title}</h1><p style="color:gray; font-size:12px;">建立日期: ${n.date}</p><div style="margin-top:20px; font-family: sans-serif; white-space: pre-wrap;">${n.content.replace(/\n/g, '<br>')}</div>${imgTags}</body></html>`;
+            
+            // ★ 富文本相容 Word 匯出
+            const wordContent = n.isHtml ? n.content : n.content.replace(/\n/g, '<br>');
+            
+            let htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${n.title}</title></head><body><h1>${n.title}</h1><p style="color:gray; font-size:12px;">建立日期: ${n.date}</p><div style="margin-top:20px; font-family: sans-serif;">${wordContent}</div>${imgTags}</body></html>`;
             try {
                 const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' }); const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.doc`; 
@@ -1715,6 +1879,7 @@
                 
                 renderThinkingState(true);
 
+                // 原有的 AI 對話判斷提醒邏輯完美保留
                 if (appState.pendingReminder && appState.reminderStage > 0) {
                      const todo = appState.todos.find(t => t.id === appState.pendingReminder);
                      if (todo) {
@@ -1742,7 +1907,6 @@
                 }
 
                 if (appState.isTranslateMode && modelToUse === 'gemini') {
-                    // ★ 核心修復：翻譯模式增加極端嚴格的不重複指令
                     systemPromptAddon += `\n\n【強制執行：即時同步口譯模式】\n你現在是一位專業、精準的口譯員。請對使用者的輸入進行直譯。\n規則：\n1. 若判定輸入為「中文」，請將其翻譯為最流暢的「英文」(若對話前後文有提及日韓則翻譯為對應語言)。\n2. 若判定輸入為「外文 (如英、日、韓等)」，請一律翻譯為「繁體中文」。\n3. 你的回應『只能』包含翻譯後的最終結果，絕對不允許加入任何解釋、引言、拼音標註或聊天回覆內容。\n4. 嚴格禁止重複輸出翻譯內容，翻譯結果僅能輸出一次，也絕對不可輸出原文。`;
                 }
 
@@ -1812,39 +1976,6 @@
             }
         }
 
-        function parseTimeNatural(str) {
-            const now = new Date(); let result = { complete: false, timestamp: null, missing: null };
-            const relMatch = str.match(/(\d+)\s*(分鐘|min|minute|小時|hour|hr|秒|sec|second)後?/i);
-            if (relMatch) {
-                const amount = parseInt(relMatch[1]); const unit = relMatch[2];
-                if (unit.includes('分') || unit.includes('min')) now.setMinutes(now.getMinutes() + amount);
-                else if (unit.includes('小') || unit.includes('h')) now.setHours(now.getHours() + amount);
-                else if (unit.includes('秒') || unit.includes('s')) now.setSeconds(now.getSeconds() + amount);
-                return { complete: true, timestamp: now.getTime() };
-            }
-            let targetDate = new Date(); let hasDate = false;
-            if (str.includes('明天') || str.includes('tomorrow')) { targetDate.setDate(targetDate.getDate() + 1); hasDate = true; } 
-            else if (str.includes('後天')) { targetDate.setDate(targetDate.getDate() + 2); hasDate = true; } 
-            else if (str.match(/\d{1,2}月\d{1,2}日/)) { const dMatch = str.match(/(\d{1,2})月(\d{1,2})日/); targetDate.setMonth(parseInt(dMatch[1]) - 1); targetDate.setDate(parseInt(dMatch[2])); hasDate = true; } 
-            else if (str.includes('今天') || str.includes('today')) { hasDate = true; }
-
-            let hour = -1, minute = 0;
-            const timeMatch = str.match(/(\d{1,2})[:：](\d{2})/); const hourMatch = str.match(/(\d{1,2})點(\d{1,2})?分?/); 
-            if (timeMatch) { hour = parseInt(timeMatch[1]); minute = parseInt(timeMatch[2]); } else if (hourMatch) { hour = parseInt(hourMatch[1]); if (hourMatch[2]) minute = parseInt(hourMatch[2]); }
-
-            let isPM = str.includes('下午') || str.includes('晚上') || str.includes('pm') || str.includes('PM');
-            let isAM = str.includes('上午') || str.includes('早上') || str.includes('am') || str.includes('AM');
-
-            if (hour !== -1) {
-                if (hour < 12 && !isPM && !isAM && !str.includes('24h')) return { complete: false, missing: 'ampm' }; 
-                if (isPM && hour < 12) hour += 12; if (isAM && hour === 12) hour = 0; 
-                targetDate.setHours(hour, minute, 0, 0);
-                if (!hasDate) { if (targetDate < new Date()) return { complete: false, missing: 'date' }; }
-                return { complete: true, timestamp: targetDate.getTime() };
-            }
-            return { complete: false, missing: 'time' };
-        }
-
         async function fetchAIResponse(userText, model, options = {}) {
             const fetchWithTimeout = async (url, fetchOpts, timeout = 60000) => { 
                 const controller = new AbortController(); const id = setTimeout(() => controller.abort(), timeout);
@@ -1855,10 +1986,9 @@
             try {
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
                 
-                // ★ 核心修復：翻譯模式中斷歷史記憶上下文，避免將前文混淆並產生重複對話或翻譯循環
                 let chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
                 if (appState.isTranslateMode) {
-                    chatHistory = []; // 清空上下文，確保每次翻譯都是全新無狀態
+                    chatHistory = []; 
                 }
 
                 const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim());
@@ -2078,7 +2208,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 70 系統升級完畢！\n\n✅ **🌐 翻譯模式核心優化**：修復了因歷史對話干擾導致的文字重複輸出問題，現在口譯會維持全新狀態，翻譯更加純粹、精準！\n✅ **💾 資料庫刪除修復**：徹底解決了刪除筆記或行程後，重開 App 會再度出現的「幽靈復活」資料庫型別問題。\n✅ **🎙️ 延續全局語音與 Line 風格**：請繼續享有單手極簡操作的「連續語音」按鈕與 1/2 大螢幕的 LIVE 視覺體驗！', 
+                    text: 'NOVA 71 系統升級完畢！\n\n✅ **💾 全系統完整備份**：設定區新增「完整備份/還原」功能，對話、筆記、行程錄音一鍵無縫搬家！\n✅ **📋 快速複製功能**：對話區的每則訊息右上角新增「複製」按鈕，快速提取 AI 回答內容。\n✅ **🎨 圖文完整剪貼簿**：本地筆記的「新增圖文筆記」已換裝富文本編輯器，網頁圖文排版直接貼上不走鐘！\n✅ **⏰ 原生日曆選擇器**：行程管理的鈴鐺已結合原生日期時間滾輪，點選即可精準設定時間。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2139,7 +2269,6 @@
                     if (document.getElementById('recording-status').classList.contains('hidden')) { 
                         if (voiceTimer) clearTimeout(voiceTimer); 
                         voiceTimer = setTimeout(() => { 
-                            // 加上 !appState.isThinking 的保護機制
                             if(input.value.trim() !== '' && !appState.isThinking) handleSendMessage(); 
                         }, appState.voiceTimeout * 1000); 
                     }
