@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 75</title>
+    <title>NOVA 76</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 75</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 76</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -96,7 +96,7 @@
 
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 75</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 76</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -259,9 +259,7 @@
                     <div id="live-video-container" class="hidden w-full h-[45%] bg-slate-900 border-b-2 border-red-500/50 shadow-xl z-20 overflow-hidden flex-col relative shrink-0 transition-all duration-300">
                         <div class="absolute top-2 right-2 z-40">
                             <select id="camera-select" onchange="switchCamera(this.value)" class="bg-slate-900/80 text-white text-xs rounded-lg px-3 py-1.5 outline-none border border-red-500/50 backdrop-blur-md shadow-lg cursor-pointer">
-                                <option value="environment">後鏡頭 (1倍)</option>
-                                <option value="wide">後鏡頭 (廣角)</option>
-                                <option value="user">前鏡頭 (自拍)</option>
+                                <option value="environment">載入鏡頭清單中...</option>
                             </select>
                         </div>
                         <div class="bg-red-600 text-white text-xs font-bold text-center py-1 tracking-widest flex items-center justify-center gap-2 shrink-0">
@@ -382,7 +380,7 @@
                             </div>
                             <div class="flex flex-col gap-3">
                                 <div class="relative">
-                                    <textarea id="doc-input-main" rows="5" placeholder="輸入文字內容，或直接 Ctrl+V 貼上圖片..." class="w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none pr-24 resize-none" onkeydown="handleNoteKeydown(event)"></textarea>
+                                    <div id="doc-input-main" contenteditable="true" placeholder="輸入文字內容，或直接 Ctrl+V 貼上圖文..." class="note-html-content w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none overflow-y-auto min-h-[120px] max-h-[300px]" onkeydown="handleNoteKeydown(event)"></div>
                                     <div id="paste-indicator" class="hidden absolute right-3 top-3 text-[10px] text-emerald-400 bg-emerald-900/50 px-2 py-0.5 rounded border border-emerald-500/50 animate-pulse"><i class="ph-bold ph-image"></i> 圖片已就緒</div>
                                     <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
                                     <label for="photo-input" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors cursor-pointer" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></label>
@@ -525,7 +523,7 @@
 
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-multi', geminiModel: 'gemini-multi',
-            chatFile: null, cameraMode: 'environment',
+            chatFile: null, currentDeviceId: null,
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
             messages: [], notes: [], todos: [], audioRecords: [], 
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
@@ -920,38 +918,54 @@
             }
         };
 
-        async function getCameraConstraints(mode) {
+        async function populateCameraSelect() {
+            const select = document.getElementById('camera-select');
+            if (!select) return;
+            
             try {
+                await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
                 
-                if (mode === 'user') {
-                    return { video: { facingMode: "user" } };
+                select.innerHTML = '';
+                if (videoDevices.length === 0) {
+                    select.innerHTML = '<option value="">無相機</option>';
+                    return;
                 }
+
+                videoDevices.forEach((d, i) => {
+                    const option = document.createElement('option');
+                    option.value = d.deviceId;
+                    option.text = d.label || `相機 ${i + 1}`;
+                    select.appendChild(option);
+                });
                 
-                let backCameras = videoDevices.filter(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('環境') || d.label.toLowerCase().includes('rear'));
-                
-                if (mode === 'wide') {
-                    let wideCam = backCameras.find(d => d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('廣角') || d.label.toLowerCase().includes('0.5'));
-                    if (wideCam) return { video: { deviceId: { exact: wideCam.deviceId } } };
-                    return { video: { facingMode: "environment" } };
+                if (appState.currentDeviceId) {
+                    let exists = videoDevices.find(d => d.deviceId === appState.currentDeviceId);
+                    if(exists) select.value = appState.currentDeviceId;
+                    else select.selectedIndex = 0;
+                } else {
+                    let backCams = videoDevices.filter(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('後'));
+                    let standardCam = backCams.find(d => !d.label.toLowerCase().includes('wide') && !d.label.toLowerCase().includes('廣角'));
+                    if(standardCam) select.value = standardCam.deviceId;
+                    else if(backCams.length > 0) select.value = backCams[0].deviceId;
+                    else select.selectedIndex = 0;
+                    
+                    appState.currentDeviceId = select.value;
                 }
-                
-                let standardCam = backCameras.find(d => !d.label.toLowerCase().includes('wide') && !d.label.toLowerCase().includes('廣角'));
-                if (standardCam) return { video: { deviceId: { exact: standardCam.deviceId } } };
-                
-                return { video: { facingMode: "environment" } };
             } catch(e) {
-                return { video: { facingMode: mode === 'user' ? "user" : "environment" } };
+                select.innerHTML = '<option value="environment">後鏡頭 (預設)</option><option value="user">前鏡頭 (自拍)</option>';
             }
         }
 
-        window.switchCamera = async function(mode) {
-            appState.cameraMode = mode;
+        window.switchCamera = async function(deviceId) {
+            appState.currentDeviceId = deviceId;
             if (appState.isLiveMode && liveVideoStream) {
                 liveVideoStream.getTracks().forEach(t => t.stop());
                 try {
-                    const constraints = await getCameraConstraints(mode);
+                    let constraints = { video: { deviceId: { exact: deviceId } } };
+                    if(deviceId === 'environment' || deviceId === 'user') constraints = { video: { facingMode: deviceId } };
+                    
                     liveVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
                     document.getElementById('live-video-preview').srcObject = liveVideoStream;
                 } catch(e) {
@@ -974,8 +988,17 @@
                 try {
                     if (appState.isTranslateMode) toggleTranslateMode(true);
                     
+                    await populateCameraSelect(); 
                     const cameraSelect = document.getElementById('camera-select');
-                    const constraints = await getCameraConstraints(cameraSelect ? cameraSelect.value : 'environment');
+                    let constraints = { video: { facingMode: 'environment' } };
+                    if(cameraSelect && cameraSelect.value) {
+                        if (cameraSelect.value === 'environment' || cameraSelect.value === 'user') {
+                            constraints = { video: { facingMode: cameraSelect.value } };
+                        } else {
+                            constraints = { video: { deviceId: { exact: cameraSelect.value } } };
+                        }
+                    }
+                    
                     liveVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
                     
                     videoEl.srcObject = liveVideoStream;
@@ -992,7 +1015,7 @@
                     if (!appState.isContinuous) toggleContinuous();
                     togglePlusMenu();
                 } catch (e) {
-                    alert("無法存取相機或找不到合適鏡頭：" + e.message);
+                    alert("無法存取相機或權限被拒絕：" + e.message);
                     appState.isLiveMode = false;
                     btn.classList.remove('text-red-400');
                     btn.classList.add('text-slate-300');
@@ -1262,7 +1285,12 @@
             updateNoteVoiceUI();
         }
 
-        function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }
+        function handleNoteKeydown(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                handleDocWriteBtn();
+            }
+        }
         
         function autoResizeInput(el) { 
             el.style.height = 'auto'; 
@@ -1350,41 +1378,11 @@
             reader.readAsDataURL(file);
         }
 
-        // ★ 核心修復：統一攔截所有地方的純圖檔貼上
-        window.handlePaste = function(e) {
-            if (e.target.id === 'user-input' || e.target.id === 'doc-input-main' || e.target.closest('#doc-input-main')) {
-                const items = (e.clipboardData || window.clipboardData).items; if (!items) return;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf("image") !== -1) {
-                        const blob = items[i].getAsFile(); const reader = new FileReader();
-                        reader.onload = function(event) {
-                            if (e.target.id === 'user-input') {
-                                appState.chatFile = { category: 'image', data: event.target.result, mime: blob.type, name: '剪貼簿圖片.png' }; 
-                                showFilePreview('剪貼簿圖片', true, event.target.result);
-                            } else {
-                                appState.pastedImageBase64 = event.target.result;
-                                const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.remove('hidden');
-                                const docInput = document.getElementById('doc-input-main');
-                                if(docInput) docInput.value = "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]";
-                            }
-                        };
-                        reader.readAsDataURL(blob); e.preventDefault(); return;
-                    }
-                }
-            }
-        };
-
-        function handleNoteKeydown(e) {
-            if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
-            if (appState.pastedImageBase64) {
-                 const docInput = document.getElementById('doc-input-main');
-                 if (docInput && (docInput.value === "[已偵測到剪貼簿圖片，請點擊「發送寫入」按鈕上傳]" || docInput.value === "[已偵測到選擇的圖片，請點擊「發送寫入」按鈕上傳]")) { appState.pastedImageBase64 = null; const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden'); docInput.value = ""; }
-            }
-            if (e.ctrlKey && e.key === 'Enter') handleDocWriteBtn();
-        }
         function clearNoteInput() {
              const docInputMain = document.getElementById('doc-input-main'); const docInputSub = document.getElementById('doc-input-sub');
-             if(docInputMain) docInputMain.value = ''; if(docInputSub) docInputSub.value = ''; appState.pastedImageBase64 = null;
+             if(docInputMain) docInputMain.innerHTML = ''; 
+             if(docInputSub) docInputSub.value = ''; 
+             appState.pastedImageBase64 = null;
              const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden');
         }
 
@@ -1393,30 +1391,83 @@
             if(num === 1) { btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white'; btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50'; label.innerText = '* 目前寫入目標：筆記本 A (URL 1)'; } 
             else { btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-teal-600 text-white'; btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50'; label.innerText = '* 目前寫入目標：筆記本 B (URL 2)'; }
         }
+        
         function setWriteMode(mode) {
             appState.writeMode = mode;
             ['text', 'image', 'link'].forEach(m => { const btn = document.getElementById(`btn-mode-${m}`); if(!btn) return; if(m === mode) btn.className = 'text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all'; else btn.className = 'text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all'; });
             const mainInput = document.getElementById('doc-input-main'); const subInput = document.getElementById('doc-input-sub'); if(!mainInput || !subInput) return;
-            if(mode === 'text') { mainInput.placeholder = "輸入文字內容，或直接 Ctrl+V 貼上圖片..."; subInput.classList.add('hidden'); } else if (mode === 'image') { mainInput.placeholder = "輸入圖片網址 (https://...)"; subInput.classList.add('hidden'); } else if (mode === 'link') { mainInput.placeholder = "輸入連結顯示文字"; subInput.placeholder = "輸入連結網址 (https://...)"; subInput.classList.remove('hidden'); }
-        }
-        async function handleDocWriteBtn() {
-            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
-            const mainInput = document.getElementById('doc-input-main'); const subInput = document.getElementById('doc-input-sub'); if(!mainInput) return;
-            const mainVal = mainInput.value.trim(); const subVal = subInput ? subInput.value.trim() : ''; const sendBtn = document.getElementById('note-send-btn');
-            let payload = {}; let currentMode = appState.writeMode || 'text';
-            if (currentMode === 'image' && !mainVal.match(/^https?:\/\//i) && mainVal.length > 0) currentMode = 'text';
             
-            if (appState.pastedImageBase64 && (mainVal.includes("[已偵測到"))) { payload = { type: 'image_base64', content: appState.pastedImageBase64 };
-            } else {
-                if(!mainVal && currentMode !== 'image_base64') return; 
-                if(currentMode === 'text') payload = { type: 'text', content: mainVal }; else if (currentMode === 'image') payload = { type: 'image', content: mainVal }; else if (currentMode === 'link') { if(!subVal) return alert("請輸入連結網址"); payload = { type: 'link', text: mainVal, content: subVal }; }
-            }
-            if(sendBtn) {
-                const originalText = sendBtn.innerHTML; sendBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> ⏳ 寫入中...'; sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
-                try { await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system'); clearNoteInput(); } 
-                catch(e) { alert("寫入失敗，請檢查 URL"); } finally { sendBtn.innerHTML = originalText; sendBtn.classList.remove('opacity-70', 'cursor-not-allowed'); }
+            if(mode === 'text') { 
+                mainInput.setAttribute('placeholder', "輸入文字內容，或直接 Ctrl+V 貼上圖文..."); 
+                subInput.classList.add('hidden'); 
+            } else if (mode === 'image') { 
+                mainInput.setAttribute('placeholder', "輸入圖片網址 (https://...)"); 
+                subInput.classList.add('hidden'); 
+            } else if (mode === 'link') { 
+                mainInput.setAttribute('placeholder', "輸入連結顯示文字"); 
+                subInput.placeholder = "輸入連結網址 (https://...)"; 
+                subInput.classList.remove('hidden'); 
             }
         }
+        
+        async function handleDocWriteBtn() {
+            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; 
+            if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
+            
+            const mainInput = document.getElementById('doc-input-main'); 
+            const subInput = document.getElementById('doc-input-sub'); 
+            if(!mainInput) return;
+
+            const mainHtml = mainInput.innerHTML;
+            const mainText = mainInput.innerText.trim();
+            const subVal = subInput ? subInput.value.trim() : ''; 
+            const sendBtn = document.getElementById('note-send-btn');
+            
+            let payload = {}; 
+            let currentMode = appState.writeMode || 'text';
+            
+            const imgMatch = mainHtml.match(/<img[^>]+src="(data:image\/[^">]+)"/);
+            const urlMatch = mainHtml.match(/<img[^>]+src="(http[^">]+)"/);
+            
+            const base64Img = imgMatch ? imgMatch[1] : null;
+            const urlImg = urlMatch ? urlMatch[1] : null;
+
+            if (currentMode === 'image' && !mainText.match(/^https?:\/\//i) && mainText.length > 0) currentMode = 'text';
+
+            if (currentMode === 'image') { 
+                payload = { type: 'image', content: mainText || urlImg || base64Img }; 
+            } else if (currentMode === 'link') { 
+                if(!subVal) return alert("請輸入連結網址"); 
+                payload = { type: 'link', text: mainText, content: subVal }; 
+            } else {
+                if(!mainText && !base64Img && !urlImg) return; 
+                
+                if (base64Img) {
+                    payload = { type: 'image_base64', content: base64Img };
+                } else if (urlImg) {
+                    payload = { type: 'text', content: mainText + "\n[圖片]: " + urlImg };
+                } else {
+                    payload = { type: 'text', content: mainText };
+                }
+            }
+            
+            if(sendBtn) {
+                const originalText = sendBtn.innerHTML; 
+                sendBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> ⏳ 寫入中...'; 
+                sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                try { 
+                    await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); 
+                    addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system'); 
+                    clearNoteInput(); 
+                } catch(e) { 
+                    alert("寫入失敗，請檢查 URL"); 
+                } finally { 
+                    sendBtn.innerHTML = originalText; 
+                    sendBtn.classList.remove('opacity-70', 'cursor-not-allowed'); 
+                }
+            }
+        }
+
         function openNoteDocViewer() { const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`); document.getElementById('doc-viewer-modal').classList.remove('hidden'); refreshNoteDocView(); }
         function closeDocViewer() { document.getElementById('doc-viewer-modal').classList.add('hidden'); }
         async function refreshNoteDocView() {
@@ -1598,7 +1649,7 @@
         async function fetchWeather(lat, lon, locName, silent) { try { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`; const res = await fetch(url); const data = await res.json(); if(data.current) { const c = data.current; appState.weather = { temp: Math.round(c.temperature_2m), humidity: c.relative_humidity_2m, wind: c.wind_speed_10m, condition: wmoToCondition(c.weather_code), loc: locName }; renderWeather(); updateLocStatus("已更新"); if(!silent) addMessage(`✅ 天氣已更新: ${c.temperature_2m}°C`, "system"); } } catch(e) { updateLocStatus("錯誤"); } }
         function updateLocStatus(msg) { 
             const el = document.getElementById('location-status'); if(el) el.innerText = msg; 
-            if(msg==="已更新"||msg.includes("預設")||msg.includes("手動")) { 
+            if(msg==="已更新"||msg.includes("預設")||msg.includes("手掌握")) { 
                 const {loc, temp} = appState.weather; 
                 const locName = document.getElementById('location-name'); if(locName) locName.innerText = loc; 
                 const mTemp = document.getElementById('mobile-weather-temp'); if(mTemp) mTemp.innerText = `${temp}°`; 
@@ -2444,7 +2495,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 75 系統升級完畢！\n\n✅ **📸 LIVE 鏡頭視覺分層**：LIVE 畫面現在獨立佔據上半屏，且右上角支援即時切換 1倍/廣角/前鏡頭。AI 回覆不重疊，對話依然清晰可見！\n✅ **📝 隨手筆記貼圖修復**：徹底修復隨手筆記本的 `Ctrl+V` 貼圖功能，同時保留了本地筆記本無敵的網頁圖文排版剪貼！', 
+                    text: 'NOVA 76 系統升級完畢！\n\n✅ **📸 LIVE 鏡頭視覺分層**：LIVE 畫面現在獨立佔據上半屏，且右上角支援即時掃描並選擇手機上「所有實體的硬體鏡頭」。AI 回覆不再與影像重疊！\n✅ **📝 隨手筆記本圖文雙修復**：隨手記事本已正式升級為富文本輸入框，並與本地筆記本共用全新「原生穿透」與「圖檔攔截」雙引擎！現在無論從網頁複製文章排版，還是純截圖貼上，全都能完美支援！', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2459,15 +2510,17 @@
             const hideLiveCaptureEl = document.getElementById('key-hide-live-capture');
             if (hideLiveCaptureEl) hideLiveCaptureEl.checked = appState.hideLiveCapture;
             
-            const editNoteEl = document.getElementById('edit-note-content');
-            if (editNoteEl) {
-                editNoteEl.addEventListener('paste', function(e) {
+            // ★ 富文本與純圖檔雙支援 Paste 攔截
+            function attachRichPasteHandler(elementId) {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                el.addEventListener('paste', function(e) {
                     const clipboardData = e.clipboardData || window.clipboardData;
-                    const types = clipboardData.types;
+                    if (!clipboardData) return;
                     
                     let hasHtmlOrText = false;
-                    for (let i = 0; i < types.length; i++) {
-                        if (types[i] === 'text/html' || types[i] === 'text/plain') hasHtmlOrText = true;
+                    for (let i = 0; i < clipboardData.types.length; i++) {
+                        if (clipboardData.types[i] === 'text/html' || clipboardData.types[i] === 'text/plain') hasHtmlOrText = true;
                     }
 
                     if (!hasHtmlOrText) {
@@ -2477,9 +2530,7 @@
                                 e.preventDefault();
                                 const blob = items[i].getAsFile();
                                 const reader = new FileReader();
-                                reader.onload = function(evt) {
-                                    document.execCommand('insertImage', false, evt.target.result);
-                                };
+                                reader.onload = function(evt) { document.execCommand('insertImage', false, evt.target.result); };
                                 reader.readAsDataURL(blob);
                                 return;
                             }
@@ -2487,6 +2538,9 @@
                     }
                 });
             }
+
+            attachRichPasteHandler('edit-note-content');
+            attachRichPasteHandler('doc-input-main');
 
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
@@ -2573,7 +2627,8 @@
                     }
 
                     const el = document.getElementById('doc-input-main'); 
-                    el.value = (noteInitialInput + (interimT ? "\n" + interimT : "")).trim();
+                    if(el.tagName === 'TEXTAREA') el.value = (noteInitialInput + (interimT ? "\n" + interimT : "")).trim();
+                    else el.innerText = (noteInitialInput + (interimT ? "\n" + interimT : "")).trim();
                     
                     if (noteVoiceTimer) clearTimeout(noteVoiceTimer); 
                     noteVoiceTimer = setTimeout(() => { 
