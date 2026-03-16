@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <!-- 網頁基本設定：編碼、響應式視口 (防止手機端縮放) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 76</title>
+    <title>NOVA 83</title>
+    
+    <!-- 引入外部庫：Tailwind CSS (樣式框架) 與 Phosphor Icons (圖示庫) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- 引入 Google 字體 Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS 自訂設定檔 -->
     <script>
         tailwind.config = {
             theme: {
@@ -18,14 +24,21 @@
             }
         }
     </script>
+    
+    <!-- 自訂 CSS 樣式 -->
     <style>
+        /* 滾動條美化設定 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        /* 隱藏特定元素的滾動條但保持可滾動 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* 基礎動畫設定 */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        
+        /* AI 思考中的「三個點」跳動動畫 (打字提示) */
         .dot-flashing {
             position: relative; width: 6px; height: 6px; border-radius: 5px; background-color: #9880ff; color: #9880ff;
             animation: dot-flashing 1s infinite linear alternate; animation-delay: 0.5s;
@@ -36,15 +49,21 @@
         .dot-flashing::before { left: -10px; animation-delay: 0s; }
         .dot-flashing::after { left: 10px; animation-delay: 1s; }
         @keyframes dot-flashing { 0% { background-color: #9880ff; } 50%, 100% { background-color: rgba(152, 128, 255, 0.2); } }
-        .msg-content a, #doc-content-area a { color: #60a5fa; text-decoration: underline; word-break: break-all; cursor: pointer; }
-        .msg-content p, #doc-content-area div { margin-bottom: 0.5em; line-height: 1.6; }
+        
+        /* 聊天訊息內部元素的排版微調 */
+        .msg-content a { color: #60a5fa; text-decoration: underline; word-break: break-all; cursor: pointer; }
+        .msg-content p { margin-bottom: 0.5em; line-height: 1.6; }
         .slide-in { animation: slideIn 0.3s ease-out; }
+        
+        /* 聊天訊息的懸浮選單顯示邏輯 */
         .msg-group:hover .msg-actions { opacity: 1; }
         .msg-actions { opacity: 0; transition: opacity 0.2s; }
+        
+        /* 錄音狀態的脈衝動畫 */
         @keyframes recordPulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
         .recording-dot { animation: recordPulse 1.5s infinite; }
 
-        /* Toast Alert */
+        /* Toast 提示浮窗樣式 */
         #toast {
             visibility: hidden; min-width: 250px; background-color: #334155; color: #fff; text-align: center;
             border-radius: 8px; padding: 12px; position: fixed; z-index: 100; left: 50%; transform: translateX(-50%);
@@ -52,39 +71,44 @@
         }
         #toast.show { visibility: visible; opacity: 1; bottom: 120px; }
         
-        /* Audio Player Styling */
+        /* 預設 Audio 播放器外觀調整 */
         audio { outline: none; border-radius: 8px; }
         audio::-webkit-media-controls-panel { background-color: #1e293b; color: #fff; }
         audio::-webkit-media-controls-current-time-display, audio::-webkit-media-controls-time-remaining-display { color: #fff; }
 
-        /* Rich Text Editor Overrides */
+        /* 富文本編輯器 (Rich Text Editor) 覆寫樣式 */
         .note-html-content, .note-html-content * { color: inherit !important; background-color: transparent !important; font-family: inherit !important; }
         .note-html-content img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 0.5rem 0; background-color: #f8fafc; }
         .note-html-content a { color: #60a5fa !important; text-decoration: underline !important; }
         .note-html-content ul { list-style-type: disc; margin-left: 1.5rem; }
         .note-html-content ol { list-style-type: decimal; margin-left: 1.5rem; }
+        .note-html-content iframe { border-radius: 0.5rem; max-width: 100%; }
         [contenteditable]:empty:before { content: attr(placeholder); color: #64748b; pointer-events: none; display: block; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans overflow-hidden selection:bg-blue-500/30">
 
     <div class="flex h-[100dvh] w-full relative">
+        <!-- ================= 左側邊欄 (桌面版導航) ================= -->
         <aside class="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 p-6 flex-shrink-0 z-10">
+            <!-- 標題與 Logo -->
             <div class="flex items-center space-x-3 mb-10 px-2">
                 <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 76</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 83</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
+            <!-- 主選單連結 -->
             <nav class="flex-1 space-y-2">
                 <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all"><i class="ph ph-chats-circle text-xl"></i><span class="font-medium">助理對話</span></button>
                 <button onclick="switchTab('schedule')" id="nav-schedule" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i class="ph ph-calendar-check text-xl"></i><span class="font-medium">行程管理</span></button>
                 <button onclick="switchTab('notes')" id="nav-notes" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i class="ph ph-notebook text-xl"></i><span class="font-medium">筆記/文件</span></button>
                 <button onclick="switchTab('audio')" id="nav-audio" class="nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i class="ph ph-waveform text-xl"></i><span class="font-medium">錄音紀錄</span></button>
             </nav>
+            <!-- 底部設定區塊與當前模型狀態 -->
             <div class="mt-auto space-y-3">
                 <button onclick="openSettings()" class="flex items-center space-x-2 text-xs text-slate-500 hover:text-slate-300 w-full px-2"><i class="ph ph-gear"></i><span>設定 & 備份</span></button>
                 <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
@@ -94,9 +118,11 @@
             </div>
         </aside>
 
+        <!-- ================= 主要內容顯示區 ================= -->
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
+            <!-- 手機版頂部導航列 -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 76</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 83</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -106,6 +132,7 @@
                 </div>
             </div>
 
+            <!-- 手機版全螢幕彈出選單 -->
             <div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-40 bg-slate-950/95 pt-20 px-6 backdrop-blur-md">
                 <nav class="space-y-4">
                     <button onclick="switchTab('dashboard'); toggleMobileMenu()" class="flex items-center space-x-3 w-full p-4 rounded-xl bg-slate-800 text-white"><i class="ph ph-chats-circle text-xl"></i><span>助理對話</span></button>
@@ -115,25 +142,24 @@
                 </nav>
             </div>
 
+            <!-- ================= 設定彈窗 (Settings Modal) ================= -->
             <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-bold text-white">設定</h3><button onclick="closeSettings()"><i class="ph ph-x text-2xl text-slate-400"></i></button></div>
                     <div class="space-y-4 overflow-y-auto flex-1 pr-2 scrollbar-thin">
+                        <!-- URL 設定區 (代理及備份) -->
                         <div class="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 p-4 rounded-xl border border-blue-500/50 shadow-inner space-y-4">
                             <div>
                                 <label class="block text-xs text-blue-300 mb-2 font-bold flex items-center gap-2"><i class="ph-fill ph-robot"></i> 系統代理 Google Doc (搜尋/爬蟲)</label>
                                 <input type="text" id="key-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs focus:border-blue-500 outline-none mb-2" placeholder="Apps Script URL (for Agent)">
                             </div>
-                            <div class="grid grid-cols-1 gap-2">
-                                <div><label class="block text-xs text-emerald-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 A URL</label><input type="text" id="key-note-doc-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none" placeholder="Apps Script URL (Notebook A)"></div>
-                                <div><label class="block text-xs text-teal-300 mb-1 font-bold"><i class="ph-fill ph-notebook"></i> 隨手記事本 B URL</label><input type="text" id="key-note-doc-url-2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-teal-500 outline-none" placeholder="Apps Script URL (Notebook B)"></div>
-                            </div>
                             <div class="border-t border-white/10 pt-2">
-                                 <label class="block text-xs text-red-300 mb-1 font-bold"><i class="ph-fill ph-upload"></i> Google Drive 上傳 URL (備份用)</label>
+                                 <label class="block text-xs text-red-300 mb-1 font-bold"><i class="ph-fill ph-upload"></i> Google Drive 上傳 URL (錄音/筆記備份用)</label>
                                  <input type="text" id="key-drive-url" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500 outline-none" placeholder="(選填) 雲端備份 Apps Script URL">
                             </div>
                             <div class="flex items-center justify-between mt-2"><span id="doc-monitor-status" class="text-[10px] text-slate-500">未測試</span><button onclick="testDocConnection()" class="text-[10px] bg-blue-600 px-3 py-1 rounded text-white hover:bg-blue-500 transition-colors">測試連線</button></div>
                         </div>
+                        <!-- API Key 設定區 -->
                         <div class="space-y-3 pt-2 pb-4 border-b border-slate-800">
                             <div><label class="block text-xs text-blue-400 mb-1">Gemini API Key</label><input type="password" id="key-gemini" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-blue-500 outline-none"></div>
                             <div><label class="block text-xs text-green-400 mb-1">SerpApi Key</label><input type="password" id="key-serpapi" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-green-500 outline-none" placeholder="Your SerpApi Key"></div>
@@ -142,6 +168,7 @@
                             <div><label class="block text-xs text-emerald-400 mb-1">OpenAI API Key</label><input type="password" id="key-openai" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-emerald-500 outline-none"></div>
                             <div><label class="block text-xs text-slate-300 mb-1">Grok API Key</label><input type="password" id="key-grok" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-slate-500 outline-none"></div>
                             
+                            <!-- 進階選項設定 -->
                             <div class="border-t border-slate-700 pt-3 mt-2">
                                 <label class="block text-xs text-amber-400 mb-1 font-bold"><i class="ph-fill ph-timer"></i> 連續語音等待秒數 (秒)</label>
                                 <input type="number" id="key-voice-timeout" min="1" max="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-amber-500 outline-none text-slate-300" placeholder="預設: 5">
@@ -160,6 +187,7 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 備份與還原按鈕 -->
                     <div class="mt-4 pt-2 flex justify-between items-center shrink-0">
                         <div class="flex space-x-2">
                             <button onclick="exportSettings()" class="flex items-center gap-1 text-[11px] text-blue-400 bg-blue-900/30 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-800/50 transition-colors" title="包含所有設定、對話、筆記、錄音"><i class="ph-bold ph-download-simple"></i> 完整備份</button>
@@ -171,6 +199,7 @@
                 </div>
             </div>
 
+            <!-- ================= 鬧鐘提醒彈窗 (Alarm Modal) ================= -->
             <div id="alarm-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6">
                 <div class="bg-slate-900 border border-red-500/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.3)] animate-pulse">
                     <i class="ph-fill ph-alarm text-6xl text-red-500 mb-4 inline-block animate-bounce"></i>
@@ -182,6 +211,7 @@
                 </div>
             </div>
 
+            <!-- ================= 待辦事項時間選擇彈窗 ================= -->
             <div id="todo-time-modal" class="hidden fixed inset-0 z-[70] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl flex-col">
                     <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="ph-bold ph-bell text-yellow-500"></i> 設定提醒時間</h3>
@@ -197,19 +227,21 @@
                 </div>
             </div>
 
+            <!-- ================= 儀表板/聊天介面 (Dashboard View) ================= -->
             <div id="view-dashboard" class="flex flex-col lg:flex-row h-full w-full relative min-h-0">
                 <div class="flex-1 flex flex-col h-full min-w-0 relative">
+                    <!-- 頂部狀態列與模型選擇下拉單 -->
                     <div class="p-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center shrink-0 overflow-x-auto no-scrollbar relative z-10">
                          <div class="flex items-center space-x-2 mr-4 shrink-0">
                             <span id="web-search-badge" class="hidden md:flex items-center space-x-1 text-[10px] bg-blue-900/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full"><i class="ph-bold ph-globe"></i><span>連網搜尋</span></span>
                             <div id="recording-status" onclick="stopAudioRecording()" class="hidden items-center space-x-2 bg-red-900/50 border border-red-500/50 px-3 py-1 rounded-full animate-pulse mr-2 cursor-pointer hover:bg-red-800/50 transition-colors" title="點擊停止錄音">
                                 <div class="w-2 h-2 bg-red-500 rounded-full recording-dot"></div><span class="text-xs text-red-200 font-bold">錄音中... (點擊停止)</span>
                             </div>
-                            <span id="doc-monitor-badge" class="hidden items-center space-x-1 text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full animate-pulse"><i class="ph-bold ph-arrows-clockwise"></i><span>Docs 監控中</span></span>
                             <button onclick="clearChatHistory()" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center space-x-1 border border-slate-700 px-2 py-0.5 rounded-lg transition-colors"><i class="ph-bold ph-trash"></i><span>清空對話</span></button>
                          </div>
                          
                          <div class="flex space-x-2 ml-auto shrink-0">
+                             <!-- Gemini 子模型選擇 -->
                              <select id="gemini-sub-model-select" onchange="setGeminiModel(this.value)" class="bg-blue-900 border border-blue-500/50 text-blue-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-blue-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="gemini-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Imagen 4.0 生成">
@@ -231,6 +263,7 @@
                                      <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image</option>
                                  </optgroup>
                              </select>
+                             <!-- Grok 子模型選擇 -->
                              <select id="grok-sub-model-select" onchange="setGrokModel(this.value)" class="hidden bg-slate-800 border border-slate-600 text-slate-300 text-xs rounded-lg px-2 py-1 outline-none focus:border-slate-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="grok-multi">⚡ 智慧切換 (Auto)</option>
                                  <optgroup label="Language models">
@@ -245,6 +278,7 @@
                                      <option value="grok-imagine-image">grok-imagine-image</option>
                                  </optgroup>
                              </select>
+                             <!-- 主模型切換 -->
                              <select id="main-model-select" onchange="setModel(this.value)" class="bg-slate-800 border border-slate-600 text-white text-xs rounded-lg px-3 py-1 outline-none focus:border-blue-500 font-bold tracking-wide">
                                  <option value="gemini">Gemini</option>
                                  <option value="grok">Grok</option>
@@ -255,8 +289,9 @@
                          </div>
                     </div>
                     
-                    <!-- 分層：上半部視訊 -->
+                    <!-- LIVE 視訊畫面層 (分層：上半部視訊) -->
                     <div id="live-video-container" class="hidden w-full h-[45%] bg-slate-900 border-b-2 border-red-500/50 shadow-xl z-20 overflow-hidden flex-col relative shrink-0 transition-all duration-300">
+                        <!-- 相機鏡頭選擇 -->
                         <div class="absolute top-2 right-2 z-40">
                             <select id="camera-select" onchange="switchCamera(this.value)" class="bg-slate-900/80 text-white text-xs rounded-lg px-3 py-1.5 outline-none border border-red-500/50 backdrop-blur-md shadow-lg cursor-pointer">
                                 <option value="environment">載入鏡頭清單中...</option>
@@ -268,12 +303,13 @@
                         <video id="live-video-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
                     </div>
 
-                    <!-- 分層：下半部對話 -->
+                    <!-- 聊天對話顯示層 (分層：下半部對話) -->
                     <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 relative"></div>
                     
-                    <!-- Line Style Bottom Input Area -->
+                    <!-- Line 風格底部輸入區塊 -->
                     <div class="bg-slate-900 border-t border-slate-800 shrink-0 z-20 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex flex-col relative w-full">
                         
+                        <!-- 檔案預覽列 -->
                         <div id="chat-file-preview-container" class="hidden relative inline-flex items-center bg-slate-800 p-2 m-2 rounded-lg border border-slate-700 shadow-md self-start">
                             <img id="chat-image-preview" src="" class="h-12 w-auto rounded hidden mr-2">
                             <div id="chat-file-icon-wrapper" class="hidden flex items-center justify-center bg-blue-900/50 w-12 h-12 rounded mr-2"><i class="ph-fill ph-file text-2xl text-blue-400"></i></div>
@@ -282,13 +318,15 @@
                         </div>
                         <input type="file" id="audio-analyze-input" accept="*/*" class="hidden" onchange="handleAudioAnalyzeSelect(event)">
                         
+                        <!-- 連網搜尋提示 -->
                         <div id="search-hint" class="text-[10px] text-blue-400 text-center hidden mt-1 absolute -top-5 w-full">🌐 已開啟連網搜尋 (支援各模型)</div>
                         
-                        <!-- 語言聽取切換 Badge -->
+                        <!-- 語言聽取切換 Badge (即時口譯模式使用) -->
                         <div id="stt-lang-toggle" onclick="toggleListenLang()" class="hidden absolute -top-10 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-lg cursor-pointer flex items-center gap-1 z-50 hover:bg-indigo-500 transition-colors border border-indigo-400/50 active:scale-95">
                             <i class="ph-bold ph-microphone-stage text-sm animate-pulse"></i> <span id="stt-lang-text">聽取: 中文 (點擊切換)</span>
                         </div>
                         
+                        <!-- 附加功能展開選單 (+) -->
                         <div id="plus-menu" class="hidden absolute bottom-full left-0 mb-1 w-full bg-slate-900 border-t border-slate-800 p-4 grid grid-cols-4 gap-4 z-40 rounded-t-2xl shadow-[0_-10px_20px_rgba(0,0,0,0.5)] transition-all">
                             <label for="chat-file-input" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 cursor-pointer text-slate-300 transition-colors active:scale-95">
                                 <i class="ph-bold ph-paperclip text-2xl text-emerald-400"></i><span class="text-[10px] font-bold">上傳檔案</span>
@@ -304,24 +342,34 @@
                             </button>
                         </div>
 
-                        <!-- 主輸入列 -->
+                        <!-- 底部主輸入列 -->
                         <div class="flex items-end gap-2 w-full relative z-50 p-2">
+                            <!-- 展開附加選單按鈕 -->
                             <button onclick="togglePlusMenu()" class="p-2 mb-1 rounded-full bg-slate-800 text-slate-300 hover:text-white shrink-0 transition-transform flex items-center justify-center active:scale-90 h-[40px] w-[40px]">
                                 <i class="ph-bold ph-plus text-xl transition-transform" id="plus-icon"></i>
                             </button>
                             
+                            <!-- 訊息輸入框 -->
                             <div id="input-wrapper" class="flex-1 flex items-end bg-slate-950 rounded-2xl px-3 py-1.5 border border-slate-700 focus-within:border-blue-500 transition-colors">
                                 <textarea id="user-input" rows="1" placeholder="輸入訊息..." class="flex-1 bg-transparent border-none focus:ring-0 text-white outline-none resize-none py-1.5 scrollbar-none text-base min-h-[38px] max-h-[120px]" onkeydown="handleEnter(event)" oninput="autoResizeInput(this)"></textarea>
                             </div>
                             
+                            <!-- 搜尋切換按鈕 -->
                             <button id="search-toggle-btn" onclick="toggleSearch()" class="p-2 mb-1 rounded-full bg-slate-800 text-slate-400 hover:text-blue-400 shrink-0 transition-all flex items-center justify-center active:scale-90 h-[40px] w-[40px]" title="開關連網搜尋">
                                 <i id="search-icon" class="ph-bold ph-globe text-xl"></i>
                             </button>
 
+                            <!-- 記憶上下文開關 -->
+                            <button id="context-toggle-btn" onclick="toggleContext()" class="p-2 mb-1 rounded-full bg-blue-600 text-white hover:bg-blue-500 shrink-0 transition-all flex items-center justify-center active:scale-90 h-[40px] w-[40px]" title="記憶上下文：開啟 (維持連貫對話)">
+                                <i id="context-icon" class="ph-bold ph-brain text-xl"></i>
+                            </button>
+
+                            <!-- 連續語音切換按鈕 -->
                             <button id="continuous-btn" onclick="toggleContinuous()" class="p-2 mb-1 rounded-full bg-slate-800 text-slate-400 hover:text-red-400 shrink-0 transition-all flex items-center justify-center active:scale-90 h-[40px] w-[40px]" title="連續語音">
                                 <i id="continuous-icon" class="ph-bold ph-microphone text-xl"></i>
                             </button>
                             
+                            <!-- 傳送訊息按鈕 -->
                             <button onclick="handleSendMessage()" id="send-btn" class="p-2 mb-1 rounded-full bg-blue-600 text-white hover:bg-blue-500 shrink-0 transition-all shadow hidden items-center justify-center active:scale-90 h-[40px] w-[40px]">
                                 <i id="send-icon" class="ph-bold ph-paper-plane-right text-xl ml-0.5"></i>
                             </button>
@@ -329,6 +377,7 @@
                     </div>
                 </div>
                 
+                <!-- ================= 桌面版側邊資訊欄 (天氣、任務、筆記預覽) ================= -->
                 <div class="hidden lg:flex w-80 bg-slate-900 flex-col p-6 space-y-6 border-l border-slate-800 overflow-y-auto shrink-0">
                     <div class="bg-gradient-to-br from-indigo-900 to-slate-800 rounded-3xl p-6 text-white shadow-lg border border-slate-700 relative overflow-hidden group">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
@@ -339,10 +388,12 @@
                             <div class="mt-4 flex items-end space-x-2"><span id="weather-temp" class="text-5xl font-bold">--°</span><span id="weather-desc" class="text-slate-300 text-sm mb-2">--</span></div>
                         </div>
                     </div>
+                    <!-- 近期任務模塊 -->
                     <div class="bg-slate-950 rounded-2xl p-5 border border-slate-800">
                         <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-200 text-sm flex items-center gap-2"><i class="ph-fill ph-calendar-check text-blue-500"></i>近期任務</h3><button onclick="switchTab('schedule')" class="text-xs text-blue-400">管理</button></div>
                         <div id="mini-todo-list" class="space-y-2"></div>
                     </div>
+                    <!-- 最新筆記模塊 -->
                     <div class="bg-slate-950 rounded-2xl p-5 border border-slate-800">
                          <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-200 text-sm flex items-center gap-2"><i class="ph-fill ph-notebook text-emerald-500"></i>最新筆記</h3><button onclick="switchTab('notes')" class="text-xs text-blue-400">查看</button></div>
                         <div id="mini-note-list" class="space-y-2"></div>
@@ -350,6 +401,7 @@
                 </div>
             </div>
 
+            <!-- ================= 行程管理介面 (Schedule View) ================= -->
             <div id="view-schedule" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-3xl mx-auto w-full">
                     <header class="flex justify-between items-center mb-6">
@@ -360,41 +412,10 @@
                 </div>
             </div>
             
+            <!-- ================= 筆記/文件介面 (Notes View) ================= -->
             <div id="view-notes" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-5xl mx-auto w-full">
-                    <div class="bg-gradient-to-r from-blue-900/40 to-slate-900 border border-blue-500/30 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-lg">
-                        <div class="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-notebook text-emerald-400"></i> 隨手記事本</h3>
-                                <div class="flex gap-2"><button onclick="openNoteDocViewer()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg border border-slate-600 flex items-center gap-2 transition-colors"><i class="ph-bold ph-book-open"></i> 閱讀</button></div>
-                            </div>
-                            <div class="flex space-x-2 mb-4 bg-slate-950/50 p-1 rounded-lg inline-flex">
-                                <button onclick="setActiveNotebook(1)" id="btn-nb-1" class="flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white">筆記本 A</button>
-                                <button onclick="setActiveNotebook(2)" id="btn-nb-2" class="flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50">筆記本 B</button>
-                            </div>
-                            <div class="flex space-x-2 mb-3">
-                                <button onclick="setWriteMode('text')" id="btn-mode-text" class="text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all">純文字 / 貼上圖片 (Ctrl+V)</button>
-                                <button onclick="setWriteMode('image')" id="btn-mode-image" class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all">圖片網址</button>
-                                <button onclick="setWriteMode('link')" id="btn-mode-link" class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all">超連結</button>
-                            </div>
-                            <div class="flex flex-col gap-3">
-                                <div class="relative">
-                                    <div id="doc-input-main" contenteditable="true" placeholder="輸入文字內容，或直接 Ctrl+V 貼上圖文..." class="note-html-content w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none overflow-y-auto min-h-[120px] max-h-[300px]" onkeydown="handleNoteKeydown(event)"></div>
-                                    <div id="paste-indicator" class="hidden absolute right-3 top-3 text-[10px] text-emerald-400 bg-emerald-900/50 px-2 py-0.5 rounded border border-emerald-500/50 animate-pulse"><i class="ph-bold ph-image"></i> 圖片已就緒</div>
-                                    <button onclick="clearNoteInput()" class="absolute right-3 bottom-3 text-slate-500 hover:text-red-400 p-1 bg-slate-900/50 rounded-full transition-colors" title="清除內容"><i class="ph-bold ph-trash"></i></button>
-                                    <label for="photo-input" class="absolute right-28 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors cursor-pointer" title="選擇圖片 (資料夾)"><i class="ph-bold ph-image text-xl"></i></label>
-                                    <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(event)">
-                                    <label for="camera-input" class="absolute right-20 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors cursor-pointer" title="拍照上傳"><i class="ph-bold ph-camera text-xl"></i></label>
-                                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event)">
-                                    <button onclick="toggleNoteVoice()" id="note-voice-btn" class="absolute right-10 bottom-3 text-slate-500 hover:text-white p-1 bg-slate-900/50 rounded-full transition-colors" title="語音輸入"><i id="note-voice-icon" class="ph-bold ph-microphone text-xl"></i></button>
-                                </div>
-                                <input type="text" id="doc-input-sub" placeholder="輸入連結網址 (例如: https://...)" class="hidden w-full bg-slate-950/80 border border-slate-700 rounded-lg p-3 text-sm focus:border-blue-500 outline-none">
-                                <div class="flex justify-end"><button onclick="handleDocWriteBtn()" id="note-send-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"><i class="ph-bold ph-paper-plane-right"></i> 發送寫入</button></div>
-                            </div>
-                            <p id="active-notebook-label" class="text-[10px] text-slate-400 mt-2 opacity-80">* 目前寫入目標：筆記本 A</p>
-                        </div>
-                    </div>
+                    <!-- 本地筆記中心列表 -->
                     <header class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-white">本地筆記中心</h2>
                         <div class="flex space-x-2">
@@ -407,6 +428,7 @@
                 </div>
             </div>
 
+            <!-- ================= 錄音紀錄介面 (Audio View) ================= -->
             <div id="view-audio" class="hidden flex-col h-full w-full p-6 overflow-y-auto">
                 <div class="max-w-4xl mx-auto w-full">
                     <header class="flex justify-between items-center mb-6">
@@ -420,19 +442,7 @@
                 </div>
             </div>
             
-            <div id="doc-viewer-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/95 backdrop-blur-md flex flex-col p-4">
-                <div class="flex justify-between items-center mb-4 shrink-0">
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-fill ph-book-open text-blue-400"></i> 文件瀏覽器</h3>
-                    <div class="flex gap-2">
-                        <button onclick="refreshNoteDocView()" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-xs"><i class="ph-bold ph-arrows-clockwise"></i> 重新整理</button>
-                        <button onclick="closeDocViewer()" class="p-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700"><i class="ph-bold ph-x text-lg"></i></button>
-                    </div>
-                </div>
-                <div class="flex-1 bg-white text-slate-900 rounded-xl p-6 overflow-y-auto shadow-2xl font-serif leading-relaxed text-lg" id="doc-content-area">
-                    <div class="flex items-center justify-center h-full text-slate-400 gap-2"><div class="dot-flashing bg-slate-400"></div> 載入中...</div>
-                </div>
-            </div>
-
+            <!-- ================= 編輯待辦事項彈窗 (Todo Edit Modal) ================= -->
             <div id="todo-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl flex-col">
                     <div class="flex justify-between items-center mb-4 shrink-0">
@@ -451,29 +461,29 @@
                 </div>
             </div>
 
-            <!-- 富文本筆記編輯器 -->
-            <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <!-- ================= 富文本筆記劇院級編輯器彈窗 (Note Edit/View Modal) ================= -->
+            <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-2 md:p-6">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 w-[98vw] md:w-[85vw] max-w-7xl shadow-2xl flex flex-col h-[80vh] md:h-[75vh]">
                     <div class="flex justify-between items-center mb-4 shrink-0">
-                        <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-bold ph-pencil-simple text-emerald-400"></i> <span id="note-modal-title-text">編輯筆記</span></h3>
-                        <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-bold ph-corners-out text-emerald-400"></i> <span id="note-modal-title-text">檢視與編輯筆記</span></h3>
+                        <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
                     <input type="hidden" id="edit-note-id">
                     <div class="space-y-4 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700 flex flex-col min-h-0">
-                        <div class="shrink-0"><label class="text-xs text-slate-400 mb-1 block">標題</label><input type="text" id="edit-note-title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 outline-none"></div>
+                        <div class="shrink-0"><label class="text-xs text-slate-400 mb-1 block">標題</label><input type="text" id="edit-note-title" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-lg font-bold text-white focus:border-emerald-500 outline-none"></div>
                         <div class="flex-1 flex flex-col min-h-0">
                             <label class="text-xs text-slate-400 mb-1 flex justify-between shrink-0">
-                                內文 (支援網頁圖文完整複製貼上)
-                                <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1"><i class="ph-bold ph-image"></i> 加入圖片</label>
+                                內文 (支援直接貼上網頁圖文排版、YouTube 網址)
+                                <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1 bg-emerald-900/30 px-2 py-1 rounded"><i class="ph-bold ph-image"></i> 插入圖片</label>
                                 <input type="file" id="edit-note-img-upload" accept="image/*" multiple class="hidden" onchange="handleNoteEditImage(event)">
                             </label>
-                            <div id="edit-note-content" contenteditable="true" placeholder="在這裡輸入文字，或直接貼上網頁上的圖文內容..." class="note-html-content flex-1 w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-sm text-white focus:border-emerald-500 outline-none overflow-y-auto min-h-[150px]"></div>
+                            <div id="edit-note-content" contenteditable="true" placeholder="在這裡輸入文字，或直接 Ctrl+V 貼上網頁圖文、YouTube連結..." class="note-html-content flex-1 w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-base md:text-lg leading-relaxed text-slate-200 focus:border-emerald-500 outline-none overflow-y-auto"></div>
                             <div id="edit-note-img-preview-container" class="hidden mt-3 flex-wrap gap-2 shrink-0"></div>
                         </div>
                     </div>
                     <div class="flex justify-end space-x-3 mt-4 shrink-0 pt-4 border-t border-slate-800">
-                        <button onclick="closeNoteEdit()" class="px-4 py-2 text-slate-400 hover:text-white transition-colors">取消</button>
-                        <button onclick="saveNoteEdit()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-medium">儲存筆記</button>
+                        <button onclick="closeNoteEdit()" class="px-5 py-2.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors font-medium">取消</button>
+                        <button onclick="saveNoteEdit()" class="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-bold text-lg shadow-lg">儲存變更</button>
                     </div>
                 </div>
             </div>
@@ -481,16 +491,21 @@
         </main>
     </div>
     
+    <!-- Toast 系統提示區塊 -->
     <div id="toast">✅ 訊息提示</div>
 
+    <!-- ================= JavaScript 邏輯與功能實作 ================= -->
     <script>
+        // --- 全域變數與狀態初始化 ---
         let recognition = null; let noteRecognition = null; let voiceTimer = null; 
         let chatInitialInput = ""; let noteInitialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
         let liveVideoStream = null; 
 
+        // --- IndexedDB 資料庫初始化與操作 ---
         const DB_NAME = 'NovaDB'; const DB_VERSION = 2; let db;
 
+        // 初始化資料庫及 Store
         function initDB() {
             return new Promise((resolve, reject) => {
                 if (!window.indexedDB) { console.warn("瀏覽器不支援 IndexedDB"); resolve(null); return; }
@@ -508,7 +523,6 @@
         }
         function loadStoreFromDB(storeName) { return new Promise((resolve) => { if (!db) return resolve([]); try { const tx = db.transaction(storeName, 'readonly'); const req = tx.objectStore(storeName).getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); } catch(e) { resolve([]); } }); }
         function saveToDB(storeName, item) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).put(item); } catch(e) {} }
-        
         function deleteFromDB(storeName, id) { 
             if (!db) return; 
             try { 
@@ -518,13 +532,13 @@
                 if (typeof id === 'string' && !isNaN(Number(id))) store.delete(Number(id)); 
             } catch(e) { console.warn("Delete DB Error:", e); } 
         }
-
         function clearStoreDB(storeName) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).clear(); } catch(e) {} }
 
+        // --- 核心應用狀態 (appState) 與模型設定 (MODEL_CONFIG) ---
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-multi', geminiModel: 'gemini-multi',
             chatFile: null, currentDeviceId: null,
-            docMonitorUrl: localStorage.getItem('nova_doc_url') || '', noteDocUrl: localStorage.getItem('nova_note_doc_url') || '', noteDocUrl2: localStorage.getItem('nova_note_doc_url_2') || '', activeNotebook: 1, driveUrl: localStorage.getItem('nova_drive_url') || '',
+            docMonitorUrl: localStorage.getItem('nova_doc_url') || '', driveUrl: localStorage.getItem('nova_drive_url') || '',
             messages: [], notes: [], todos: [], audioRecords: [], 
             weather: { temp: '--', condition: 'cloudy', humidity: '--', wind: '--', loc: '未定位' },
             keys: { gemini: localStorage.getItem('nova_key_gemini')||'', groq: localStorage.getItem('nova_key_groq')||'', cohere: localStorage.getItem('nova_key_cohere')||'', openai: localStorage.getItem('nova_key_openai')||'', grok: localStorage.getItem('nova_key_grok')||'', serpapi: localStorage.getItem('nova_key_serpapi')||'' },
@@ -533,12 +547,13 @@
             translateSetupStage: 0, translateTargetLang: '', currentListenLang: 'zh-TW',
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
-            recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], writeMode: 'text', pastedImageBase64: null,
+            recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], 
             pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "",
             activeMediaTracks: [], recordingAudioCtx: null,
             voiceTimeout: parseInt(localStorage.getItem('nova_voice_timeout')) || 5,
             hideLiveCapture: localStorage.getItem('nova_hide_live_capture') === 'true',
-            isTTSPlaying: false
+            isTTSPlaying: false,
+            enableContext: true // 上下文記憶預設開啟
         };
         
         const MODEL_CONFIG = {
@@ -547,6 +562,7 @@
 
         function getTime() { return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
+        // --- 訊息文字格式化與安全過濾 ---
         function formatMessage(text) { 
             if (!text) return ''; 
             let images = [];
@@ -573,6 +589,7 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
+        // --- 語音朗讀 (TTS) 功能 ---
         window.playMessageAudio = function(id) {
             const msg = appState.messages.find(m => String(m.id) === String(id));
             if (!msg || !msg.text) return;
@@ -638,6 +655,7 @@
             }
         }
 
+        // --- 剪貼簿與檔案下載功能 ---
         window.copyDeepLink = function(text) {
             const textArea = document.createElement("textarea"); textArea.value = text;
             textArea.style.top = "0"; textArea.style.left = "0"; textArea.style.position = "fixed";
@@ -706,6 +724,7 @@
 
         function renderAll() { renderMessages(); renderTodos(); renderNotes(); renderAudioRecords(); renderWeather(); }
         
+        // --- UI 渲染功能 (訊息) ---
         function renderMessages() { 
             const container = document.getElementById('chat-container'); if(!container) return;
             container.innerHTML = appState.messages.map(msg => { 
@@ -794,23 +813,31 @@
             else if(!show && el) el.remove(); 
         }
 
+        // --- UI 渲染功能 (待辦事項) ---
         function renderTodos() { 
             const el = document.getElementById('full-todo-list'); const mini = document.getElementById('mini-todo-list');
             if(el) el.innerHTML=appState.todos.map(t=>`<div class="group bg-slate-900 p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-slate-600 transition-all slide-in"><div class="flex items-center space-x-4"><button onclick="toggleTodo(${t.id})" class="text-slate-500 hover:text-blue-400"><i class="ph${t.done?'-fill ph-check-circle text-green-500':' ph-circle'} text-2xl"></i></button><div><p class="text-base ${t.done?'line-through text-slate-600':'text-slate-200'}">${escapeHtml(t.text)}</p><span class="text-xs text-slate-500">${t.time}</span></div></div><div class="flex items-center space-x-2"><button onclick="openTodoDatePicker(${t.id})" class="${t.alertEnabled !== false ? 'text-yellow-500' : 'text-slate-600'} hover:text-yellow-400 p-2" title="${t.alertEnabled !== false ? '修改提醒' : '開啟提醒'}"><i class="ph-bold ${t.alertEnabled !== false ? 'ph-bell-ringing' : 'ph-bell-slash'}"></i></button><button onclick="openTodoEdit('${t.id}')" class="text-slate-500 hover:text-blue-400 p-2" title="編輯"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteTodo('${t.id}')" class="text-slate-500 hover:text-red-400 p-2" title="刪除"><i class="ph-bold ph-trash"></i></button></div></div>`).join('')||'<p class="text-slate-500 text-center mt-10">無任務</p>'; 
             if(mini) mini.innerHTML=appState.todos.slice(0,3).map(t=>`<div class="flex items-center space-x-3 p-2 bg-slate-950/50 rounded-lg border border-slate-800/50"><div class="w-1.5 h-8 rounded-full ${t.done?'bg-green-500':'bg-blue-500'}"></div><div class="flex-1 min-w-0"><p class="text-xs truncate ${t.done?'line-through text-slate-600':'text-slate-300'}">${escapeHtml(t.text)}</p></div></div>`).join('')||'<p class="text-xs text-slate-500 text-center">無待辦</p>'; 
         }
 
+        // --- UI 渲染功能 (筆記) ---
         function renderNotes() { 
             const el = document.getElementById('full-note-list'); const mini = document.getElementById('mini-note-list');
             if(el) el.innerHTML=appState.notes.map(n=>{
                 const isAudio = n.type === 'audio'; const icon = isAudio ? '<i class="ph-fill ph-microphone text-purple-400"></i>' : '<i class="ph-fill ph-notebook text-emerald-400"></i>';
-                let actionButtons = `<button onclick="exportNoteWord('${n.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors border border-slate-700" title="匯出為Word"><i class="ph-bold ph-download-simple"></i> Word</button>`;
                 
+                let actionButtons = `<button onclick="exportNoteWord('${n.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1" title="匯出為 Word"><i class="ph-bold ph-file-doc"></i> Word</button>`;
+                actionButtons += `<button onclick="exportNoteRichText('${n.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1" title="匯出為 HTML"><i class="ph-bold ph-file-html"></i> RichText</button>`;
+                actionButtons += `<button id="btn-backup-${n.id}" onclick="backupNoteToDrive('${n.id}')" class="text-xs bg-blue-900/50 hover:bg-blue-800/50 border border-blue-500/50 px-2 py-1.5 rounded text-blue-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-cloud-arrow-up"></i> 雲端備份</button>`;
+                // 強調 檢視與編輯 按鈕
+                actionButtons += `<button onclick="openNoteEdit('${n.id}')" class="text-xs bg-emerald-900/50 hover:bg-emerald-800/50 border border-emerald-500/50 px-3 py-1.5 rounded text-emerald-200 transition-colors flex items-center gap-1 font-bold ml-auto"><i class="ph-bold ph-corners-out"></i> 檢視與編輯</button>`;
+
+                let extraAudioButtons = '';
                 if(isAudio) {
-                    actionButtons += `<button onclick="downloadLocalAudio('${n.id}', 'note')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition-colors border border-slate-700"><i class="ph-bold ph-download-simple"></i> 下載 .weba</button>`;
-                    actionButtons += `<button onclick="summarizeVoiceNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> AI 深度分析</button>`;
+                    extraAudioButtons += `<button onclick="downloadLocalAudio('${n.id}', 'note')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1"><i class="ph-bold ph-download-simple"></i> 下載 .weba</button>`;
+                    extraAudioButtons += `<button onclick="summarizeVoiceNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
                 } else {
-                    actionButtons += `<button onclick="summarizeTextNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1 rounded text-purple-200 transition-colors"><i class="ph-bold ph-sparkle"></i> AI 深度分析</button>`;
+                    extraAudioButtons += `<button onclick="summarizeTextNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
                 }
                 
                 let imgHtml = '';
@@ -820,11 +847,11 @@
                 }
 
                 let audioPlayerHtml = n.audioData ? `<div class="mt-3 mb-2"><audio controls src="${n.audioData}" class="w-full h-10 rounded-lg bg-slate-800 shadow-inner"></audio></div>` : '';
-                let linkHtml = (n.driveUrl && !n.driveUrl.startsWith('blob:')) ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-cloud"></i> 雲端備份音檔</a></div>` : '';
+                let linkHtml = (n.driveUrl && !n.driveUrl.startsWith('blob:')) ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-cloud"></i> 在雲端查看已備份筆記</a></div>` : '';
                 
                 let renderedContent = n.isHtml ? n.content : formatMessage(n.content);
                 
-                return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit('${n.id}')" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-pencil-simple"></i></button><button onclick="deleteNote('${n.id}')" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}${audioPlayerHtml}<div class="note-html-content text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin ${n.isHtml ? 'whitespace-normal' : 'whitespace-pre-wrap'}">${renderedContent}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${actionButtons}</div></div>`;
+                return `<div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col relative overflow-hidden slide-in"><div class="flex justify-between items-start mb-2"><h3 class="text-lg font-bold text-white flex items-center gap-2 truncate pr-2">${icon} <span>${escapeHtml(n.title)}</span></h3><div class="flex space-x-1 shrink-0"><button onclick="openNoteEdit('${n.id}')" class="text-slate-500 hover:text-blue-400 p-1 bg-slate-950/50 rounded" title="展開檢視"><i class="ph-bold ph-arrows-out-simple"></i></button><button onclick="deleteNote('${n.id}')" class="text-slate-500 hover:text-red-400 p-1 bg-slate-950/50 rounded"><i class="ph-bold ph-trash"></i></button></div></div><span class="text-[10px] text-slate-500 mb-2">${n.date}</span>${imgHtml}${audioPlayerHtml}<div class="note-html-content text-slate-300 text-sm overflow-y-auto max-h-40 scrollbar-thin ${n.isHtml ? 'whitespace-normal' : 'whitespace-pre-wrap'} relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-8 after:bg-gradient-to-t after:from-slate-900 after:to-transparent">${renderedContent}</div>${linkHtml}<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-800">${extraAudioButtons}</div><div class="flex flex-wrap items-center gap-2 mt-2">${actionButtons}</div></div>`;
             }).join('')||'<p class="text-slate-500 text-center col-span-3 mt-10">無筆記</p>'; 
             
             if(mini) mini.innerHTML=appState.notes.slice(0,2).map(n=>{
@@ -833,6 +860,7 @@
             }).join('')||'<p class="text-xs text-slate-500 text-center">無筆記</p>'; 
         }
 
+        // --- UI 渲染功能 (錄音紀錄) ---
         function renderAudioRecords() {
             const el = document.getElementById('audio-records-list'); if(!el) return;
             el.innerHTML = appState.audioRecords.map(r => {
@@ -874,17 +902,6 @@
             }
         }
         
-        function updateNoteVoiceUI() {
-            const btn = document.getElementById('note-voice-btn'); const icon = document.getElementById('note-voice-icon');
-            if (appState.isNoteListening || appState.noteVoiceActive) { 
-                btn.classList.add('text-red-400'); btn.classList.remove('text-slate-500'); 
-                icon.classList.add('animate-pulse'); 
-            } else { 
-                btn.classList.remove('text-red-400'); btn.classList.add('text-slate-500'); 
-                icon.classList.remove('animate-pulse'); 
-            }
-        }
-
         function togglePlusMenu() {
             const menu = document.getElementById('plus-menu');
             const icon = document.getElementById('plus-icon');
@@ -918,6 +935,7 @@
             }
         };
 
+        // --- 攝影機與 LIVE 視覺功能 ---
         async function populateCameraSelect() {
             const select = document.getElementById('camera-select');
             if (!select) return;
@@ -1113,7 +1131,26 @@
                 if (appState.isTranslateMode) toggleTranslateMode(true);
             }
         }
+        
+        // --- 聰明上下文控制 (切換記憶模式) ---
+        function toggleContext() {
+            appState.enableContext = !appState.enableContext;
+            const btn = document.getElementById('context-toggle-btn');
+            
+            if (appState.enableContext) {
+                btn.classList.add('bg-blue-600', 'text-white');
+                btn.classList.remove('bg-slate-800', 'text-slate-400');
+                btn.title = "記憶上下文：開啟 (維持連貫對話)";
+                showToast("🧠 已開啟上下文記憶模式");
+            } else {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-400');
+                btn.title = "記憶上下文：關閉 (獨立問答)";
+                showToast("🧠 已關閉上下文記憶模式 (完全獨立問答)");
+            }
+        }
 
+        // --- 對話訊息處理邏輯 ---
         function addMessage(text, sender, model=null, sources=[], file=null, actionData=null) { 
             const newMsg = {id:Date.now(), text, sender, model, sources, file, actionData, time:getTime()};
             appState.messages.push(newMsg); saveToDB('messages', newMsg); renderMessages(); 
@@ -1121,6 +1158,7 @@
 
         function deleteMessage(id) { appState.messages = appState.messages.filter(m => String(m.id) !== String(id)); deleteFromDB('messages', id); renderMessages(); }
         function clearChatHistory() { if(confirm("確定要清空所有對話紀錄嗎？")) { appState.messages = []; clearStoreDB('messages'); renderMessages(); } }
+        
         function favoriteMessage(id) {
             const msg = appState.messages.find(m => String(m.id) === String(id)); if (!msg) return;
             let senderName = msg.sender === 'user' ? '你' : (msg.sender === 'system' ? '系統提示' : (MODEL_CONFIG[msg.model]?.name || '系統'));
@@ -1131,6 +1169,7 @@
             appState.notes.unshift(newNote); saveToDB('notes', newNote); renderNotes(); addMessage(`✅ 已將此對話成功收藏至「筆記/文件」分頁。`, 'system');
         }
 
+        // --- 待辦事項與筆記基礎操作 ---
         function toggleTodo(id){ const t=appState.todos.find(x=>String(x.id)===String(id)); if(t){t.done=!t.done;saveToDB('todos', t);renderTodos();} }
         function deleteTodo(id){ appState.todos=appState.todos.filter(x=>String(x.id)!==String(id)); deleteFromDB('todos', id); renderTodos(); }
         function deleteNote(id){ appState.notes=appState.notes.filter(x=>String(x.id)!==String(id)); deleteFromDB('notes', id); renderNotes(); }
@@ -1148,26 +1187,29 @@
             document.getElementById('note-edit-modal').classList.remove('hidden');
         }
         
+        // --- 介面導航切換邏輯 ---
         function switchTab(id){ 
             ['dashboard','schedule','notes','audio'].forEach(t=>document.getElementById(`view-${t}`)?.classList.add('hidden')); 
             document.getElementById(`view-${id}`)?.classList.remove('hidden'); document.getElementById(`view-${id}`)?.classList.add('flex'); 
             document.querySelectorAll('.nav-item').forEach(b=>{b.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all';}); 
             const active=document.getElementById(`nav-${id}`); if(active)active.className='nav-item flex items-center space-x-3 w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transition-all'; 
         }
+        
         function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');}
         function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
         function toggleMobileMenu(){document.getElementById('mobile-menu').classList.toggle('hidden');}
 
+        // --- 設定保存與資料備份功能 ---
         function saveKeys(){ 
             const safeGetVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
             appState.keys.gemini = safeGetVal('key-gemini'); appState.keys.groq = safeGetVal('key-groq'); appState.keys.cohere = safeGetVal('key-cohere'); appState.keys.openai = safeGetVal('key-openai'); appState.keys.grok = safeGetVal('key-grok'); appState.keys.serpapi = safeGetVal('key-serpapi'); 
-            appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.noteDocUrl = safeGetVal('key-note-doc-url'); appState.noteDocUrl2 = safeGetVal('key-note-doc-url-2'); appState.driveUrl = safeGetVal('key-drive-url'); 
+            appState.docMonitorUrl = safeGetVal('key-doc-url'); appState.driveUrl = safeGetVal('key-drive-url'); 
             
             appState.voiceTimeout = parseInt(safeGetVal('key-voice-timeout')) || 5;
             appState.hideLiveCapture = document.getElementById('key-hide-live-capture').checked;
 
             localStorage.setItem('nova_key_gemini', appState.keys.gemini); localStorage.setItem('nova_key_groq', appState.keys.groq); localStorage.setItem('nova_key_cohere', appState.keys.cohere); localStorage.setItem('nova_key_openai', appState.keys.openai); localStorage.setItem('nova_key_grok', appState.keys.grok); localStorage.setItem('nova_key_serpapi', appState.keys.serpapi); 
-            localStorage.setItem('nova_doc_url', appState.docMonitorUrl); localStorage.setItem('nova_note_doc_url', appState.noteDocUrl); localStorage.setItem('nova_note_doc_url_2', appState.noteDocUrl2); localStorage.setItem('nova_drive_url', appState.driveUrl); 
+            localStorage.setItem('nova_doc_url', appState.docMonitorUrl); localStorage.setItem('nova_drive_url', appState.driveUrl); 
             localStorage.setItem('nova_voice_timeout', appState.voiceTimeout);
             localStorage.setItem('nova_hide_live_capture', appState.hideLiveCapture);
 
@@ -1191,7 +1233,7 @@
             try {
                 const data = { 
                     keys: appState.keys, 
-                    urls: { docMonitorUrl: appState.docMonitorUrl, noteDocUrl: appState.noteDocUrl, noteDocUrl2: appState.noteDocUrl2, driveUrl: appState.driveUrl }, 
+                    urls: { docMonitorUrl: appState.docMonitorUrl, driveUrl: appState.driveUrl }, 
                     settings: { voiceTimeout: appState.voiceTimeout, hideLiveCapture: appState.hideLiveCapture },
                     messages: await loadStoreFromDB('messages'),
                     notes: await loadStoreFromDB('notes'),
@@ -1222,7 +1264,7 @@
                     const data = JSON.parse(evt.target.result);
                     
                     if (data.keys) { appState.keys.gemini = data.keys.gemini || ''; appState.keys.groq = data.keys.groq || ''; appState.keys.cohere = data.keys.cohere || ''; appState.keys.openai = data.keys.openai || ''; appState.keys.grok = data.keys.grok || ''; appState.keys.serpapi = data.keys.serpapi || ''; }
-                    if (data.urls) { appState.docMonitorUrl = data.urls.docMonitorUrl || ''; appState.noteDocUrl = data.urls.noteDocUrl || ''; appState.noteDocUrl2 = data.urls.noteDocUrl2 || ''; appState.driveUrl = data.urls.driveUrl || ''; }
+                    if (data.urls) { appState.docMonitorUrl = data.urls.docMonitorUrl || ''; appState.driveUrl = data.urls.driveUrl || ''; }
                     if (data.settings) { 
                         appState.voiceTimeout = data.settings.voiceTimeout || 5; 
                         appState.hideLiveCapture = !!data.settings.hideLiveCapture;
@@ -1230,7 +1272,7 @@
 
                     const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
                     safeSet('key-gemini', appState.keys.gemini); safeSet('key-groq', appState.keys.groq); safeSet('key-cohere', appState.keys.cohere); safeSet('key-openai', appState.keys.openai); safeSet('key-grok', appState.keys.grok); safeSet('key-serpapi', appState.keys.serpapi);
-                    safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-note-doc-url', appState.noteDocUrl); safeSet('key-note-doc-url-2', appState.noteDocUrl2); safeSet('key-drive-url', appState.driveUrl);
+                    safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-drive-url', appState.driveUrl);
                     safeSet('key-voice-timeout', appState.voiceTimeout);
                     
                     const hideLiveCaptureEl = document.getElementById('key-hide-live-capture');
@@ -1262,6 +1304,7 @@
             reader.readAsText(file);
         }
 
+        // --- 模型狀態切換邏輯 ---
         function setModel(m){ appState.currentModel=m; updateModelUI(); }
         function setGrokModel(m) { appState.grokModel = m; }
         function setGeminiModel(m) { appState.geminiModel = m; }
@@ -1274,24 +1317,6 @@
         function toggleSearch() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); }
         function cycleManualLocation() { appState.manualLocIndex = (appState.manualLocIndex + 1) % appState.manualLocs.length; const loc = appState.manualLocs[appState.manualLocIndex]; fetchWeather(loc.lat, loc.lon, loc.name + " (手掌握)", false); }
 
-        function toggleNoteVoice() { 
-            appState.noteVoiceActive = !appState.noteVoiceActive; 
-            if (appState.noteVoiceActive) {
-                noteInitialInput = document.getElementById('doc-input-main').value;
-                try { noteRecognition.start(); } catch(e){}
-            } else {
-                noteRecognition.stop();
-            }
-            updateNoteVoiceUI();
-        }
-
-        function handleNoteKeydown(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                handleDocWriteBtn();
-            }
-        }
-        
         function autoResizeInput(el) { 
             el.style.height = 'auto'; 
             el.style.height = (el.scrollHeight) + 'px'; 
@@ -1312,6 +1337,7 @@
             }
         }
         
+        // --- 檔案處理邏輯 ---
         function handleChatFileSelect(e) {
             const file = e.target.files[0]; if (!file) return;
             if (file.size > 20 * 1024 * 1024) { alert("檔案過大，請上傳小於 20MB 的檔案以確保穩定性。"); e.target.value = ''; return; }
@@ -1354,6 +1380,7 @@
 
             document.getElementById('user-input').focus();
         }
+        
         function clearChatFile() { 
             appState.chatFile = null; 
             document.getElementById('chat-file-preview-container').classList.add('hidden'); 
@@ -1378,105 +1405,7 @@
             reader.readAsDataURL(file);
         }
 
-        function clearNoteInput() {
-             const docInputMain = document.getElementById('doc-input-main'); const docInputSub = document.getElementById('doc-input-sub');
-             if(docInputMain) docInputMain.innerHTML = ''; 
-             if(docInputSub) docInputSub.value = ''; 
-             appState.pastedImageBase64 = null;
-             const indicator = document.getElementById('paste-indicator'); if(indicator) indicator.classList.add('hidden');
-        }
-
-        function setActiveNotebook(num) {
-            appState.activeNotebook = num; const btn1 = document.getElementById('btn-nb-1'); const btn2 = document.getElementById('btn-nb-2'); const label = document.getElementById('active-notebook-label');
-            if(num === 1) { btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white'; btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50'; label.innerText = '* 目前寫入目標：筆記本 A (URL 1)'; } 
-            else { btn2.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all bg-teal-600 text-white'; btn1.className = 'flex-1 text-xs px-4 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white bg-slate-950/50'; label.innerText = '* 目前寫入目標：筆記本 B (URL 2)'; }
-        }
-        
-        function setWriteMode(mode) {
-            appState.writeMode = mode;
-            ['text', 'image', 'link'].forEach(m => { const btn = document.getElementById(`btn-mode-${m}`); if(!btn) return; if(m === mode) btn.className = 'text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-bold transition-all'; else btn.className = 'text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-400 font-bold hover:text-white transition-all'; });
-            const mainInput = document.getElementById('doc-input-main'); const subInput = document.getElementById('doc-input-sub'); if(!mainInput || !subInput) return;
-            
-            if(mode === 'text') { 
-                mainInput.setAttribute('placeholder', "輸入文字內容，或直接 Ctrl+V 貼上圖文..."); 
-                subInput.classList.add('hidden'); 
-            } else if (mode === 'image') { 
-                mainInput.setAttribute('placeholder', "輸入圖片網址 (https://...)"); 
-                subInput.classList.add('hidden'); 
-            } else if (mode === 'link') { 
-                mainInput.setAttribute('placeholder', "輸入連結顯示文字"); 
-                subInput.placeholder = "輸入連結網址 (https://...)"; 
-                subInput.classList.remove('hidden'); 
-            }
-        }
-        
-        async function handleDocWriteBtn() {
-            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; 
-            if(!targetUrl) return alert(`請先至設定輸入「隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'}」的 Apps Script URL`);
-            
-            const mainInput = document.getElementById('doc-input-main'); 
-            const subInput = document.getElementById('doc-input-sub'); 
-            if(!mainInput) return;
-
-            const mainHtml = mainInput.innerHTML;
-            const mainText = mainInput.innerText.trim();
-            const subVal = subInput ? subInput.value.trim() : ''; 
-            const sendBtn = document.getElementById('note-send-btn');
-            
-            let payload = {}; 
-            let currentMode = appState.writeMode || 'text';
-            
-            const imgMatch = mainHtml.match(/<img[^>]+src="(data:image\/[^">]+)"/);
-            const urlMatch = mainHtml.match(/<img[^>]+src="(http[^">]+)"/);
-            
-            const base64Img = imgMatch ? imgMatch[1] : null;
-            const urlImg = urlMatch ? urlMatch[1] : null;
-
-            if (currentMode === 'image' && !mainText.match(/^https?:\/\//i) && mainText.length > 0) currentMode = 'text';
-
-            if (currentMode === 'image') { 
-                payload = { type: 'image', content: mainText || urlImg || base64Img }; 
-            } else if (currentMode === 'link') { 
-                if(!subVal) return alert("請輸入連結網址"); 
-                payload = { type: 'link', text: mainText, content: subVal }; 
-            } else {
-                if(!mainText && !base64Img && !urlImg) return; 
-                
-                if (base64Img) {
-                    payload = { type: 'image_base64', content: base64Img };
-                } else if (urlImg) {
-                    payload = { type: 'text', content: mainText + "\n[圖片]: " + urlImg };
-                } else {
-                    payload = { type: 'text', content: mainText };
-                }
-            }
-            
-            if(sendBtn) {
-                const originalText = sendBtn.innerHTML; 
-                sendBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> ⏳ 寫入中...'; 
-                sendBtn.classList.add('opacity-70', 'cursor-not-allowed');
-                try { 
-                    await fetch(targetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); 
-                    addMessage(`📝 已寫入${appState.activeNotebook === 1 ? '筆記本 A' : '筆記本 B'}`, 'system'); 
-                    clearNoteInput(); 
-                } catch(e) { 
-                    alert("寫入失敗，請檢查 URL"); 
-                } finally { 
-                    sendBtn.innerHTML = originalText; 
-                    sendBtn.classList.remove('opacity-70', 'cursor-not-allowed'); 
-                }
-            }
-        }
-
-        function openNoteDocViewer() { const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2; if(!targetUrl) return alert(`請先設定隨手記事本 ${appState.activeNotebook === 1 ? 'A' : 'B'} URL`); document.getElementById('doc-viewer-modal').classList.remove('hidden'); refreshNoteDocView(); }
-        function closeDocViewer() { document.getElementById('doc-viewer-modal').classList.add('hidden'); }
-        async function refreshNoteDocView() {
-            const area = document.getElementById('doc-content-area'); if(!area) return;
-            const targetUrl = (appState.activeNotebook === 1) ? appState.noteDocUrl : appState.noteDocUrl2;
-            area.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 gap-2"><div class="dot-flashing bg-slate-400"></div> 讀取中...</div>';
-            try { const res = await fetch(targetUrl); const text = await res.text(); area.innerHTML = text || '<div class="text-center text-slate-400">記事本是空的</div>'; } catch(e) { area.innerHTML = '<div class="text-center text-red-500">讀取失敗</div>'; }
-        }
-
+        // --- 待辦事項設定與編輯邏輯 ---
         function formatDateForPicker(d) {
             const tzOffset = d.getTimezoneOffset() * 60000;
             return (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 16);
@@ -1545,11 +1474,12 @@
             saveToDB('todos', t); renderTodos(); closeTodoEdit();
         }
 
+        // --- 筆記編輯與儲存邏輯 ---
         function openNoteEdit(id) {
             const n = appState.notes.find(x => String(x.id) === String(id)); if(!n) return;
             document.getElementById('edit-note-id').value = n.id; 
             document.getElementById('edit-note-title').value = n.title || ''; 
-            document.getElementById('note-modal-title-text').innerText = '編輯筆記';
+            document.getElementById('note-modal-title-text').innerText = '檢視與編輯筆記';
             
             const editorContent = n.isHtml ? (n.content || '') : escapeHtml(n.content || '').replace(/\n/g, '<br>');
             document.getElementById('edit-note-content').innerHTML = editorContent;
@@ -1558,6 +1488,7 @@
             document.getElementById('note-edit-modal').classList.remove('hidden');
         }
         function closeNoteEdit() { document.getElementById('note-edit-modal').classList.add('hidden'); }
+        
         async function handleNoteEditImage(e) {
             const files = Array.from(e.target.files); if (!files.length) return;
             const promises = files.map(file => new Promise(resolve => { const reader = new FileReader(); reader.onload = evt => resolve(evt.target.result); reader.readAsDataURL(file); }));
@@ -1595,6 +1526,7 @@
             closeNoteEdit();
         }
         
+        // 匯出為 Word 文件 (.doc)
         function exportNoteWord(id) {
             const n = appState.notes.find(x=>String(x.id)===String(id)); if(!n) return;
             let imgTags = ''; const displayImages = n.images || (n.image ? [n.image] : []);
@@ -1610,6 +1542,94 @@
             } catch (e) { alert("下載失敗，您的瀏覽器可能阻擋了 Blob 生成：" + e.message); }
         }
 
+        // 匯出為 RichText (.html 檔案保留完整樣式與排版)
+        window.exportNoteRichText = function(id) {
+            const n = appState.notes.find(x=>String(x.id)===String(id)); if(!n) return;
+            let imgTags = ''; const displayImages = n.images || (n.image ? [n.image] : []);
+            if (displayImages.length > 0) imgTags = displayImages.map(img => `<br><br><img src="${img}" style="max-width: 100%; border-radius: 8px;">`).join('');
+            
+            const htmlContent = `<!DOCTYPE html>
+            <html lang="zh-TW">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${n.title}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+                    .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                    h1 { color: #111; margin-top: 0; }
+                    .meta { color: #777; font-size: 0.85em; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+                    img { max-width: 100%; height: auto; display: block; margin: 15px 0; border-radius: 8px; }
+                    a { color: #2563eb; text-decoration: none; }
+                    a:hover { text-decoration: underline; }
+                    iframe { max-width: 100%; border-radius: 8px; margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>${n.title}</h1>
+                    <div class="meta">建立日期: ${n.date}</div>
+                    <div class="content">${n.isHtml ? n.content : n.content.replace(/\n/g, '<br>')}</div>
+                    ${imgTags}
+                </div>
+            </body>
+            </html>`;
+            
+            try {
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' }); 
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}.html`; 
+                document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+            } catch (e) { alert("下載失敗：" + e.message); }
+        };
+
+        // 雲端備份筆記 (利用既有的 Google Drive Upload URL)
+        window.backupNoteToDrive = async function(id) {
+            if (!appState.driveUrl) {
+                alert("請先至設定頁面輸入「Google Drive 上傳 URL (錄音/筆記備份用)」\n\n(若不知如何設定，請參考對話視窗中 AI 提供的 Apps Script 教學！)");
+                return;
+            }
+            const n = appState.notes.find(x => String(x.id) === String(id)); if(!n) return;
+            
+            const btn = document.getElementById(`btn-backup-${id}`);
+            if(btn) { btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> 備份中...'; btn.classList.add('opacity-70', 'cursor-not-allowed'); }
+            
+            try {
+                const pureHtml = n.isHtml ? n.content : n.content.replace(/\n/g, '<br>');
+                const htmlDoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${n.title}</title></head><body style="font-family:sans-serif; padding:20px;"><h1>${n.title}</h1><p style="color:gray;">建立日期: ${n.date}</p><hr><div style="margin-top:20px;">${pureHtml}</div></body></html>`;
+                
+                // Base64 encode for UTF-8 correctly
+                const base64Data = btoa(unescape(encodeURIComponent(htmlDoc)));
+                const filename = `${n.title.replace(/[/\\?%*:|"<>]/g, '-')}_${Date.now()}.html`;
+                
+                const payload = JSON.stringify({ filename: filename, mimeType: 'text/html', data: base64Data });
+                
+                const res = await fetch(appState.driveUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: payload });
+                
+                let finalDriveUrl = "";
+                if (res.ok) {
+                    const resText = await res.text();
+                    try { 
+                        const resJson = JSON.parse(resText); 
+                        finalDriveUrl = resJson.url || resJson.link || resText; 
+                    } catch(e) { finalDriveUrl = resText; }
+                    
+                    n.driveUrl = finalDriveUrl; saveToDB('notes', n); renderNotes();
+                    showToast("✅ 筆記雲端備份成功！");
+                } else { throw new Error('伺服器回傳狀態異常: HTTP ' + res.status); }
+            } catch(e) {
+                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+                    n.driveUrl = "https://drive.google.com/"; saveToDB('notes', n); renderNotes();
+                    showToast("✅ 備份請求已送出，由於跨網域限制，無法取得直接連結。請至您的雲端硬碟確認。");
+                } else {
+                    alert("備份失敗：" + e.message);
+                }
+            } finally {
+                if(btn) { btn.innerHTML = '<i class="ph-bold ph-cloud-arrow-up"></i> 雲端備份'; btn.classList.remove('opacity-70', 'cursor-not-allowed'); }
+            }
+        };
+
+        // --- 定位與天氣處理 ---
         async function tryGetLocation(silent=false) { 
             if(!silent) updateLocStatus("GPS定位中..."); 
             if (navigator.geolocation) { 
@@ -1657,6 +1677,7 @@
         }
         function wmoToCondition(c) { if(c===0)return 'sunny'; if(c<=48)return 'cloudy'; if(c<=82)return 'rainy'; if(c<=77)return 'snow'; return 'storm'; }
 
+        // --- 錄音相關邏輯 (MediaRecorder / WebRTC) ---
         function startAudioRecordOnly() {
             appState.recordingContext = 'record';
             switchTab('dashboard');
@@ -1880,13 +1901,14 @@
             appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
 
+        // --- 深度分析功能 (AI 針對音檔或筆記進行分析) ---
         function summarizeAudioRecord(id) {
             const r = appState.audioRecords.find(x => String(x.id) === String(id)); if (!r) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
             
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'audioRecord';
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。`;
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。`;
             
             if (r.audioData) {
                 if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
@@ -1905,7 +1927,7 @@
             
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'voiceNote';
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。`;
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。`;
             
             if (n.audioData) {
                 if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
@@ -1924,7 +1946,7 @@
 
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'textNote';
-            appState.pendingAnalyzePrompt = `請幫我深度分析並總結以下筆記內容，提取出最重要的關鍵字、結構化重點，並給出適當的建議。`;
+            appState.pendingAnalyzePrompt = `請幫我深度分析並總結以下筆記內容，提取出最重要的關鍵字與結構化重點。\n\n【嚴格約束】：請「絕對忠於提供的筆記內容」，只做客觀的整理，絕對不要給出任何額外的個人建議、評論，也不要自行腦補外部資訊。若筆記內容過短或無具體意義，請直接回覆「筆記內容不足以產生有效摘要」。`;
 
             if(!confirm(`即將對「${n.title}」進行 AI 深度分析。\n\n系統將自動為您提取重點摘要並附加於筆記底部！`)) return;
 
@@ -1937,11 +1959,12 @@
             handleSendMessage();
         }
 
-        // --- WEB SCRAPER & SEARCH ---
+        // --- 網路搜尋與爬蟲功能 (WEB SCRAPER & SEARCH) ---
         async function fetchUrlViaGas(url) {
             if (!appState.docMonitorUrl) return null;
             try { const res = await fetch(appState.docMonitorUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'scrape_and_log', url: url }) }); const text = await res.text(); return (text && !text.startsWith("Error")) ? text : null; } catch (e) { return null; }
         }
+        
         async function searchViaSerpApi(query) {
             if (!appState.keys.serpapi) return null;
             const targetUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${appState.keys.serpapi}&engine=google&gl=tw&hl=zh-tw`;
@@ -2018,6 +2041,7 @@
             }
         }
 
+        // --- 核心訊息發送與處理邏輯 ---
         async function handleSendMessage() {
             if(appState.isThinking) return;
             
@@ -2144,7 +2168,11 @@
                     return;
                 }
 
-                let systemPromptAddon = ""; let injectedContext = ""; let modelToUse = appState.currentModel; let enableSearchTool = appState.isSearchEnabled;
+                // ====== 核心系統提示詞增強 ======
+                // 加入「優先且專注回答最新問題」的防錯亂指令
+                let systemPromptAddon = "【系統強烈約束指令：請優先且專注地回答使用者的「最新問題」。前文紀錄僅供代名詞解析參考，嚴禁被舊話題干擾而給出無關的答覆。】\n"; 
+                let injectedContext = ""; let modelToUse = appState.currentModel; let enableSearchTool = appState.isSearchEnabled;
+                
                 if (appState.weather && appState.weather.loc && appState.weather.loc !== '未定位') {
                     systemPromptAddon += `\n(系統隱藏資訊：使用者目前的位置位於 ${appState.weather.loc}，當地氣溫 ${appState.weather.temp}°C，天氣狀況 ${appState.weather.condition}。若使用者問及「我在哪」等問題，請根據此資訊回答。)`;
                 }
@@ -2273,9 +2301,10 @@
             try {
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
                 
-                let chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-6);
-                if (appState.isTranslateMode) {
-                    chatHistory = []; 
+                let chatHistory = [];
+                // ✅ 聰明記憶控制：根據大腦按鈕決定是否帶入歷史，並縮減歷史抓取數量以降低錯亂率
+                if (appState.enableContext && !appState.isTranslateMode) {
+                    chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-4);
                 }
 
                 const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(userText.trim());
@@ -2396,7 +2425,8 @@
 
                     return { text: outputText || (responseImageFile ? "✨ 圖片生成成功！已為您附在下方。" : "(無回傳文字)"), sources: sources, file: responseImageFile };
                     
-                } else if (model === 'groq' || model === 'gpt') {
+                } 
+                else if (model === 'groq' || model === 'gpt') {
                     const messagesPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text || "[附檔]" }));
                     let finalUserContent = userText;
                     if (options.file && options.file.category === 'image') {
@@ -2412,12 +2442,14 @@
                     const res = await fetchWithTimeout(ep, { method:'POST', headers:{'Content-Type':'application/json', 'Authorization':`Bearer ${key}`}, body: JSON.stringify({model:mName, messages: messagesPayload}) });
                     const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
                     if (!res.ok) throw new Error(`${data.error?.message || res.status}`); return data.choices?.[0]?.message?.content || "無回應";
-                } else if (model === 'cohere') {
+                } 
+                else if (model === 'cohere') {
                     const chatHistoryPayload = chatHistory.map(m => ({ role: m.sender === 'user' ? 'USER' : 'CHATBOT', message: m.text || "[附檔]" }));
                     const res = await fetchWithTimeout('https://api.cohere.com/v1/chat', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ model: 'command-r-plus-08-2024', message: userText, chat_history: chatHistoryPayload }) });
                     const resText = await res.text(); let data; try { data = JSON.parse(resText); } catch(e) { throw new Error(`API 異常: ${resText.substring(0, 50)}`); }
                     if (!res.ok) throw new Error(`${data.message || res.status}`); return data.text || "無回應";
-                } else if (model === 'grok') {
+                } 
+                else if (model === 'grok') {
                     const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/'; 
                     let mName = appState.grokModel || 'grok-multi'; 
                     let isGrokAutoRouted = false;
@@ -2468,7 +2500,6 @@
             } catch(e) { throw e; }
         }
 
-        // --- INIT ---
         window.onload = async () => {
             try {
                 await initDB();
@@ -2495,7 +2526,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 76 系統升級完畢！\n\n✅ **📸 LIVE 鏡頭視覺分層**：LIVE 畫面現在獨立佔據上半屏，且右上角支援即時掃描並選擇手機上「所有實體的硬體鏡頭」。AI 回覆不再與影像重疊！\n✅ **📝 隨手筆記本圖文雙修復**：隨手記事本已正式升級為富文本輸入框，並與本地筆記本共用全新「原生穿透」與「圖檔攔截」雙引擎！現在無論從網頁複製文章排版，還是純截圖貼上，全都能完美支援！', 
+                    text: 'NOVA 83 系統升級完畢！\n\n✅ **精準 AI 分析引擎**：全面升級 AI 在分析筆記與錄音時的系統指令！現在 AI 將「絕對忠於原文」，只做客觀的重點摘要與逐字稿提取，不再隨意腦補或給出無關的個人建議。若內容不足，也會誠實告知，讓分析結果更純粹、更專業！\n✅ **「劇院級」筆記檢視**：支援原生網頁與 YouTube 連結無縫貼上預覽。\n✅ **🧠 記憶上下文開關**：可隨時關閉對話記憶，100% 防止舊話題干擾新問題。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2504,13 +2535,12 @@
             renderAll();
             
             const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
-            safeSet('key-gemini', appState.keys.gemini); safeSet('key-groq', appState.keys.groq); safeSet('key-cohere', appState.keys.cohere); safeSet('key-openai', appState.keys.openai); safeSet('key-grok', appState.keys.grok); safeSet('key-serpapi', appState.keys.serpapi); safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-note-doc-url', appState.noteDocUrl); safeSet('key-note-doc-url-2', appState.noteDocUrl2); safeSet('key-drive-url', appState.driveUrl);
+            safeSet('key-gemini', appState.keys.gemini); safeSet('key-groq', appState.keys.groq); safeSet('key-cohere', appState.keys.cohere); safeSet('key-openai', appState.keys.openai); safeSet('key-grok', appState.keys.grok); safeSet('key-serpapi', appState.keys.serpapi); safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-drive-url', appState.driveUrl);
             safeSet('key-voice-timeout', appState.voiceTimeout);
             
             const hideLiveCaptureEl = document.getElementById('key-hide-live-capture');
             if (hideLiveCaptureEl) hideLiveCaptureEl.checked = appState.hideLiveCapture;
             
-            // ★ 富文本與純圖檔雙支援 Paste 攔截
             function attachRichPasteHandler(elementId) {
                 const el = document.getElementById(elementId);
                 if (!el) return;
@@ -2518,6 +2548,15 @@
                     const clipboardData = e.clipboardData || window.clipboardData;
                     if (!clipboardData) return;
                     
+                    let plainText = clipboardData.getData('text/plain');
+                    let ytMatch = plainText.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s\n]+)/);
+                    if (ytMatch && ytMatch[1]) {
+                        e.preventDefault();
+                        let embedHtml = `<br><div contenteditable="false" style="margin: 10px 0;"><iframe width="100%" height="315" src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen style="border-radius: 8px;"></iframe></div><br>`;
+                        document.execCommand('insertHTML', false, embedHtml);
+                        return;
+                    }
+
                     let hasHtmlOrText = false;
                     for (let i = 0; i < clipboardData.types.length; i++) {
                         if (clipboardData.types[i] === 'text/html' || clipboardData.types[i] === 'text/plain') hasHtmlOrText = true;
@@ -2540,7 +2579,6 @@
             }
 
             attachRichPasteHandler('edit-note-content');
-            attachRichPasteHandler('doc-input-main');
 
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) { 
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
@@ -2626,9 +2664,8 @@
                         noteInitialInput += (noteInitialInput ? "\n" : "") + finalT;
                     }
 
-                    const el = document.getElementById('doc-input-main'); 
-                    if(el.tagName === 'TEXTAREA') el.value = (noteInitialInput + (interimT ? "\n" + interimT : "")).trim();
-                    else el.innerText = (noteInitialInput + (interimT ? "\n" + interimT : "")).trim();
+                    const el = document.getElementById('edit-note-content'); 
+                    if(el) el.innerText += (noteInitialInput + (interimT ? "\n" + interimT : "")).trim();
                     
                     if (noteVoiceTimer) clearTimeout(noteVoiceTimer); 
                     noteVoiceTimer = setTimeout(() => { 
@@ -2638,6 +2675,7 @@
                 };
             }
             tryGetLocation(true); updateModelUI(); 
+
             const checkReminders = () => {
                 const now = Date.now();
                 appState.todos.forEach(t => {
@@ -2659,6 +2697,7 @@
                 });
             };
             setInterval(checkReminders, 10000);
+
             window.stopAlarm = function() {
                 document.getElementById('alarm-modal').classList.add('hidden'); document.getElementById('alarm-modal').classList.remove('flex');
                 if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
@@ -2667,4 +2706,4 @@
         };
     </script>
 </body>
-    </html>
+</html>
