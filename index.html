@@ -4,7 +4,7 @@
     <!-- 網頁基本設定：編碼、響應式視口 (防止手機端縮放) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 93</title>
+    <title>NOVA 94</title>
     
     <!-- 引入外部庫：Tailwind CSS (樣式框架) 與 Phosphor Icons (圖示庫) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -86,7 +86,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 93</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 94</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -109,7 +109,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- 手機版頂部導航列 -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 93</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 94</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -871,6 +871,32 @@
             return { complete, timestamp: target.getTime(), missing };
         };
 
+        // --- 強制硬體釋放與防佔用系統 ---
+        window.releaseMicrophone = function() {
+            if (vadInterval) { clearInterval(vadInterval); vadInterval = null; }
+            if (vadStream) { try{vadStream.disconnect();}catch(e){} vadStream = null; }
+            if (vadAnalyser) { try{vadAnalyser.disconnect();}catch(e){} vadAnalyser = null; }
+            if (vadAudioCtx && vadAudioCtx.state !== 'closed') {
+                try { vadAudioCtx.close().catch(()=>{}); } catch(e){}
+                vadAudioCtx = null;
+            }
+            if (appState.recordingAudioCtx && appState.recordingAudioCtx.state !== 'closed') {
+                try { appState.recordingAudioCtx.close().catch(()=>{}); } catch(e){}
+                appState.recordingAudioCtx = null;
+            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                try { mediaRecorder.stop(); } catch(e){}
+            }
+            if (appState.activeMediaTracks && appState.activeMediaTracks.length > 0) {
+                appState.activeMediaTracks.forEach(t => { 
+                    t.enabled = false; 
+                    try { t.stop(); } catch(e){} 
+                });
+                appState.activeMediaTracks = [];
+            }
+            if (recognition) { try { recognition.abort(); } catch(e){} }
+        };
+
         window.addTodoManually = function() {
             const text = prompt('請輸入待辦事項：');
             if(text && text.trim()) {
@@ -1121,7 +1147,7 @@
                 
                 utterance.onstart = () => {
                     appState.isTTSPlaying = true;
-                    if (recognition && appState.translateMode !== 'auto') { try { recognition.abort(); } catch(e){} }
+                    // 在翻譯模式下，TTS 說話時我們並不重啟麥克風，等說完才重啟
                 };
                 
                 utterance.onend = () => {
@@ -1552,7 +1578,10 @@
             if (!select) return;
             
             try {
-                await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                // 為了避免授權後麥克風卡死，建立暫時的 stream 來要權限，要完馬上釋放
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                tempStream.getTracks().forEach(t => t.stop());
+
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(d => d.kind === 'videoinput');
                 
@@ -1688,7 +1717,7 @@
                 stopTranslateBAndSend(true); // Force stop & discard chunk
                 window.speechSynthesis.cancel();
                 
-                addMessage("🌐 全自動即時口譯已關閉，麥克風已完全關閉。", 'system');
+                addMessage("🌐 全自動即時口譯已關閉，麥克風已完全釋放。", 'system');
                 
                 if (recognition && appState.isContinuous) {
                     setTimeout(()=>recognition.start(), 300);
@@ -1703,7 +1732,7 @@
                 icon.classList.add('animate-pulse', 'text-blue-400');
                 textEl.innerText = "口譯中...";
                 
-                addMessage("🌐 **全自動語音直譯已啟動！**\n系統會自動偵測您說話完畢，等待設定秒數後立即送出翻譯。AI 回覆期間麥克風會自動關閉以防干擾。\n**👉 系統已啟動收音，請直接對著設備說話！**\n*(如需結束，請點擊上方紅燈或直接說出「結束口譯」)*", 'system');
+                addMessage("🌐 **全自動語音直譯已啟動！**\n系統會自動偵測您說話完畢，等待設定秒數後立即送出翻譯。AI 回覆期間麥克風會自動完全關閉以防干擾。\n**👉 系統已啟動收音，請直接對著設備說話！**\n*(如需結束，您可以直接點選上方閃爍的紅燈，或是直接說出「結束口譯」)*", 'system');
                 speakText("全自動即時口譯已啟動", true);
                 
                 setTimeout(() => { startTranslateBAutoRecord(); }, 1500); 
@@ -1716,7 +1745,15 @@
         async function startTranslateBAutoRecord() {
             if (appState.translateMode !== 'auto') return;
             try {
+                // 強制在獲取新權限前停止任何潛在的殘留音軌
+                releaseMicrophone();
+
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                if (appState.translateMode !== 'auto') {
+                    stream.getTracks().forEach(t => t.stop());
+                    return;
+                }
+
                 appState.recordingContext = 'translateB';
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
@@ -1737,7 +1774,7 @@
 
                 vadInterval = setInterval(() => {
                     if (appState.translateMode !== 'auto') {
-                        clearInterval(vadInterval);
+                        releaseMicrophone();
                         return;
                     }
                     vadAnalyser.getByteFrequencyData(dataArray);
@@ -1754,8 +1791,7 @@
                             let silentDuration = (Date.now() - silenceStart) / 1000;
                             if (silentDuration >= appState.translateBTimeout) {
                                 isSpeaking = false;
-                                clearInterval(vadInterval);
-                                stopTranslateBAndSend(false); // 觸發送出
+                                stopTranslateBAndSend(false); // 觸發送出並斷開麥克風
                             }
                         } else {
                             silenceStart = Date.now(); // 尚未開始說話，鎖住計時
@@ -1771,9 +1807,6 @@
                 document.getElementById('recording-status').classList.add('flex');
                 document.getElementById('recording-status-text').innerText = "🔊 聆聽中... (說完自動翻譯)";
                 
-                if (recognition) {
-                    try { recognition.start(); } catch(e){}
-                }
             } catch (err) {
                 addMessage("⚠️ 無法啟動錄音麥克風，請檢查權限。", 'system');
                 toggleTranslateMode(true);
@@ -1782,18 +1815,7 @@
 
         function stopTranslateBAndSend(discard = false) {
             translateDiscardNext = discard;
-            
-            if (vadInterval) clearInterval(vadInterval);
-            if (vadAudioCtx) { vadAudioCtx.close().catch(e=>{}); vadAudioCtx = null; }
-
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            if (appState.activeMediaTracks) {
-                appState.activeMediaTracks.forEach(t => { try{t.stop();}catch(e){} });
-                appState.activeMediaTracks = [];
-            }
-            if (recognition) { try { recognition.abort(); } catch(e){} }
+            releaseMicrophone(); // 呼叫全域底層麥克風強制釋放協議
             
             document.getElementById('recording-status').classList.add('hidden');
             document.getElementById('recording-status').classList.remove('flex');
@@ -1805,7 +1827,7 @@
                 return; 
             }
             
-            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder?.mimeType || 'audio/webm' });
             audioChunks = [];
             
             const reader = new FileReader();
@@ -1813,15 +1835,24 @@
             reader.onloadend = async () => {
                 const base64dataWithPrefix = reader.result;
                 appState.recordingContext = 'default';
-                addMessage("🎙️ 音軌已自動擷取，AI 翻譯中... (麥克風暫時關閉防干擾)", "user");
+                addMessage("🎙️ 音軌已自動擷取，AI 翻譯中... (麥克風已釋放防干擾)", "user");
                 appState.isThinking = true;
                 renderThinkingState(true);
                 try {
                     let prompt = "你是一位專業的同步口譯員。請直接聽取這段音檔中的對話並進行翻譯。如果說的是中文，請翻譯成自然流暢的英文；如果說的是任何外文，請翻譯成繁體中文。請『只輸出最終的翻譯結果文字』，絕對不要包含任何解釋、原文、拼音或個人評論。";
                     let res = await fetchAIResponse(prompt, 'gemini', { 
-                        file: { category: 'media', data: base64dataWithPrefix, mime: mediaRecorder.mimeType || 'audio/webm', name: 'Voice_Input.weba' } 
+                        file: { category: 'media', data: base64dataWithPrefix, mime: mediaRecorder?.mimeType || 'audio/webm', name: 'Voice_Input.weba' } 
                     });
                     let finalTxt = typeof res === 'string' ? res : res.text;
+                    
+                    // --- 攔截語音停止指令 (AI 翻譯結果判斷) ---
+                    let checkCmd = finalTxt.replace(/[\s.,!?"'。，！？]/g, '').toLowerCase();
+                    if (checkCmd.includes('結束口譯') || checkCmd.includes('關閉口譯') || checkCmd.includes('stoptranslation') || checkCmd.includes('endtranslation') || checkCmd === 'stop' || checkCmd.includes('停止口譯')) {
+                        addMessage("✅ 已聽到您的語音停止指令，全自動口譯已結束。", 'system');
+                        toggleTranslateMode(true);
+                        return; // 終止後續
+                    }
+                    
                     addMessage(finalTxt, 'ai', 'gemini');
                     
                     if (appState.translateMode === 'auto') {
@@ -1890,10 +1921,7 @@
             switchTab('dashboard');
             appState.currentAudioTranscript = "";
             
-            if (appState.activeMediaTracks) {
-                appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
-            }
-            appState.activeMediaTracks = [];
+            releaseMicrophone(); // 啟動前強制清理乾淨
 
             let micStream = null;
             let sysStream = null;
@@ -1962,7 +1990,7 @@
                 
                 if (recognition && !appState.isListening) { 
                     chatInitialInput = document.getElementById('user-input').value; 
-                    recognition.start(); 
+                    try { recognition.start(); } catch(e){}
                 }
 
             } catch (err) {
@@ -1975,6 +2003,8 @@
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { addMessage("⚠️ 瀏覽器不支援錄音", 'system'); return; }
             try {
                 if(customContext) appState.recordingContext = customContext;
+
+                releaseMicrophone();
 
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
@@ -1989,7 +2019,11 @@
                 let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始錄製「語音筆記」... (點擊上方紅燈停止)" : "🎙️ 開始錄音... (僅麥克風，點擊上方紅燈停止)";
                 addMessage(titleMsg, 'system');
                 document.getElementById('recording-status-text').innerText = "錄音中... (點擊停止)";
-                if (recognition && !appState.isListening) { chatInitialInput = document.getElementById('user-input').value; recognition.start(); }
+                
+                if (recognition && !appState.isListening) { 
+                    chatInitialInput = document.getElementById('user-input').value; 
+                    try { recognition.start(); } catch(e){}
+                }
             } catch (err) { addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限", 'system'); }
         }
 
@@ -1999,26 +2033,18 @@
                 return;
             }
 
+            let wasRecording = false;
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop(); 
-                
-                if (appState.activeMediaTracks) {
-                    appState.activeMediaTracks.forEach(track => { try{track.stop();}catch(e){} });
-                    appState.activeMediaTracks = [];
-                }
-                if (appState.recordingAudioCtx) {
-                    try { appState.recordingAudioCtx.close(); } catch(e){}
-                    appState.recordingAudioCtx = null;
-                }
+                wasRecording = true;
+            }
 
-                if (recognition) { try { recognition.abort(); } catch(e){} }
-                document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex');
-                
-                if(appState.recordingContext !== 'translateB') {
-                    addMessage("⏹️ 錄音結束，正在處理並儲存至本地端...", 'system');
-                }
-            } else { 
-                document.getElementById('recording-status').classList.add('hidden'); document.getElementById('recording-status').classList.remove('flex'); 
+            releaseMicrophone();
+            
+            document.getElementById('recording-status').classList.add('hidden'); 
+            document.getElementById('recording-status').classList.remove('flex'); 
+            
+            if(wasRecording && appState.recordingContext !== 'translateB') {
+                addMessage("⏹️ 錄音結束，正在處理並儲存至本地端...", 'system');
             }
         }
         
@@ -2242,6 +2268,32 @@
                 return null;
             }
         }
+
+        // --- 強制底層資源釋放協議 ---
+        window.releaseMicrophone = function() {
+            if (vadInterval) { clearInterval(vadInterval); vadInterval = null; }
+            if (vadStream) { try{vadStream.disconnect();}catch(e){} vadStream = null; }
+            if (vadAnalyser) { try{vadAnalyser.disconnect();}catch(e){} vadAnalyser = null; }
+            if (vadAudioCtx && vadAudioCtx.state !== 'closed') {
+                try { vadAudioCtx.close().catch(()=>{}); } catch(e){}
+                vadAudioCtx = null;
+            }
+            if (appState.recordingAudioCtx && appState.recordingAudioCtx.state !== 'closed') {
+                try { appState.recordingAudioCtx.close().catch(()=>{}); } catch(e){}
+                appState.recordingAudioCtx = null;
+            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                try { mediaRecorder.stop(); } catch(e){}
+            }
+            if (appState.activeMediaTracks && appState.activeMediaTracks.length > 0) {
+                appState.activeMediaTracks.forEach(t => { 
+                    t.enabled = false; 
+                    try { t.stop(); } catch(e){} 
+                });
+                appState.activeMediaTracks = [];
+            }
+            if (recognition) { try { recognition.abort(); } catch(e){} }
+        };
 
         // --- 核心訊息發送與處理邏輯 ---
         async function handleSendMessage() {
@@ -2685,7 +2737,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 93 系統升級完畢！\n\n✅ **語音中斷優化**：不論在何種錄音模式下，只要口述「停止錄音」或「結束口譯」，系統會第一時間強勢攔截並停止。\n✅ **Grok 繪圖修復**：優化了影像傳輸格式，確保 Grok 圖片能完美出現在對話框中！', 
+                    text: 'NOVA 94 系統重構升級完畢！\n\n✅ **硬體防卡死/佔用釋放協議**：徹底解決錄音或口譯關閉後麥克風仍被佔用的問題。現在一按停止，資源100%立刻釋放！\n✅ **AI 語音指令攔截**：在「全自動直譯」模式下，只要對著麥克風說「結束口譯」，AI 聽懂後會為您全自動關閉系統。\n*(註：在一般錄製長錄音時，因瀏覽器硬體獨佔限制，此時仍需手動點擊畫面上方的紅點按鈕停止。)*\n✅ **Grok 繪圖完美修復**：強制使用 Base64 格式傳輸，保證圖片順利顯示無破圖。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2760,6 +2812,7 @@
                 };
                 
                 recognition.onresult = (e) => {
+                    if (appState.translateMode === 'auto') return; // 強制阻斷直譯模式下的語音轉文字
                     if (appState.isTTSPlaying) return;
 
                     let finalT = "";
@@ -2801,8 +2854,6 @@
                             return;
                         }
                     }
-
-                    if (appState.translateMode === 'auto') return; // 強制阻斷直譯模式下的語音轉文字
                     
                     if (finalT) {
                         chatInitialInput += (chatInitialInput ? " " : "") + finalT;
@@ -2897,4 +2948,4 @@
         };
     </script>
 </body>
-</html>
+                    </html>
