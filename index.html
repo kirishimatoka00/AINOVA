@@ -4,7 +4,7 @@
     <!-- 網頁基本設定：編碼、響應式視口 (防止手機端縮放) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 86</title>
+    <title>NOVA 87</title>
     
     <!-- 引入外部庫：Tailwind CSS (樣式框架) 與 Phosphor Icons (圖示庫) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -86,7 +86,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 86</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 87</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -109,7 +109,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- 手機版頂部導航列 -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 86</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 87</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -2014,6 +2014,64 @@
             }
         };
 
+        // --- 深度分析功能 (AI 針對音檔或筆記進行分析) ---
+        window.summarizeAudioRecord = function(id) {
+            const r = appState.audioRecords.find(x => String(x.id) === String(id)); if (!r) return;
+            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+            
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'audioRecord';
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。`;
+            
+            if (r.audioData) {
+                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
+                appState.chatFile = { category: 'media', data: r.audioData, mime: r.mimeType || 'audio/webm', name: r.filename || 'audio.weba' };
+                showFilePreview(appState.chatFile.name, false, null); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+            } else {
+                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n請在接下來的視窗中，手動選取您的原始音檔 (.webm, .weba 等)。`)) return;
+                document.getElementById('audio-analyze-input').click();
+            }
+        };
+
+        window.summarizeVoiceNote = function(id) {
+            const n = appState.notes.find(x => String(x.id) === String(id)); if (!n) return;
+            if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+            
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'voiceNote';
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。`;
+            
+            if (n.audioData) {
+                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) return;
+                appState.chatFile = { category: 'media', data: n.audioData, mime: n.mimeType || 'audio/webm', name: n.filename || 'audio.weba' };
+                showFilePreview(appState.chatFile.name, false, null); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+            } else {
+                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n請在接下來的視窗中，選取該語音筆記的原始音檔。`)) return;
+                document.getElementById('audio-analyze-input').click();
+            }
+        };
+
+        window.summarizeTextNote = function(id) {
+            const n = appState.notes.find(x => String(x.id) === String(id)); if (!n) return;
+            if (appState.currentModel !== 'gemini') { alert("文字深度分析建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
+
+            appState.pendingAnalyzeContextId = id;
+            appState.pendingAnalyzeType = 'textNote';
+            appState.pendingAnalyzePrompt = `請幫我深度分析並總結以下筆記內容，提取出最重要的關鍵字與結構化重點。\n\n【嚴格約束】：請「絕對忠於提供的筆記內容」，只做客觀的整理，絕對不要給出任何額外的個人建議、評論，也不要自行腦補外部資訊。若筆記內容過短或無具體意義，請直接回覆「筆記內容不足以產生有效摘要」。`;
+
+            if(!confirm(`即將對「${n.title}」進行 AI 深度分析。\n\n系統將自動為您提取重點摘要並附加於筆記底部！`)) return;
+
+            let cleanContent = n.isHtml ? n.content.replace(/<[^>]+>/g, '\n').replace(/\n+/g, '\n') : n.content;
+            
+            appState.chatFile = { category: 'text', data: cleanContent, mime: 'text/plain', name: n.title + '.txt' };
+            showFilePreview(appState.chatFile.name, false, null); 
+            switchTab('dashboard');
+            document.getElementById('user-input').value = appState.pendingAnalyzePrompt; 
+            handleSendMessage();
+        };
+
         // --- 定位與天氣處理 ---
         async function tryGetLocation(silent=false) { 
             if(!silent) updateLocStatus("GPS定位中..."); 
@@ -2523,7 +2581,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 86 系統升級完畢！\n\n✅ **全自動口譯引擎 (VAD)**：不再依賴舊有的文字判定，我們為「口譯模式 B」導入了原生的 Web Audio 聲量偵測技術！系統會極其精準地捕捉您的發聲與停頓，確保不漏聽、不卡頓，真正實現無縫直譯。\n✅ **抗幻覺防護罩**：強化了 AI 對於環境雜訊的判定，若您沒開口，系統會安靜地忽略並繼續監聽，再也不會出現 AI「無中生有」的幻覺！', 
+                    text: 'NOVA 87 系統升級完畢！\n\n✅ **AI 分析引擎緊急修復**：已修復前版本中「AI 分析按鈕失效」的異常情況，現在您可以再次順暢地一鍵分析所有長篇筆記與語音紀錄！系統會堅守防幻覺準則，為您整理最精確的客觀摘要。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
