@@ -4,7 +4,7 @@
     <!-- 網頁基本設定：編碼、響應式視口 (防止手機端縮放) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 94</title>
+    <title>NOVA 95</title>
     
     <!-- 引入外部庫：Tailwind CSS (樣式框架) 與 Phosphor Icons (圖示庫) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -86,7 +86,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 94</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 95</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">Ultimate Edition</p>
                 </div>
             </div>
@@ -109,7 +109,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- 手機版頂部導航列 -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 94</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 95</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -191,15 +191,27 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between border-t border-slate-700 pt-3 mt-2">
-                                <div>
-                                    <label class="block text-xs text-emerald-400 font-bold flex items-center gap-1"><i class="ph-fill ph-eye-slash"></i> 隱藏 LIVE 自動截圖訊息</label>
-                                    <p class="text-[10px] text-slate-500 mt-1">開啟後，聊天室不顯示自動傳送的相片畫面。</p>
+                            <div class="flex flex-col gap-3 border-t border-slate-700 pt-3 mt-2">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <label class="block text-xs text-purple-400 font-bold flex items-center gap-1"><i class="ph-fill ph-speaker-high"></i> 自動播放 AI 語音</label>
+                                        <p class="text-[10px] text-slate-500 mt-1">開啟時，連續語音或口譯的回覆會自動朗讀。</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
+                                        <input type="checkbox" id="key-auto-tts" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                                    </label>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer ml-3">
-                                    <input type="checkbox" id="key-hide-live-capture" class="sr-only peer">
-                                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <label class="block text-xs text-emerald-400 font-bold flex items-center gap-1"><i class="ph-fill ph-eye-slash"></i> 隱藏 LIVE 自動截圖訊息</label>
+                                        <p class="text-[10px] text-slate-500 mt-1">開啟後，聊天室不顯示自動傳送的相片畫面。</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
+                                        <input type="checkbox" id="key-hide-live-capture" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -270,7 +282,7 @@
                          </div>
                          
                          <div class="flex space-x-2 ml-auto shrink-0">
-                             <!-- Grok 子模型選擇 (更新 API list) -->
+                             <!-- Grok 子模型選擇 -->
                              <select id="grok-sub-model-select" onchange="setGrokModel(this.value)" class="hidden bg-slate-800 border border-slate-600 text-slate-100 text-xs rounded-lg px-2 py-1 outline-none focus:border-slate-400 font-medium max-w-[140px] md:max-w-none">
                                  <option value="grok-multi">⚡ 智慧切換 (Auto)</option>
                                  <option value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning</option>
@@ -584,7 +596,7 @@
             keys: { gemini: localStorage.getItem('nova_key_gemini')||'', groq: localStorage.getItem('nova_key_groq')||'', cohere: localStorage.getItem('nova_key_cohere')||'', openai: localStorage.getItem('nova_key_openai')||'', grok: localStorage.getItem('nova_key_grok')||'', serpapi: localStorage.getItem('nova_key_serpapi')||'' },
             isThinking: false, isListening: false, isNoteListening: false, noteVoiceActive: false, isSearchEnabled: false, isContinuous: false, manualLocIndex: 0,
             isLiveMode: false, 
-            translateMode: 'off', // off, auto
+            translateMode: 'off', 
             currentListenLang: 'zh-TW',
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
@@ -594,6 +606,7 @@
             voiceTimeout: parseInt(localStorage.getItem('nova_voice_timeout')) || 5,
             translateBTimeout: parseInt(localStorage.getItem('nova_trans_b_timeout')) || 2,
             hideLiveCapture: localStorage.getItem('nova_hide_live_capture') === 'true',
+            autoTTS: localStorage.getItem('nova_auto_tts') !== 'false',
             isTTSPlaying: false,
             playingMsgId: null,
             enableContext: false,
@@ -636,7 +649,7 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        // ================= 前端介面輔助函數 (Utility Functions) =================
+        // ================= 前端介面輔助函數 =================
         window.switchTab = function(tabId) {
             ['dashboard', 'schedule', 'notes', 'audio'].forEach(id => {
                 const el = document.getElementById('view-' + id);
@@ -674,12 +687,13 @@
             appState.ttsRate = document.getElementById('key-tts-rate').value; localStorage.setItem('nova_tts_rate', appState.ttsRate);
             appState.ttsVoice = document.getElementById('key-tts-voice').value; localStorage.setItem('nova_tts_voice', appState.ttsVoice);
             appState.hideLiveCapture = document.getElementById('key-hide-live-capture').checked; localStorage.setItem('nova_hide_live_capture', appState.hideLiveCapture);
+            appState.autoTTS = document.getElementById('key-auto-tts').checked; localStorage.setItem('nova_auto_tts', appState.autoTTS);
 
             closeSettings(); showToast("✅ 設定已儲存"); updateModelUI();
         };
 
         window.exportSettings = function() {
-            const data = JSON.stringify({ keys: appState.keys, doc: appState.docMonitorUrl, drive: appState.driveUrl, voiceTimeout: appState.voiceTimeout, translateBTimeout: appState.translateBTimeout, replyLength: appState.replyLength, ttsRate: appState.ttsRate, ttsVoice: appState.ttsVoice, hideLiveCapture: appState.hideLiveCapture });
+            const data = JSON.stringify({ keys: appState.keys, doc: appState.docMonitorUrl, drive: appState.driveUrl, voiceTimeout: appState.voiceTimeout, translateBTimeout: appState.translateBTimeout, replyLength: appState.replyLength, ttsRate: appState.ttsRate, ttsVoice: appState.ttsVoice, hideLiveCapture: appState.hideLiveCapture, autoTTS: appState.autoTTS });
             const blob = new Blob([data], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'nova_settings_backup.json'; a.click(); URL.revokeObjectURL(url);
@@ -696,6 +710,7 @@
                     }
                     if(data.doc !== undefined) { appState.docMonitorUrl = data.doc; localStorage.setItem('nova_doc_url', data.doc); document.getElementById('key-doc-url').value = data.doc; }
                     if(data.drive !== undefined) { appState.driveUrl = data.drive; localStorage.setItem('nova_drive_url', data.drive); document.getElementById('key-drive-url').value = data.drive; }
+                    if(data.autoTTS !== undefined) { appState.autoTTS = data.autoTTS; localStorage.setItem('nova_auto_tts', data.autoTTS); document.getElementById('key-auto-tts').checked = data.autoTTS; }
                     showToast("✅ 設定還原成功"); updateModelUI();
                 } catch(err) { alert("無效的備份檔"); }
             };
@@ -895,6 +910,7 @@
                 appState.activeMediaTracks = [];
             }
             if (recognition) { try { recognition.abort(); } catch(e){} }
+            if (noteRecognition) { try { noteRecognition.abort(); } catch(e){} }
         };
 
         window.addTodoManually = function() {
@@ -1103,12 +1119,29 @@
 
         function speakText(text, force = false, msgId = null) {
             const shouldAutoPlay = appState.isLiveMode || appState.translateMode !== 'off' || appState.isContinuous;
+            
+            const continueLoop = () => {
+                if (appState.translateMode === 'auto') {
+                    setTimeout(() => { startTranslateBAutoRecord(); }, 300);
+                } else if (appState.isContinuous || appState.isLiveMode) {
+                    setTimeout(() => { 
+                        if(!appState.isThinking) {
+                            try { recognition.start(); } catch(e){} 
+                        }
+                    }, 500);
+                }
+            };
+
             if (!shouldAutoPlay && !force) return; 
 
             if (!text || text.trim() === "") {
-                if (appState.translateMode === 'auto') {
-                     setTimeout(() => { startTranslateBAutoRecord(); }, 300);
-                }
+                continueLoop();
+                return;
+            }
+
+            // 若設定不自動播放，則直接跳過朗讀並進入下一個聆聽循環 (手動點擊喇叭 force = true 則不受限)
+            if (!force && !appState.autoTTS) {
+                continueLoop();
                 return;
             }
 
@@ -1117,12 +1150,15 @@
                 appState.playingMsgId = msgId;
                 
                 let cleanText = text.replace(/[*_#`\[\]]/g, '').replace(/(https?:\/\/[^\s]+)/g, "網址連結");
+                // 過濾掉系統模型調配提示文字與圖片生成提示
+                cleanText = cleanText.replace(/\(?系統提示：[^\)]+\)?/g, '').trim();
+                cleanText = cleanText.replace(/✨ 圖片生成成功！已為您附在下方。/g, '為您生成圖片如下');
+                
                 let utterance = new SpeechSynthesisUtterance(cleanText);
                 
                 let lang = 'en-US'; 
                 let testChunk = cleanText.substring(0, 150);
                 
-                // 智慧判斷語言
                 if (/[\u3040-\u309F\u30A0-\u30FF]/.test(testChunk)) {
                     lang = 'ja-JP';
                 } else if (/[\uAC00-\uD7AF]/.test(testChunk)) {
@@ -1133,7 +1169,6 @@
                 
                 utterance.lang = lang;
                 
-                // 套用聲音與語速
                 let voices = window.speechSynthesis.getVoices();
                 if (appState.ttsVoice) {
                     let preferred = voices.find(v => v.name === appState.ttsVoice && v.lang.startsWith(lang.substring(0,2)));
@@ -1147,39 +1182,20 @@
                 
                 utterance.onstart = () => {
                     appState.isTTSPlaying = true;
-                    // 在翻譯模式下，TTS 說話時我們並不重啟麥克風，等說完才重啟
                 };
                 
                 utterance.onend = () => {
                     appState.isTTSPlaying = false;
                     appState.playingMsgId = null;
                     renderMessages();
-                    
-                    if (appState.translateMode === 'auto') {
-                        setTimeout(() => { startTranslateBAutoRecord(); }, 300);
-                    } else if (appState.isContinuous || appState.isLiveMode) {
-                        setTimeout(() => { 
-                            if(!appState.isTTSPlaying && !appState.isThinking) {
-                                try { recognition.start(); } catch(e){} 
-                            }
-                        }, 500);
-                    }
+                    continueLoop();
                 };
 
                 utterance.onerror = () => {
                     appState.isTTSPlaying = false;
                     appState.playingMsgId = null;
                     renderMessages();
-                    
-                    if (appState.translateMode === 'auto') {
-                        setTimeout(() => { startTranslateBAutoRecord(); }, 300);
-                    } else if (appState.isContinuous || appState.isLiveMode) {
-                        setTimeout(() => { 
-                            if(!appState.isTTSPlaying && !appState.isThinking) {
-                                try { recognition.start(); } catch(e){} 
-                            }
-                        }, 500);
-                    }
+                    continueLoop();
                 };
 
                 window.speechSynthesis.speak(utterance);
@@ -1732,8 +1748,9 @@
                 icon.classList.add('animate-pulse', 'text-blue-400');
                 textEl.innerText = "口譯中...";
                 
-                addMessage("🌐 **全自動語音直譯已啟動！**\n系統會自動偵測您說話完畢，等待設定秒數後立即送出翻譯。AI 回覆期間麥克風會自動完全關閉以防干擾。\n**👉 系統已啟動收音，請直接對著設備說話！**\n*(如需結束，您可以直接點選上方閃爍的紅燈，或是直接說出「結束口譯」)*", 'system');
-                speakText("全自動即時口譯已啟動", true);
+                addMessage("🌐 **全自動語音直譯已啟動！**\n系統會自動偵測您說話完畢，等待設定秒數後立即送出翻譯。AI 回覆期間麥克風會自動完全關閉以防干擾。\n**👉 系統已啟動收音，請直接對著設備說話！**\n*(如需結束，您可以直接點選上方閃爍的紅燈，或是直接對麥克風說出「結束口譯」或「停止翻譯」)*", 'system');
+                
+                if (appState.autoTTS) speakText("全自動即時口譯已啟動", true);
                 
                 setTimeout(() => { startTranslateBAutoRecord(); }, 1500); 
                 
@@ -1758,7 +1775,9 @@
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
                 translateDiscardNext = false;
-                appState.activeMediaTracks = stream.getTracks();
+                
+                // 將音軌全部推入全局管理，方便統一釋放
+                appState.activeMediaTracks.push(...stream.getTracks());
 
                 // 使用 AudioContext 進行音量靜音偵測 (Voice Activity Detection)
                 vadAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1847,8 +1866,8 @@
                     
                     // --- 攔截語音停止指令 (AI 翻譯結果判斷) ---
                     let checkCmd = finalTxt.replace(/[\s.,!?"'。，！？]/g, '').toLowerCase();
-                    if (checkCmd.includes('結束口譯') || checkCmd.includes('關閉口譯') || checkCmd.includes('stoptranslation') || checkCmd.includes('endtranslation') || checkCmd === 'stop' || checkCmd.includes('停止口譯')) {
-                        addMessage("✅ 已聽到您的語音停止指令，全自動口譯已結束。", 'system');
+                    if (checkCmd.includes('結束口譯') || checkCmd.includes('關閉口譯') || checkCmd.includes('stoptranslation') || checkCmd.includes('endtranslation') || checkCmd === 'stop' || checkCmd.includes('停止翻譯')) {
+                        addMessage("✅ 已聽到您的語音中止指令，全自動口譯已結束。", 'system');
                         toggleTranslateMode(true);
                         return; // 終止後續
                     }
@@ -2007,9 +2026,10 @@
                 releaseMicrophone();
 
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
-                appState.activeMediaTracks = stream.getTracks();
+                appState.activeMediaTracks.push(...stream.getTracks());
 
+                mediaRecorder = new MediaRecorder(stream); audioChunks = []; appState.currentAudioTranscript = ""; 
+                
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                 mediaRecorder.onstop = uploadAudioRecording; 
                 mediaRecorder.start();
@@ -2268,32 +2288,6 @@
                 return null;
             }
         }
-
-        // --- 強制底層資源釋放協議 ---
-        window.releaseMicrophone = function() {
-            if (vadInterval) { clearInterval(vadInterval); vadInterval = null; }
-            if (vadStream) { try{vadStream.disconnect();}catch(e){} vadStream = null; }
-            if (vadAnalyser) { try{vadAnalyser.disconnect();}catch(e){} vadAnalyser = null; }
-            if (vadAudioCtx && vadAudioCtx.state !== 'closed') {
-                try { vadAudioCtx.close().catch(()=>{}); } catch(e){}
-                vadAudioCtx = null;
-            }
-            if (appState.recordingAudioCtx && appState.recordingAudioCtx.state !== 'closed') {
-                try { appState.recordingAudioCtx.close().catch(()=>{}); } catch(e){}
-                appState.recordingAudioCtx = null;
-            }
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                try { mediaRecorder.stop(); } catch(e){}
-            }
-            if (appState.activeMediaTracks && appState.activeMediaTracks.length > 0) {
-                appState.activeMediaTracks.forEach(t => { 
-                    t.enabled = false; 
-                    try { t.stop(); } catch(e){} 
-                });
-                appState.activeMediaTracks = [];
-            }
-            if (recognition) { try { recognition.abort(); } catch(e){} }
-        };
 
         // --- 核心訊息發送與處理邏輯 ---
         async function handleSendMessage() {
@@ -2557,7 +2551,7 @@
                         const base64Image = data.predictions[0].bytesBase64Encoded;
                         const fileObj = { category: 'image', data: `data:image/png;base64,${base64Image}`, name: 'Imagen_Generated.png' };
                         let resTxt = `✨ 圖片生成成功！已為您附在下方。`;
-                        if(isAutoRouted) resTxt += `\n\n*(系統提示：已自動為您調配至 **${selectedModelName}** 執行繪圖任務)*`;
+                        if(isAutoRouted) resTxt += `\n\n*(系統提示：已為您動態調配至 **${selectedModelName}** 執行繪圖任務)*`;
                         return { text: resTxt, sources: [], file: fileObj };
                     }
 
@@ -2671,7 +2665,6 @@
                     let apiUrl, payload;
                     if (mName.includes('imagine')) {
                         apiUrl = 'https://api.x.ai/v1/images/generations'; 
-                        // 強制要求 b64_json 避免圖片跨域或過期問題
                         payload = { model: mName, prompt: finalPrompt, response_format: "b64_json" };
                     } else {
                         apiUrl = 'https://api.x.ai/v1/chat/completions';
@@ -2737,7 +2730,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 94 系統重構升級完畢！\n\n✅ **硬體防卡死/佔用釋放協議**：徹底解決錄音或口譯關閉後麥克風仍被佔用的問題。現在一按停止，資源100%立刻釋放！\n✅ **AI 語音指令攔截**：在「全自動直譯」模式下，只要對著麥克風說「結束口譯」，AI 聽懂後會為您全自動關閉系統。\n*(註：在一般錄製長錄音時，因瀏覽器硬體獨佔限制，此時仍需手動點擊畫面上方的紅點按鈕停止。)*\n✅ **Grok 繪圖完美修復**：強制使用 Base64 格式傳輸，保證圖片順利顯示無破圖。', 
+                    text: 'NOVA 95 系統重構升級完畢！\n\n✅ **硬體防卡死/佔用釋放協議**：徹底解決錄音或口譯關閉後麥克風仍被佔用的問題。現在一按停止，資源100%立刻釋放！\n✅ **AI 語音指令攔截**：在「全自動直譯」模式下，只要對著麥克風說「結束口譯」，AI 聽懂後會為您全自動關閉系統。\n*(註：在一般錄製長錄音時，因瀏覽器硬體獨佔限制，此時仍需手動點擊畫面上方的紅點按鈕停止。)*\n✅ **Grok 繪圖完美修復**：強制使用 Base64 格式傳輸，保證圖片順利顯示無破圖。\n✅ **自動播放音訊開關**：可在設定頁面自由調整 AI 的語音朗讀偏好。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
@@ -2754,6 +2747,8 @@
             const trEl = document.getElementById('key-tts-rate'); if (trEl) trEl.value = appState.ttsRate;
             const hideLiveCaptureEl = document.getElementById('key-hide-live-capture');
             if (hideLiveCaptureEl) hideLiveCaptureEl.checked = appState.hideLiveCapture;
+            const autoTTSEl = document.getElementById('key-auto-tts');
+            if (autoTTSEl) autoTTSEl.checked = appState.autoTTS;
             
             function attachRichPasteHandler(elementId) {
                 const el = document.getElementById(elementId);
@@ -2812,14 +2807,13 @@
                 };
                 
                 recognition.onresult = (e) => {
-                    if (appState.translateMode === 'auto') return; // 強制阻斷直譯模式下的語音轉文字
+                    if (appState.translateMode === 'auto') return; 
                     if (appState.isTTSPlaying) return;
 
                     let finalT = "";
                     let interimT = "";
                     let fullSegment = "";
                     
-                    // 獲取目前的所有識別段落(包含先前的)來做指令匹配
                     for (let i = 0; i < e.results.length; ++i) {
                         fullSegment += e.results[i][0].transcript;
                     }
@@ -2834,7 +2828,6 @@
                         else interimT += text;
                     }
                     
-                    // 即時語音指令攔截 (不分模式)
                     let cleanSegment = fullSegment.replace(/[\s，。、！!]/g, '').toLowerCase();
                     if (cleanSegment.includes('結束口譯') || cleanSegment.includes('關閉口譯') || cleanSegment.includes('關閉即時口譯')) {
                         if (appState.translateMode !== 'off') toggleTranslateMode(true);
@@ -2844,13 +2837,23 @@
                         return;
                     }
 
+                    if (cleanSegment.includes('停止語音') || cleanSegment.includes('結束語音')) {
+                        if (appState.isContinuous) {
+                            toggleContinuous();
+                            chatInitialInput = ''; 
+                            const input = document.getElementById('user-input');
+                            if (input) input.value = '';
+                            addMessage("已停止連續語音", 'system');
+                            return;
+                        }
+                    }
+
                     if (cleanSegment.includes('停止錄音') || cleanSegment.includes('結束錄音')) {
                         if (document.getElementById('recording-status').classList.contains('flex')) {
                             stopAudioRecording();
                             chatInitialInput = ''; 
                             const input = document.getElementById('user-input');
                             if (input) input.value = '';
-                            addMessage("停止錄音", 'user');
                             return;
                         }
                     }
@@ -2948,4 +2951,4 @@
         };
     </script>
 </body>
-                    </html>
+    </html>
