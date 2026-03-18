@@ -4,7 +4,7 @@
     <!-- 網頁基本設定：編碼、響應式視口 (防止手機端縮放) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NOVA 98 SP</title>
+    <title>NOVA 99 SP</title>
     
     <!-- 引入外部庫：Tailwind CSS (樣式框架) 與 Phosphor Icons (圖示庫) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -86,7 +86,7 @@
                     <i class="ph-bold ph-infinity text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 98</h1>
+                    <h1 class="text-xl font-bold text-white tracking-wide">NOVA 99</h1>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wider">SP Edition</p>
                 </div>
             </div>
@@ -109,7 +109,7 @@
         <main class="flex-1 flex flex-col relative bg-slate-950 overflow-hidden min-h-0">
             <!-- 手機版頂部導航列 -->
             <div class="md:hidden flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 z-30 shrink-0">
-                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 98 SP</span></div>
+                <div class="flex items-center space-x-2 shrink-0"><i class="ph-bold ph-infinity text-blue-500 text-xl"></i><span class="font-bold text-white">Nova 99 SP</span></div>
                 <div class="flex items-center space-x-3 ml-auto pl-2">
                     <div class="flex items-center space-x-1 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 cursor-pointer active:scale-95 transition-transform" onclick="cycleManualLocation()">
                         <i id="mobile-weather-icon" class="ph-fill ph-navigation-arrow text-blue-400"></i><span id="mobile-weather-temp" class="text-xs font-bold text-white whitespace-nowrap">更新</span>
@@ -1132,7 +1132,15 @@
             
             const continueLoop = () => {
                 if (appState.translateMode === 'auto') {
-                    setTimeout(() => { startTranslateBAutoRecord(); }, 300);
+                    // 安全鎖：不斷輪詢確認系統語音已經完全停止，才敢重啟麥克風
+                    const checkAndStart = () => {
+                        if (window.speechSynthesis.speaking) {
+                            setTimeout(checkAndStart, 500);
+                        } else {
+                            setTimeout(() => { startTranslateBAutoRecord(); }, 1000); // 確認無聲後再給1秒冷卻，防止喇叭硬體殘響
+                        }
+                    };
+                    checkAndStart();
                 } else if (appState.isContinuous || appState.isLiveMode) {
                     setTimeout(() => { 
                         if(!appState.isThinking) {
@@ -1149,7 +1157,7 @@
                 return;
             }
 
-            // 若設定不自動播放，則直接跳過朗讀並進入下一個聆聽循環 (手動點擊喇叭 force = true 則不受限)
+            // 若設定不自動播放，則直接跳過朗讀並進入下一個聆聽循環
             if (!force && !appState.autoTTS) {
                 continueLoop();
                 return;
@@ -1160,7 +1168,6 @@
                 appState.playingMsgId = msgId;
                 
                 let cleanText = text.replace(/[*_#`\[\]]/g, '').replace(/(https?:\/\/[^\s]+)/g, "網址連結");
-                // 過濾掉系統模型調配提示文字與圖片生成提示
                 cleanText = cleanText.replace(/\(?系統提示：[^\)]+\)?/g, '').trim();
                 cleanText = cleanText.replace(/✨ 圖片生成成功！已為您附在下方。/g, '為您生成圖片如下');
                 
@@ -1340,7 +1347,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 w-full">
-                            <button onclick="copyDeepLink('${ad.deepLinkUrl}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1">
+                            <button onclick="copyDeepLink('${ad.deepLinkUrl}')" class="flex-1 bg-slate-70 hover:bg-slate-600 text-white py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1">
                                 <i class="ph-bold ph-copy"></i> 複製連結
                             </button>
                             <a href="${ad.deepLinkUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 text-center">
@@ -1771,11 +1778,26 @@
 
         async function startTranslateBAutoRecord() {
             if (appState.translateMode !== 'auto') return;
+
+            // 防護網 1: 硬體狀態鎖 (如果在發聲，絕對不啟動麥克風，防止迴圈)
+            if (window.speechSynthesis.speaking) {
+                setTimeout(startTranslateBAutoRecord, 500);
+                return;
+            }
+
             try {
                 // 強制在獲取新權限前停止任何潛在的殘留音軌
                 releaseMicrophone();
 
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // 防護網 2: 開啟硬體回音消除與降噪
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true, 
+                        noiseSuppression: true, 
+                        autoGainControl: true 
+                    } 
+                });
+
                 if (appState.translateMode !== 'auto') {
                     stream.getTracks().forEach(t => t.stop());
                     return;
@@ -1814,6 +1836,12 @@
                         return;
                     }
 
+                    // 強制中斷保險 (即使開始錄音中被 TTS 突發打斷)
+                    if (window.speechSynthesis.speaking && isSpeaking) {
+                        isSpeaking = false;
+                        silenceStart = Date.now();
+                    }
+
                     const elapsed = Date.now() - initTime;
                     vadAnalyser.getByteFrequencyData(dataArray);
                     let sum = 0;
@@ -1840,8 +1868,8 @@
                         if (baselineSamples.length > 0) {
                             baselineVolume = baselineSamples.reduce((a,b)=>a+b,0) / baselineSamples.length;
                         }
-                        // 設定最低底噪為 1.0，避免在全死音室 (baseline=0) 的情況下，任何微小雜音乘上倍數依然是0而瘋狂誤觸
-                        baselineVolume = Math.max(baselineVolume, 1.0);
+                        // 設定最低底噪為 15.0 絕對下限，避免在死音室中微小雜訊(如滑鼠聲)乘倍數後依然被觸發
+                        baselineVolume = Math.max(baselineVolume, 15.0);
                         isBaselineCalculated = true;
                         
                         const statusText = document.getElementById('recording-status-text');
@@ -1852,7 +1880,7 @@
                     // 計算當下觸發的動態門檻 = 基底噪音 x 設定的倍數
                     const dynamicThreshold = baselineVolume * appState.vadMultiplier;
 
-                    if (avgVolume > dynamicThreshold) {
+                    if (avgVolume > dynamicThreshold && !window.speechSynthesis.speaking) {
                         consecutiveLoud++;
                         silenceStart = Date.now(); // 重置靜音計時
 
@@ -1942,22 +1970,38 @@
             reader.onloadend = async () => {
                 const base64dataWithPrefix = reader.result;
                 appState.recordingContext = 'default';
-                addMessage("🎙️ 音軌已自動擷取，AI 翻譯中... (麥克風已釋放防干擾)", "user");
+                addMessage("🎙️ 音軌已自動擷取，AI 翻譯中... (麥克風已完全釋放)", "user");
                 appState.isThinking = true;
                 renderThinkingState(true);
                 try {
-                    let prompt = "你是一位專業的同步口譯員。請直接聽取這段音檔中的對話並進行翻譯。如果說的是中文，請翻譯成自然流暢的英文；如果說的是任何外文，請翻譯成繁體中文。請『只輸出最終的翻譯結果文字』，絕對不要包含任何解釋、原文、拼音或個人評論。";
+                    // 防護網 3: AI 幻覺攔截器 (嚴厲禁止輸出預設回覆)
+                    let prompt = "你是一位專業的同步口譯員。請直接聽取這段音檔中的對話並進行翻譯。如果說的是中文，請翻譯成自然流暢的英文；如果說的是任何外文，請翻譯成繁體中文。請『只輸出最終的翻譯結果文字』，絕對不要包含任何解釋、原文、拼音或個人評論。\n\n***極度重要防幻覺指令：如果音檔中只有雜音、風扇聲、沒有明顯可辨識的人類說話聲，請你務必只回傳「[NO_SPEECH]」這幾個字，絕對不要幻覺出「Thank you」、「Bye」等任何字詞！***";
+                    
                     let res = await fetchAIResponse(prompt, 'gemini', { 
                         file: { category: 'media', data: base64dataWithPrefix, mime: mediaRecorder?.mimeType || 'audio/webm', name: 'Voice_Input.weba' } 
                     });
                     let finalTxt = typeof res === 'string' ? res : res.text;
                     
-                    // --- 攔截語音停止指令 (AI 翻譯結果判斷) ---
                     let checkCmd = finalTxt.replace(/[\s.,!?"'。，！？]/g, '').toLowerCase();
+
+                    // --- 攔截 AI 幻覺雜音 (如果沒有人聲，直接靜默捨棄，不播報不進入迴圈) ---
+                    if (checkCmd.includes('[no_speech]') || finalTxt.includes('[NO_SPEECH]')) {
+                        console.log("[NOVA] 攔截到 AI 幻覺雜音或無人聲，靜默重啟收音...");
+                        if (appState.translateMode === 'auto') {
+                            setTimeout(startTranslateBAutoRecord, 500);
+                        }
+                        appState.isThinking = false;
+                        renderThinkingState(false);
+                        return;
+                    }
+
+                    // --- 攔截語音停止指令 (AI 翻譯結果判斷) ---
                     if (checkCmd.includes('結束口譯') || checkCmd.includes('關閉口譯') || checkCmd.includes('stoptranslation') || checkCmd.includes('endtranslation') || checkCmd === 'stop' || checkCmd.includes('停止翻譯')) {
                         addMessage("✅ 已聽到您的語音中止指令，全自動口譯已結束。", 'system');
                         toggleTranslateMode(true);
-                        return; // 終止後續
+                        appState.isThinking = false;
+                        renderThinkingState(false);
+                        return;
                     }
                     
                     addMessage(finalTxt, 'ai', 'gemini');
@@ -2818,7 +2862,7 @@
             if(appState.messages.length === 0) {
                 const welcomeMsg = { 
                     id: Date.now(), 
-                    text: 'NOVA 98 SP 系統升級完畢！\n\n✅ **動態底噪校正引擎**：徹底取代死板的固定音量閾值！每次啟動口譯時，系統會用 1 秒鐘全自動測量您當下環境的「背景基底噪音」。\n✅ **智慧倍數觸發**：在設定中您可自訂「倍數」。例如設定為 2.0，代表您說話的音量必須超過背景底噪的 2 倍才會開始收音！無論在圖書館或吵雜捷運上都能完美運作，不再瘋狂誤觸。', 
+                    text: 'NOVA 99 SP 系統升級完畢！\n\n✅ **斷開無限迴圈死結**：針對「開啟自動播放會無限收音」的問題，新增【TTS 硬體狀態鎖】，在喇叭發聲時絕對禁止麥克風收音，完全無視瀏覽器事件提早誤判的 Bug。\n✅ **AI 幻覺攔截器 [NO_SPEECH]**：當錄到風扇聲等純雜訊時，系統會從底層命令 AI 只回傳 `[NO_SPEECH]`，並靜默攔截拋棄，不再幻覺出 "Thank you" 並播報出來。\n✅ **硬體回音消除**：強制口譯模式啟用 WebRTC 的 `echoCancellation` 參數。', 
                     sender: 'ai', model: 'gemini', time: getTime(), sources: [], file: null 
                 };
                 appState.messages.push(welcomeMsg); saveToDB('messages', welcomeMsg);
