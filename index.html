@@ -19,6 +19,7 @@
     <script src="https://unpkg.com/fix-webm-duration"></script>
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1500.0.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
     <!-- 引入 Google 字體 Inter -->
     <script src="./telegram.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1039,6 +1040,49 @@
                 }
             } catch(e) {}
         }
+
+
+// 將 AudioBuffer 轉碼為 MP3 格式的 Blob
+async function encodeMp3(audioBuffer) {
+    const channels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+    const mp3Data = [];
+
+    const samplesLeft = audioBuffer.getChannelData(0);
+    const samplesRight = channels > 1 ? audioBuffer.getChannelData(1) : samplesLeft;
+
+    const convert = (samples) => {
+        const int16 = new Int16Array(samples.length);
+        for (let i = 0; i < samples.length; i++) {
+            const s = Math.max(-1, Math.min(1, samples[i]));
+            int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        return int16;
+    };
+
+    const left = convert(samplesLeft);
+    const right = convert(samplesRight);
+
+    const sampleBlockSize = 1152;
+    for (let i = 0; i < left.length; i += sampleBlockSize) {
+        const leftChunk = left.subarray(i, i + sampleBlockSize);
+        const rightChunk = right.subarray(i, i + sampleBlockSize);
+
+        // ✅ 修正：mono 只傳一個 chunk
+        const mp3buf = channels === 1
+            ? mp3encoder.encodeBuffer(leftChunk)
+            : mp3encoder.encodeBuffer(leftChunk, rightChunk);
+
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+    }
+
+    const mp3final = mp3encoder.flush();
+    if (mp3final.length > 0) mp3Data.push(mp3final);
+
+    return new Blob(mp3Data, { type: 'audio/mp3' });
+}
+
 
 
         // --- IndexedDB 資料庫初始化與操作 ---
@@ -2843,39 +2887,62 @@ const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
                 } catch(e) { alert("下載失敗：" + e.message); }
             };
 
-            window.downloadLocalAudio = function(id, type) {
-                let record = type === 'record' ?
-                appState.audioRecords.find(x => String(x.id) === String(id)) : appState.notes.find(x => String(x.id) === String(id));
-            if (!record || !record.audioData) { alert("找不到本地音檔資料"); return; }
-            
-            const dateObj = new Date(Number(id));
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
-            const finalFilename = `NOVA_Audio_${month}${day}${year}_${timeStr}.weba`;
+            window.downloadLocalAudio = async function(id, type) {
+    let record = type === 'record' ? 
+        appState.audioRecords.find(x => String(x.id) === String(id)) : 
+        appState.notes.find(x => String(x.id) === String(id));
 
-            try {
-                const blob = base64ToBlob(record.audioData);
-                const blobUrl = URL.createObjectURL(blob);
+    if (!record || !record.audioData) { 
+        alert("找不到本地音檔資料"); 
+        return; 
+    }
 
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = blobUrl;
-                a.download = finalFilename;
-                document.body.appendChild(a);
-                a.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(blobUrl);
-                }, 2000);
-                
-                showToast(`✅ 已開始下載：${finalFilename}`);
-            } catch(e) {
-                alert("下載失敗：" + e.message);
-            }
-        };
+    showToast("🎵 正在準備 MP3 轉換，請稍候...");
+
+    try {
+        // 1. 將 Base64 轉回 Blob [cite: 853, 861]
+        const webmBlob = base64ToBlob(record.audioData);
+        const arrayBuffer = await webmBlob.arrayBuffer();
+
+        // 2. 使用 AudioContext 解碼 WebM 成 PCM [cite: 291]
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // 3. 呼叫 LameJS 進行編碼
+        const mp3Blob = await encodeMp3(audioBuffer);
+        const blobUrl = URL.createObjectURL(mp3Blob);
+
+        // 4. 產生檔名並觸發下載 [cite: 860]
+        const dateObj = new Date(Number(id));
+        const dateStr = `${dateObj.getFullYear()}${String(dateObj.getMonth() + 1).padStart(2, '0')}${String(dateObj.getDate()).padStart(2, '0')}`;
+        const finalFilename = `NOVA_${dateStr}_${id}.mp3`;
+
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = finalFilename;
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+            audioCtx.close();
+        }, 2000);
+
+        showToast(`✅ MP3 下載成功：${finalFilename}`);
+    } catch (e) {
+        console.error("MP3 Conversion Error:", e);
+        alert("轉換 MP3 失敗，改為原格式下載。錯誤：" + e.message);
+        // 降級方案：如果轉碼失敗，則下載原始 weba [cite: 860]
+        const blob = base64ToBlob(record.audioData);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = record.filename || `NOVA_Audio_${id}.weba`;
+        a.click();
+    }
+};
 
         function renderAll() { renderMessages(); renderTodos(); renderFolderTabs(); renderNotes(); renderAudioRecords(); 
             renderWeather(); 
@@ -3206,7 +3273,7 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
 
                 let extraAudioButtons = '';
                 if(isAudio) {
-                    extraAudioButtons += `<button onclick="downloadLocalAudio('${n.id}', 'note')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1"><i class="ph-bold ph-download-simple"></i> 下載 .weba</button>`;
+                    extraAudioButtons += `<button onclick="downloadLocalAudio('${n.id}', 'note')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1"><i class="ph-bold ph-download-simple"></i> 下載 .MP3</button>`;
                     extraAudioButtons += `<button onclick="summarizeVoiceNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
                 } else {
                     extraAudioButtons += `<button onclick="summarizeTextNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
@@ -3240,7 +3307,7 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
                 let audioPlayerHtml = r.audioData ? `<div class="mb-3 w-full"><audio controls src="${r.audioData}" class="w-full h-10 rounded-lg bg-slate-800 shadow-inner"></audio></div>` : '';
                 let linkHtml = (r.driveUrl && !r.driveUrl.startsWith('blob:')) ? `<a href="${r.driveUrl}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-cloud-arrow-down"></i> 雲端備份</a>` : '';
 
-                return `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord('${r.id}')" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div>${audioPlayerHtml}<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3">${linkHtml}<button onclick="downloadLocalAudio('${r.id}', 'record')" class="flex items-center gap-1 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-download-simple"></i> 下載 .weba</button><button onclick="summarizeAudioRecord('${r.id}')" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> AI 深度分析</button></div></div>`;
+                return `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord('${r.id}')" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div>${audioPlayerHtml}<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3">${linkHtml}<button onclick="downloadLocalAudio('${r.id}', 'record')" class="flex items-center gap-1 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-download-simple"></i> 下載 .MP3</button><button onclick="summarizeAudioRecord('${r.id}')" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> AI 深度分析</button></div></div>`;
             }).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
         }
 
