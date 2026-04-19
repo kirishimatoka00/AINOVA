@@ -326,6 +326,16 @@
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <div>
+                                        <label class="block text-xs text-purple-400 font-bold flex items-center gap-1"><i class="ph-fill ph-brain"></i> 長文記憶 (同對話記憶)</label>
+                                        <p class="text-[10px] text-slate-500 mt-1">開啟後，同一對話下 AI 會記住所有前文與人設，不會互相干擾。</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
+                                        <input type="checkbox" id="key-long-memory" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
                                         <label class="block text-xs text-emerald-400 font-bold flex items-center gap-1"><i class="ph-fill ph-eye-slash"></i> 隱藏 LIVE 自動截圖訊息</label>
                                         <p class="text-[10px] text-slate-500 mt-1">開啟後，聊天室不顯示自動傳送的相片畫面。</p>
                                     </div>
@@ -523,6 +533,55 @@
                         <i class="ph-bold ph-check-circle mr-2"></i> 確 定 (停止)
                     </button>
                 </div>
+            </div>
+
+            <!-- ================= 自訂確認對話框 (Confirm Modal) ================= -->
+            <div id="confirm-modal" class="hidden fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div id="confirm-icon-wrap" class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-red-500/20">
+                            <i id="confirm-icon" class="ph-bold ph-warning text-red-400 text-xl"></i>
+                        </div>
+                        <h3 id="confirm-title" class="text-base font-bold text-white">確認操作</h3>
+                    </div>
+                    <p id="confirm-message" class="text-sm text-slate-300 mb-6 ml-[52px]">您確定要執行此操作嗎？</p>
+                    <div class="flex gap-3 justify-end">
+                        <button onclick="window._confirmCancel()" class="px-5 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700">取消</button>
+                        <button id="confirm-ok-btn" onclick="window._confirmOk()" class="px-5 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl transition-colors shadow-lg">確定</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= 圖片預覽放大彈窗 (Image Preview Modal) ================= -->
+            <div id="img-preview-modal" class="hidden fixed inset-0 z-[300] bg-black/92 backdrop-blur-md flex flex-col items-center justify-center select-none" style="touch-action:none;">
+                <!-- 圖片可縮放容器 -->
+                <div id="img-preview-viewport" class="flex-1 w-full overflow-hidden flex items-center justify-center relative" style="touch-action:none;">
+                    <img id="img-preview-img" src="" draggable="false"
+                        class="rounded-xl shadow-2xl object-contain pointer-events-none"
+                        style="max-width:92vw;max-height:78vh;transform-origin:center center;transform:scale(1) translate(0px,0px);transition:none;"
+                        alt="預覽圖片">
+                </div>
+                <!-- 底部工具列 -->
+                <div class="w-full flex items-center justify-center gap-3 py-4 px-4 shrink-0" onclick="event.stopPropagation()">
+                    <a id="img-preview-download" href="" download="image.png"
+                        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-lg">
+                        <i class="ph-bold ph-download-simple"></i> 下載
+                    </a>
+                    <button id="img-preview-copy" onclick="copyImgToClipboard()"
+                        class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-lg">
+                        <i class="ph-bold ph-copy"></i> 複製
+                    </button>
+                    <button onclick="closeImgPreview()"
+                        class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors">
+                        <i class="ph-bold ph-x"></i> 關閉
+                    </button>
+                </div>
+                <!-- 縮放提示 -->
+                <div id="img-zoom-hint" class="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 text-white/70 text-xs px-3 py-1.5 rounded-full pointer-events-none transition-opacity duration-500">
+                    雙指縮放 · 雙擊重設
+                </div>
+                <!-- 關閉按鈕 -->
+                <button onclick="closeImgPreview()" class="absolute top-4 right-4 text-white/60 hover:text-white bg-slate-800/80 p-2 rounded-full z-10"><i class="ph-bold ph-x text-xl"></i></button>
             </div>
 
             <!-- ================= 待辦事項時間選擇彈窗 ================= -->
@@ -1130,6 +1189,7 @@ async function encodeMp3(audioBuffer) {
                 isLiveSyncing = true;
                 const fullBackupData = {
                     timestamp: Date.now(),
+                    deletedIds: appState.deletedIds || {},
                     keys: appState.keys, doc: appState.docMonitorUrl, drive: appState.driveUrl, 
                     tgToken: appState.tgToken, tgChatId: appState.tgChatId, voiceTimeout: appState.voiceTimeout, 
                     translateBTimeout: appState.translateBTimeout, vadMultiplier: appState.vadMultiplier, 
@@ -1141,16 +1201,20 @@ async function encodeMp3(audioBuffer) {
                 try {
                     const res = await fetch(appState.driveUrl, {
                         method: 'POST',
-                        redirect: 'follow', // 💡 修正：允許 GAS 的重新導向
+                        redirect: 'follow',
                         headers: {
-                            'Content-Type': 'text/plain;charset=utf-8' // 💡 修正：使用 text/plain 避免觸發 CORS 預檢請求被擋
+                            'Content-Type': 'text/plain;charset=utf-8'
                         },
                         body: JSON.stringify({ action: "sync_up", filename: "NOVA120livebackup", data: fullBackupData })
                     });
-                    if(res.ok) lastLiveSyncTime = fullBackupData.timestamp;
+                    if(res.ok) {
+                        lastLiveSyncTime = fullBackupData.timestamp;
+                        // 上傳成功後立刻拉取一次雲端，確保雙向即時同步
+                        setTimeout(fetchSyncFromDrive, 300);
+                    }
                 } catch(e) { console.error("Live Sync Up Error:", e); }
                 isLiveSyncing = false;
-            }, 3000); // 防抖動 3 秒
+            }, 500); // 防抖動 3 秒
         }
 
         async function fetchSyncFromDrive() {
@@ -1159,79 +1223,159 @@ async function encodeMp3(audioBuffer) {
                 const res = await fetch(appState.driveUrl + "?action=sync_down&filename=NOVA120livebackup");
                 if (!res.ok) return;
                 const cloudData = await res.json();
-                if (cloudData && cloudData.timestamp > lastLiveSyncTime) {
-                    
-                    // 1. 解決「刪除不同步」與「順序顛倒」：直接用雲端覆蓋本地，並確保 a.id - b.id 升冪排序
-                    const replaceStoreData = (storeName, cloudItems) => {
-                        if (!cloudItems || !Array.isArray(cloudItems)) return;
-                        appState[storeName] = cloudItems;
-                        appState[storeName].sort((a, b) => a.id - b.id); // 確保由舊到新排列 (發出端/接收端統一)
-                        if (db) {
-                            try {
-                                clearStoreDB(storeName); // 絕對覆寫，解決一端刪除另一端卻殘留的問題
-                                cloudItems.forEach(cItem => db.transaction(storeName, 'readwrite').objectStore(storeName).put(cItem));
-                            } catch(e) {}
-                        }
-                    };
-                    
-                    replaceStoreData('messages', cloudData.messages);
-                    replaceStoreData('notes', cloudData.notes);
-                    replaceStoreData('todos', cloudData.todos);
-                    replaceStoreData('audioRecords', cloudData.audioRecords);
-                    
-                    if(cloudData.chatTitles) { appState.chatTitles = cloudData.chatTitles; localStorage.setItem('nova_chat_titles', JSON.stringify(cloudData.chatTitles)); }
-                    if(cloudData.pinnedSessions) { appState.pinnedSessions = cloudData.pinnedSessions; localStorage.setItem('nova_pinned_sessions', JSON.stringify(cloudData.pinnedSessions)); }
-                    if(cloudData.currentSessionId) { appState.currentSessionId = cloudData.currentSessionId; localStorage.setItem('nova_current_session', appState.currentSessionId); }
+                if (!cloudData) return;
 
-                    // 2. 解決「設定未同步」：強制覆寫所有設定值並更新 UI
-                    if(cloudData.keys) {
-                        appState.keys = cloudData.keys;
-                        Object.keys(cloudData.keys).forEach(k => {
-                            localStorage.setItem('nova_key_'+k, cloudData.keys[k]);
-                            const el = document.getElementById('key-' + k.replace(/_/g, '-'));
-                            if(el) el.value = cloudData.keys[k] || '';
-                        });
+                // ═══════════════════════════════════════════════════════
+                // 雙向合併引擎：以 id 為唯一鍵，兩端各取所長，不互相覆蓋
+                // 規則：
+                //   1. 本地有、雲端沒有 → 保留本地（不刪除）
+                //   2. 雲端有、本地沒有 → 加入本地
+                //   3. 兩端都有同一 id  → 取 updatedAt/timestamp 較新的那筆
+                // 合併結果若與雲端不同（本地有更多資料），則反推上傳
+                // ═══════════════════════════════════════════════════════
+                const mergeArrays = (localItems, cloudItems) => {
+                    if (!Array.isArray(cloudItems) || cloudItems.length === 0) return { merged: localItems, changed: false };
+                    if (!Array.isArray(localItems) || localItems.length === 0) return { merged: cloudItems, changed: true };
+
+                    const deleted = appState.deletedIds || {};
+                    const map = new Map();
+                    // 先放本地（已刪除的不放入）
+                    localItems.forEach(item => { if (!deleted[String(item.id)]) map.set(String(item.id), item); });
+                    let cloudHasNew = false;
+                    // 再用雲端合併
+                    cloudItems.forEach(cloudItem => {
+                        const key = String(cloudItem.id);
+                        // 已被本地刪除的 → 永遠跳過，不允許雲端把它救回來
+                        if (deleted[key]) return;
+                        if (!map.has(key)) {
+                            // 雲端有、本地沒有（且未被刪除）→ 加入
+                            map.set(key, cloudItem);
+                            cloudHasNew = true;
+                        } else {
+                            // 兩端都有 → 比較時間，取較新的
+                            const localItem = map.get(key);
+                            const localTs = localItem.updatedAt || localItem.timestamp || localItem.id || 0;
+                            const cloudTs = cloudItem.updatedAt || cloudItem.timestamp || cloudItem.id || 0;
+                            if (cloudTs > localTs) { map.set(key, cloudItem); cloudHasNew = true; }
+                        }
+                    });
+                    // 本地有多出來的項目（雲端沒有）→ 標記需要反推上傳
+                    const localHasExtra = localItems.some(li => !cloudItems.find(ci => String(ci.id) === String(li.id)));
+                    const merged = Array.from(map.values()).sort((a, b) => (a.id - b.id));
+                    return { merged, changed: cloudHasNew || localHasExtra, needsUpload: localHasExtra };
+                };
+
+                let needsReupload = false;
+
+                const applyMerge = (storeName, cloudItems) => {
+                    const result = mergeArrays(appState[storeName] || [], cloudItems);
+                    appState[storeName] = result.merged;
+                    if (result.needsUpload) needsReupload = true;
+                    if (result.changed && db) {
+                        try {
+                            // 只寫入有變動的項目，不清除整個 store（保留本地獨有資料）
+                            result.merged.forEach(item => {
+                                db.transaction(storeName, 'readwrite').objectStore(storeName).put(item);
+                            });
+                        } catch(e) {}
                     }
-                    
-                    const syncProp = (cloudKey, appStateKey, localKey, elId, isCheck = false) => {
-                        if(cloudData[cloudKey] !== undefined) {
-                            appState[appStateKey] = cloudData[cloudKey];
-                            if(typeof cloudData[cloudKey] === 'object') {
-                                localStorage.setItem(localKey, JSON.stringify(cloudData[cloudKey]));
-                            } else {
-                                localStorage.setItem(localKey, cloudData[cloudKey]);
-                            }
-                            if(elId) {
-                                const el = document.getElementById(elId);
-                                if(el) { if(isCheck) el.checked = cloudData[cloudKey]; else el.value = cloudData[cloudKey]; }
-                            }
-                        }
-                    };
-                    
-                    syncProp('doc', 'docMonitorUrl', 'nova_doc_url', 'key-doc-url');
-                    syncProp('drive', 'driveUrl', 'nova_drive_url', 'key-drive-url');
-                    syncProp('tgToken', 'tgToken', 'nova_tg_token', 'key-tg-token');
-                    syncProp('tgChatId', 'tgChatId', 'nova_tg_chatid', 'key-tg-chatid');
-                    syncProp('voiceTimeout', 'voiceTimeout', 'nova_voice_timeout', 'key-voice-timeout');
-                    syncProp('translateBTimeout', 'translateBTimeout', 'nova_trans_b_timeout', 'key-translate-b-timeout');
-                    syncProp('vadMultiplier', 'vadMultiplier', 'nova_vad_multiplier', 'key-vad-multiplier');
-                    syncProp('replyLength', 'replyLength', 'nova_reply_length', 'key-reply-length');
-                    syncProp('ttsRate', 'ttsRate', 'nova_tts_rate', 'key-tts-rate');
-                    syncProp('ttsVoice', 'ttsVoice', 'nova_tts_voice', 'key-tts-voice');
-                    syncProp('hideLiveCapture', 'hideLiveCapture', 'nova_hide_live_capture', 'key-hide-live-capture', true);
-                    syncProp('autoTTS', 'autoTTS', 'nova_auto_tts', 'key-auto-tts', true);
-                    syncProp('noteFolders', 'noteFolders', 'nova_folders', null);
+                };
 
-                    lastLiveSyncTime = cloudData.timestamp;
-                    if(typeof renderAll === 'function') renderAll();
+// 合併雙端的刪除墓碑（取聯集：任何一端刪過的都算刪掉）
+                if (cloudData.deletedIds) {
+                    appState.deletedIds = Object.assign({}, appState.deletedIds || {}, cloudData.deletedIds);
+                    localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
                 }
-            } catch(e) {}
+                applyMerge('messages', cloudData.messages);
+                applyMerge('notes', cloudData.notes);
+                applyMerge('todos', cloudData.todos);
+                applyMerge('audioRecords', cloudData.audioRecords);
+
+                // chatTitles 合併（物件型態，以 key 為單位合併）
+                if (cloudData.chatTitles) {
+                    const merged = Object.assign({}, cloudData.chatTitles, appState.chatTitles || {});
+                    appState.chatTitles = merged;
+                    localStorage.setItem('nova_chat_titles', JSON.stringify(merged));
+                    if (Object.keys(appState.chatTitles).some(k => !cloudData.chatTitles[k])) needsReupload = true;
+                }
+
+                // pinnedSessions 合併（陣列，取聯集）
+                if (cloudData.pinnedSessions) {
+                    const localPinned = appState.pinnedSessions || [];
+                    const merged = [...new Set([...cloudData.pinnedSessions, ...localPinned])];
+                    appState.pinnedSessions = merged;
+                    localStorage.setItem('nova_pinned_sessions', JSON.stringify(merged));
+                    if (localPinned.some(p => !cloudData.pinnedSessions.includes(p))) needsReupload = true;
+                }
+
+                
+                // 設定值同步（以雲端為準，本地沒設定的才覆寫）
+                if (cloudData.keys) {
+                    appState.keys = Object.assign({}, cloudData.keys, appState.keys || {});
+                    Object.keys(appState.keys).forEach(k => {
+                        localStorage.setItem('nova_key_'+k, appState.keys[k]);
+                        const el = document.getElementById('key-' + k.replace(/_/g, '-'));
+                        if(el) el.value = appState.keys[k] || '';
+                    });
+                }
+
+                const syncProp = (cloudKey, appStateKey, localKey, elId, isCheck = false) => {
+                    if(cloudData[cloudKey] !== undefined) {
+                        appState[appStateKey] = cloudData[cloudKey];
+                        if(typeof cloudData[cloudKey] === 'object') {
+                            localStorage.setItem(localKey, JSON.stringify(cloudData[cloudKey]));
+                        } else {
+                            localStorage.setItem(localKey, cloudData[cloudKey]);
+                        }
+                        if(elId) {
+                            const el = document.getElementById(elId);
+                            if(el) { if(isCheck) el.checked = cloudData[cloudKey]; else el.value = cloudData[cloudKey]; }
+                        }
+                    }
+                };
+
+                syncProp('doc', 'docMonitorUrl', 'nova_doc_url', 'key-doc-url');
+                syncProp('drive', 'driveUrl', 'nova_drive_url', 'key-drive-url');
+                syncProp('tgToken', 'tgToken', 'nova_tg_token', 'key-tg-token');
+                syncProp('tgChatId', 'tgChatId', 'nova_tg_chatid', 'key-tg-chatid');
+                syncProp('voiceTimeout', 'voiceTimeout', 'nova_voice_timeout', 'key-voice-timeout');
+                syncProp('translateBTimeout', 'translateBTimeout', 'nova_trans_b_timeout', 'key-translate-b-timeout');
+                syncProp('vadMultiplier', 'vadMultiplier', 'nova_vad_multiplier', 'key-vad-multiplier');
+                syncProp('replyLength', 'replyLength', 'nova_reply_length', 'key-reply-length');
+                syncProp('ttsRate', 'ttsRate', 'nova_tts_rate', 'key-tts-rate');
+                syncProp('ttsVoice', 'ttsVoice', 'nova_tts_voice', 'key-tts-voice');
+                syncProp('hideLiveCapture', 'hideLiveCapture', 'nova_hide_live_capture', 'key-hide-live-capture', true);
+                syncProp('autoTTS', 'autoTTS', 'nova_auto_tts', 'key-auto-tts', true);
+                syncProp('noteFolders', 'noteFolders', 'nova_folders', null);
+
+                lastLiveSyncTime = cloudData.timestamp || Date.now();
+
+                // 本地有雲端缺少的資料 → 反推上傳，讓雲端也補齊
+                if (needsReupload) {
+                    console.log('[Sync] 本地有雲端未收錄的資料，反推上傳以同步雲端...');
+                    triggerLiveSync();
+                }
+
+                                if(typeof renderTodos === 'function') renderTodos();
+                if(typeof renderNotes === 'function') renderNotes();
+                if(typeof renderAudioRecords === 'function') renderAudioRecords();
+                if(typeof renderChatHistoryList === 'function') renderChatHistoryList();
+                // 只有當雲端有本裝置當前對話的新訊息時，才重繪訊息區
+                const cloudCurrentMsgs = (cloudData.messages || []).filter(m => String(m.sessionId) === String(appState.currentSessionId));
+                const localCurrentMsgs = appState.messages.filter(m => String(m.sessionId) === String(appState.currentSessionId));
+                if (cloudCurrentMsgs.length !== localCurrentMsgs.length) {
+                    if(typeof renderMessages === 'function') renderMessages();
+                }
+
+
+            } catch(e) { console.error('[Sync Down Error]', e); }
         }
-        setInterval(fetchSyncFromDrive, 15000); // 每 15 秒檢查一次雲端資料更新
+        setInterval(fetchSyncFromDrive, 60000); // 每 60 秒保底檢查一次（主要靠事件觸發)
 
         // --- 核心應用狀態 ---
         const appState = {
             currentModel: 'gemini', grokModel: 'grok-multi', geminiModel: 'gemini-multi',
+            deletedIds: JSON.parse(localStorage.getItem('nova_deleted_ids') || '{}'),
             chatFiles: [], currentDeviceId: null,
             docMonitorUrl: localStorage.getItem('nova_doc_url') || '', 
             driveUrl: localStorage.getItem('nova_drive_url') || '',
@@ -1261,6 +1405,8 @@ async function encodeMp3(audioBuffer) {
             hideLiveCapture: localStorage.getItem('nova_hide_live_capture') === 'true',
             autoTTS: localStorage.getItem('nova_auto_tts') !== 'false',
             isTTSPlaying: false,
+            enableLongMemory: localStorage.getItem('nova_long_memory') === 'true',
+            uiColor: localStorage.getItem('nova_ui_color') || 'blue',
             playingMsgId: null,
             enableContext: false,
             replyLength: localStorage.getItem('nova_reply_length') || 'medium',
@@ -1451,17 +1597,22 @@ return html;
 
         window.deleteChatSession = function(sessionId, e) {
             e.stopPropagation();
-            if(!confirm('確定要刪除這筆對話紀錄嗎？')) return;
-            const msgsToDelete = appState.messages.filter(m => String(m.sessionId) === String(sessionId) || (!m.sessionId && sessionId === 'legacy'));
-            msgsToDelete.forEach(m => deleteFromDB('messages', m.id));
-            appState.messages = appState.messages.filter(m => String(m.sessionId) !== String(sessionId) && !(!m.sessionId && sessionId === 'legacy'));
-            
-            if (String(appState.currentSessionId) === String(sessionId) || (!appState.currentSessionId && sessionId === 'legacy')) {
-                appState.currentSessionId = Date.now().toString();
-                localStorage.setItem('nova_current_session', appState.currentSessionId);
-            }
-            renderMessages();
-            if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
+            showConfirmDialog({
+                title: '刪除對話',
+                message: '確定要刪除這整筆對話紀錄嗎？所有訊息將永久移除，此動作無法復原。',
+                okText: '刪除對話',
+                onConfirm: function() {
+                    const msgsToDelete = appState.messages.filter(m => String(m.sessionId) === String(sessionId) || (!m.sessionId && sessionId === 'legacy'));
+                    msgsToDelete.forEach(m => deleteFromDB('messages', m.id));
+                    appState.messages = appState.messages.filter(m => String(m.sessionId) !== String(sessionId) && !(!m.sessionId && sessionId === 'legacy'));
+                    if (String(appState.currentSessionId) === String(sessionId) || (!appState.currentSessionId && sessionId === 'legacy')) {
+                        appState.currentSessionId = Date.now().toString();
+                        localStorage.setItem('nova_current_session', appState.currentSessionId);
+                    }
+                    renderMessages();
+                    if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
+                }
+            });
         };
 
         window.applyTheme = function(theme) {
@@ -1495,7 +1646,7 @@ return html;
                 const text = el.textContent || el.innerText || '';
                 
                 // 💡 針對每一個設定區塊進行「獨立」關鍵字判定
-                const isVoiceFeature = /AWS|Polly|語音|翻譯|TTS|語氣|長度|VAD|麥克風|朗讀|字幕/i.test(text);
+                const isVoiceFeature = /AWS|Polly|語音|翻譯|TTS|語氣|長度|長文記憶|VAD|麥克風|朗讀|字幕/i.test(text);
                 
                 if (isVoiceFeature) {
                     tabVoice.appendChild(el);
@@ -1503,17 +1654,22 @@ return html;
                     tabApi.appendChild(el);
                 }
             });
-
             tabUi.innerHTML = `
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-2">介面主題配色 (自動套用於全設備)</label>
-                    <select id="key-theme-mode" class="w-full bg-slate-800 text-white border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500">
+                    <select id="key-theme-mode" class="w-full bg-slate-800 text-white border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500 mb-4">
                         <option value="dark">🌙 黑夜模式 (Dark Mode)</option>
                         <option value="light">☀️ 白晝模式 (Light Mode)</option>
                     </select>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">主色調 (UI 顏色)</label>
+                    <select id="key-ui-color" class="w-full bg-slate-800 text-white border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="blue">🔵 科技藍 (預設)</option>
+                        <option value="emerald">🟢 翡翠綠</option>
+                        <option value="purple">🟣 魅影紫</option>
+                        <option value="rose">🔴 玫瑰紅</option>
+                    </select>
                 </div>
             `;
-
             container.innerHTML = '';
             container.appendChild(tabApi); container.appendChild(tabVoice); container.appendChild(tabUi);
 
@@ -1524,10 +1680,21 @@ return html;
                 <button onclick="switchSettingsTab('voice')" id="tab-btn-voice" class="flex-1 py-2 text-xs font-bold rounded-md text-slate-400 hover:bg-slate-700 transition-colors">語音/行為</button>
                 <button onclick="switchSettingsTab('ui')" id="tab-btn-ui" class="flex-1 py-2 text-xs font-bold rounded-md text-slate-400 hover:bg-slate-700 transition-colors">外觀/主題</button>
             `;
-container.parentNode.insertBefore(header, container);
+            container.parentNode.insertBefore(header, container);
             container.setAttribute('data-tabbed', 'true');
             
             document.getElementById('key-theme-mode').value = appState.theme || 'dark';
+            document.getElementById('key-ui-color').value = appState.uiColor || 'blue';
+            const longMemoryEl = document.getElementById('key-long-memory');
+            if (longMemoryEl) longMemoryEl.checked = appState.enableLongMemory;
+            
+            window.applyUiColor = function(color) {
+                let style = document.getElementById('ui-color-fix');
+                if(!style) { style = document.createElement('style'); style.id = 'ui-color-fix'; document.head.appendChild(style); }
+                let colorHex = '#2563eb'; if (color === 'emerald') colorHex = '#059669'; if (color === 'purple') colorHex = '#9333ea'; if (color === 'rose') colorHex = '#e11d48';
+                style.innerHTML = `.bg-blue-600 { background-color: ${colorHex} !important; } .hover\\:bg-blue-500:hover { filter: brightness(1.2); } .text-blue-400 { color: ${colorHex} !important; filter: brightness(1.5); } .text-blue-500 { color: ${colorHex} !important; filter: brightness(1.3); } .border-blue-500 { border-color: ${colorHex} !important; } .focus\\:border-blue-500:focus { border-color: ${colorHex} !important; }`;
+            };
+            applyUiColor(appState.uiColor || 'blue');
 
             const tgTokenEl = document.getElementById('key-tg-token'); if (tgTokenEl) tgTokenEl.value = appState.tgToken || '';
             const tgChatIdEl = document.getElementById('key-tg-chatid'); if (tgChatIdEl) tgChatIdEl.value = appState.tgChatId || '';
@@ -1670,10 +1837,20 @@ s('key-aws-sk', 'aws_sk'); s('key-aws-region', 'aws_region'); s('key-gmaps', 'gm
             appState.autoTTS = document.getElementById('key-auto-tts').checked; localStorage.setItem('nova_auto_tts', appState.autoTTS);
 
             const themeModeEl = document.getElementById('key-theme-mode');
+            const longMemoryEl = document.getElementById('key-long-memory');
+            if (longMemoryEl) { appState.enableLongMemory = longMemoryEl.checked; localStorage.setItem('nova_long_memory', appState.enableLongMemory); }
+            
             if (themeModeEl) {
                 appState.theme = themeModeEl.value;
                 localStorage.setItem('nova_theme', appState.theme);
                 applyTheme(appState.theme);
+            }
+            
+            const uiColorEl = document.getElementById('key-ui-color');
+            if (uiColorEl) {
+                appState.uiColor = uiColorEl.value;
+                localStorage.setItem('nova_ui_color', appState.uiColor);
+                if(typeof applyUiColor === 'function') applyUiColor(appState.uiColor);
             }
 
             closeSettings(); showToast("✅ 設定已儲存"); updateModelUI();
@@ -1959,28 +2136,243 @@ msg.files : (msg.file ? [msg.file] : []);
                 appState.notes.unshift(note); saveToDB('notes', note); renderNotes(); showToast("⭐ 已加入筆記！(表格與格式已保留)");
             } 
         };
+        // ===== 通用確認對話框 =====
+        window.showConfirmDialog = function(opts) {
+            var title = opts.title || '確認操作';
+            var message = opts.message || '您確定要執行此操作嗎？';
+            var okText = opts.okText || '確定';
+            var okClass = opts.okClass || 'bg-red-600 hover:bg-red-500';
+            var icon = opts.icon || 'ph-warning';
+            var iconBg = opts.iconBg || 'bg-red-500/20';
+            var iconColor = opts.iconColor || 'text-red-400';
+            var onConfirm = opts.onConfirm;
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            const okBtn = document.getElementById('confirm-ok-btn');
+            okBtn.textContent = okText;
+            okBtn.className = 'px-5 py-2 text-sm font-bold text-white ' + okClass + ' rounded-xl transition-colors shadow-lg';
+            document.getElementById('confirm-icon').className = 'ph-bold ' + icon + ' text-xl ' + iconColor;
+            document.getElementById('confirm-icon-wrap').className = 'w-10 h-10 rounded-full flex items-center justify-center shrink-0 ' + iconBg;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            window._confirmOk = function() {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                if (typeof onConfirm === 'function') onConfirm();
+            };
+            window._confirmCancel = function() {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+            };
+        };
+
+        // ===== 圖片預覽放大（含手勢縮放、拖曳、雙擊重設、複製）=====
+        (function() {
+            let _scale = 1, _tx = 0, _ty = 0;
+            let _pinchStart = null, _scaleStart = 1;
+            let _dragStart = null, _txStart = 0, _tyStart = 0;
+            let _lastTap = 0;
+            let _currentSrc = '';
+
+            function applyTransform(img, animated) {
+                img.style.transition = animated ? 'transform 0.25s ease' : 'none';
+                img.style.transform = `scale(${_scale}) translate(${_tx}px,${_ty}px)`;
+            }
+
+            function clampTranslate(img) {
+                // 限制平移不超出圖片可視範圍
+                const maxTx = Math.max(0, (img.naturalWidth * _scale - window.innerWidth) / (2 * _scale));
+                const maxTy = Math.max(0, (img.naturalHeight * _scale - window.innerHeight * 0.78) / (2 * _scale));
+                _tx = Math.max(-maxTx, Math.min(maxTx, _tx));
+                _ty = Math.max(-maxTy, Math.min(maxTy, _ty));
+            }
+
+            function dist(t) { const dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.hypot(dx, dy); }
+            function midpoint(t) { return { x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 }; }
+
+            window.openImgPreview = function(src, filename) {
+                const modal = document.getElementById('img-preview-modal');
+                const img = document.getElementById('img-preview-img');
+                const dl = document.getElementById('img-preview-download');
+                _currentSrc = src;
+                img.src = src;
+                dl.href = src;
+                dl.download = filename || 'image.png';
+                _scale = 1; _tx = 0; _ty = 0;
+                img.style.transition = 'none';
+                img.style.transform = 'scale(1) translate(0px,0px)';
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+
+                // 顯示提示 3 秒後淡出
+                const hint = document.getElementById('img-zoom-hint');
+                if (hint) { hint.style.opacity = '1'; clearTimeout(hint._t); hint._t = setTimeout(() => { hint.style.opacity = '0'; }, 2800); }
+
+                // 清除舊事件
+                const vp = document.getElementById('img-preview-viewport');
+                vp.replaceWith(vp.cloneNode(true)); // 清除所有事件監聽
+                const vpNew = document.getElementById('img-preview-viewport');
+                const imgNew = document.getElementById('img-preview-img');
+
+                // ——— Touch 事件（手勢縮放 + 拖曳 + 雙擊重設）———
+                vpNew.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 2) {
+                        // 雙指縮放開始
+                        _pinchStart = dist(e.touches);
+                        _scaleStart = _scale;
+                        _dragStart = null;
+                        e.preventDefault();
+                    } else if (e.touches.length === 1) {
+                        // 單指拖曳 or 雙擊重設
+                        const now = Date.now();
+                        if (now - _lastTap < 280) {
+                            // 雙擊重設
+                            _scale = 1; _tx = 0; _ty = 0;
+                            applyTransform(imgNew, true);
+                            _lastTap = 0;
+                            return;
+                        }
+                        _lastTap = now;
+                        _dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                        _txStart = _tx; _tyStart = _ty;
+                    }
+                }, { passive: false });
+
+                vpNew.addEventListener('touchmove', function(e) {
+                    if (e.touches.length === 2 && _pinchStart !== null) {
+                        e.preventDefault();
+                        const newDist = dist(e.touches);
+                        const rawScale = _scaleStart * (newDist / _pinchStart);
+                        _scale = Math.max(1, Math.min(6, rawScale));
+                        clampTranslate(imgNew);
+                        applyTransform(imgNew, false);
+                    } else if (e.touches.length === 1 && _dragStart && _scale > 1) {
+                        e.preventDefault();
+                        _tx = _txStart + (e.touches[0].clientX - _dragStart.x) / _scale;
+                        _ty = _tyStart + (e.touches[0].clientY - _dragStart.y) / _scale;
+                        clampTranslate(imgNew);
+                        applyTransform(imgNew, false);
+                    }
+                }, { passive: false });
+
+                vpNew.addEventListener('touchend', function(e) {
+                    if (e.touches.length < 2) _pinchStart = null;
+                    if (_scale < 1.05) { _scale = 1; _tx = 0; _ty = 0; applyTransform(imgNew, true); }
+                });
+
+                // ——— Mouse 滾輪縮放（桌機）———
+                vpNew.addEventListener('wheel', function(e) {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? 0.85 : 1.18;
+                    _scale = Math.max(1, Math.min(6, _scale * delta));
+                    if (_scale <= 1) { _tx = 0; _ty = 0; }
+                    clampTranslate(imgNew);
+                    applyTransform(imgNew, false);
+                }, { passive: false });
+
+                // ——— Mouse 拖曳（桌機）———
+                let _mouseDown = false;
+                vpNew.addEventListener('mousedown', function(e) {
+                    if (_scale <= 1) return;
+                    _mouseDown = true;
+                    _dragStart = { x: e.clientX, y: e.clientY };
+                    _txStart = _tx; _tyStart = _ty;
+                    vpNew.style.cursor = 'grabbing';
+                });
+                window.addEventListener('mousemove', function(e) {
+                    if (!_mouseDown) return;
+                    _tx = _txStart + (e.clientX - _dragStart.x) / _scale;
+                    _ty = _tyStart + (e.clientY - _dragStart.y) / _scale;
+                    clampTranslate(imgNew);
+                    applyTransform(imgNew, false);
+                });
+                window.addEventListener('mouseup', function() {
+                    _mouseDown = false;
+                    if (vpNew) vpNew.style.cursor = '';
+                });
+
+                // 點背景關閉
+                modal.onclick = function(e) { if (e.target === modal) closeImgPreview(); };
+            };
+
+            window.closeImgPreview = function() {
+                const modal = document.getElementById('img-preview-modal');
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                const img = document.getElementById('img-preview-img');
+                _scale = 1; _tx = 0; _ty = 0;
+                if (img) { img.style.transform = 'scale(1) translate(0px,0px)'; img.src = ''; }
+            };
+
+            window.copyImgToClipboard = async function() {
+                try {
+                    const src = _currentSrc;
+                    let blob;
+                    if (src.startsWith('data:')) {
+                        const arr = src.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]);
+                        const ab = new Uint8Array(bstr.length);
+                        for (let i = 0; i < bstr.length; i++) ab[i] = bstr.charCodeAt(i);
+                        blob = new Blob([ab], { type: mime });
+                    } else {
+                        const res = await fetch(src);
+                        blob = await res.blob();
+                    }
+                    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+                    if (typeof showToast === 'function') showToast('✅ 圖片已複製到剪貼簿');
+                } catch (err) {
+                    if (typeof showToast === 'function') showToast('⚠️ 瀏覽器不支援複製圖片，請長按手動複製');
+                }
+            };
+        })();
+
         window.deleteMessage = function(id) {
-            appState.messages = appState.messages.filter(m => String(m.id) !== String(id));
-            deleteFromDB('messages', id); renderMessages();
+            showConfirmDialog({
+                title: '刪除此訊息',
+                message: '確定要刪除這則對話訊息嗎？此動作無法復原。',
+                okText: '刪除',
+                onConfirm: function() {
+                    appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
+                    appState.messages = appState.messages.filter(m => String(m.id) !== String(id));
+                    deleteFromDB('messages', id); renderMessages();
+                }
+            });
         };
 
         window.generatePPTFromMessage = function(id) {
             const msg = appState.messages.find(m => String(m.id) === String(id));
             if (!msg || !msg.text) return;
-            switchTab('dashboard');
-            document.getElementById('user-input').value = `幫我把這些內容做成簡報 (PPT)：\n\n${msg.text.substring(0, 3000)}`;
-            handleSendMessage();
-            showToast("✅ 已發送製作 PPT 指令");
+            showConfirmDialog({
+                title: '製作投影片',
+                message: '確定要將此訊息內容傳送給 AI 製作 PPT 投影片嗎？',
+                okText: '確定製作',
+                okClass: 'bg-emerald-600 hover:bg-emerald-500',
+                icon: 'ph-presentation-chart',
+                iconBg: 'bg-emerald-500/20',
+                iconColor: 'text-emerald-400',
+                onConfirm: function() {
+                    switchTab('dashboard');
+                    document.getElementById('user-input').value = `幫我把這些內容做成簡報 (PPT)：\n\n${msg.text.substring(0, 3000)}`;
+                    handleSendMessage();
+                    showToast("✅ 已發送製作 PPT 指令");
+                }
+            });
         };
 
         window.generatePPTFromNote = function(id) {
             const n = appState.notes.find(x => String(x.id) === String(id));
             if (!n) return;
-            switchTab('dashboard');
-            let contentText = n.isHtml ? n.content.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ') : n.content;
-            document.getElementById('user-input').value = `幫我把這篇筆記做成簡報 (PPT)：\n\n【${n.title}】\n${contentText.substring(0, 3000)}`;
-            handleSendMessage();
-            showToast("✅ 已發送製作 PPT 指令");
+            showConfirmDialog({
+                title: '製作投影片',
+                message: `確定要將筆記「${n.title || '(未命名)'}」製作成 PPT 投影片嗎？`,
+                okText: '確定製作',
+                okClass: 'bg-emerald-600 hover:bg-emerald-500',
+                icon: 'ph-presentation-chart',
+                iconBg: 'bg-emerald-500/20',
+                iconColor: 'text-emerald-400',
+                onConfirm: function() {
+                    switchTab('dashboard');
+                    let contentText = n.isHtml ? n.content.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ') : n.content;
+                    document.getElementById('user-input').value = `幫我把這篇筆記做成簡報 (PPT)：\n\n【${n.title}】\n${contentText.substring(0, 3000)}`;
+                    handleSendMessage();
+                    showToast("✅ 已發送製作 PPT 指令");
+                }
+            });
         };
 
         window.autoResizeInput = function(el) {
@@ -2082,7 +2474,7 @@ handleSendMessage(); }
             else { btn.classList.add('bg-blue-600', 'hover:bg-blue-500'); btn.classList.remove('bg-slate-700'); icon.className = 'ph-bold ph-paper-plane-right text-xl ml-0.5'; }
         };
 
-        window.parseTimeNatural = function(text) {
+       window.parseTimeNatural = function(text) {
             const map = {'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
             text = text.replace(/\s+/g, '').replace(/[一二兩三四五六七八九十]+/g, match => {
                 if(match === '十') return '10';
@@ -2095,23 +2487,82 @@ handleSendMessage(); }
             const now = new Date();
             let target = new Date(now); let complete = false; let missing = null;
             let hasDate = false, hasTime = false, hasAmPm = false;
-            if(text.includes('今天')) hasDate = true;
-            else if(text.includes('明天')) { target.setDate(target.getDate() + 1); hasDate = true; }
+
+            // 相對日期
+            if(text.includes('今天')) { hasDate = true; }
+            else if(text.includes('大後天')) { target.setDate(target.getDate() + 3); hasDate = true; }
             else if(text.includes('後天')) { target.setDate(target.getDate() + 2); hasDate = true; }
-            if(text.includes('上午') || text.includes('早上')) hasAmPm = true;
-            if(text.includes('下午') || text.includes('晚上')) { hasAmPm = true; target.setHours(target.getHours() >= 12 ? target.getHours() : target.getHours() + 12); }
-            const timeMatch = text.match(/(\d+)(?:點|時)(?:(\d+)(?:分)?)?/);
-            if(timeMatch) {
-                hasTime = true; let h = parseInt(timeMatch[1]); const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-                if(text.includes('下午') || text.includes('晚上') && h < 12) h += 12;
+            else if(text.includes('明天')) { target.setDate(target.getDate() + 1); hasDate = true; }
+
+            // 絕對日期：支援 4/20、4月20日、4月20號
+            if (!hasDate) {
+                const slashMatch = text.match(/(\d{1,2})\/(\d{1,2})/);
+                const chDateMatch = text.match(/(\d{1,2})月(\d{1,2})[日號]?/);
+                const dateM = slashMatch || chDateMatch;
+                if (dateM) {
+                    const mo = parseInt(dateM[1]) - 1;
+                    const dy = parseInt(dateM[2]);
+                    target.setMonth(mo, dy);
+                    if (target.getTime() < now.getTime() - 86400000) target.setFullYear(target.getFullYear() + 1);
+                    hasDate = true;
+                }
+            }
+
+            // 上午/下午關鍵字判斷
+            const isAfternoon = text.includes('下午') || text.includes('晚上');
+            const isMorning = text.includes('上午') || text.includes('早上') || text.includes('凌晨');
+            if (isAfternoon || isMorning) hasAmPm = true;
+
+            // 解析時間：支援 HH:MM / HH:MM:SS（24小時制冒號格式，如 13:00、9:30）
+            const colonTimeMatch = text.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+            if (colonTimeMatch) {
+                hasTime = true;
+                let h = parseInt(colonTimeMatch[1]);
+                const m = parseInt(colonTimeMatch[2]);
+                // 24小時制：小時>=13 或 ==0 視為已知AM/PM，不需再追問
+                if (h >= 13 || h === 0) hasAmPm = true;
+                if (isAfternoon && h < 12) h += 12;
                 target.setHours(h, m, 0, 0);
             }
-            if(text.includes('半小時後')) { target = new Date(now.getTime() + 30*60000); complete = true; }
-            else if(text.includes('1小時後') || text.includes('一小時後')) { target = new Date(now.getTime() + 60*60000); complete = true; }
-            else if(hasDate && hasTime && hasAmPm) complete = true;
-            else if(hasDate && hasTime && !hasAmPm) missing = 'ampm';
-            else if(!hasDate && hasTime) missing = 'date';
-            else if(hasDate && !hasTime) missing = 'time';
+
+            // 解析時間：X點 / X點Y分（中文格式，若冒號格式未匹配才執行）
+            if (!hasTime) {
+                const timeMatch = text.match(/(\d+)(?:點|時)(?:(\d+)分?)?/);
+                if(timeMatch) {
+                    hasTime = true;
+                    let h = parseInt(timeMatch[1]);
+                    const m = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+                    // 24小時制自動識別
+                    if (h >= 13 || h === 0) hasAmPm = true;
+                    if(isAfternoon && h < 12) h += 12;
+                    if(text.includes('凌晨') && h === 12) h = 0;
+                    target.setHours(h, m, 0, 0);
+                }
+            }
+
+            // 純「X分後」格式（例如：10分後、30分鐘後）
+            if(!hasTime && !complete) {
+                const minAfterMatch = text.match(/(\d+)分(?:後|鐘後)/);
+                if (minAfterMatch) { target = new Date(now.getTime() + parseInt(minAfterMatch[1]) * 60000); complete = true; }
+            }
+
+            // 相對時間（X小時後）
+            if(!complete) {
+                if(text.includes('半小時後')) { target = new Date(now.getTime() + 30*60000); complete = true; }
+                else {
+                    const hrAfterMatch = text.match(/(\d+)小時後/);
+                    if(hrAfterMatch) { target = new Date(now.getTime() + parseInt(hrAfterMatch[1])*3600000); complete = true; }
+                }
+            }
+
+            // 完整性判斷
+            if(!complete) {
+                if(hasDate && hasTime && hasAmPm) complete = true;
+                else if(hasDate && hasTime && !hasAmPm) missing = 'ampm';
+                else if(!hasDate && hasTime) missing = 'date';
+                else if(hasDate && !hasTime) missing = 'time';
+            }
+
             return { complete, timestamp: target.getTime(), missing };
         };
 
@@ -2167,6 +2618,7 @@ handleSendMessage(); }
         };
 
         window.deleteTodo = function(id) {
+            appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
             appState.todos = appState.todos.filter(x => String(x.id) !== String(id)); deleteFromDB('todos', id); renderTodos();
         };
 
@@ -2437,8 +2889,8 @@ handleSendMessage(); }
 
         window.deleteNote = function(id) {
             if(confirm('確定要刪除這則筆記嗎？')) { 
-                appState.notes = appState.notes.filter(x => String(x.id) !== String(id));
-                deleteFromDB('notes', id); 
+                appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
+                appState.notes = appState.notes.filter(x => String(x.id) !== String(id)); 
                 renderNotes(); 
             }
         };
@@ -2506,7 +2958,7 @@ handleSendMessage(); }
         };
 
         window.deleteAudioRecord = function(id) {
-            if(confirm('確定要刪除這筆錄音紀錄嗎？')) { appState.audioRecords = appState.audioRecords.filter(x => String(x.id) !== String(id)); deleteFromDB('audioRecords', id); renderAudioRecords(); }
+            if(confirm('確定要刪除這筆錄音紀錄嗎？')) { appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds)); appState.audioRecords = appState.audioRecords.filter(x => String(x.id) !== String(id)); deleteFromDB('audioRecords', id); renderAudioRecords(); }
         };
 
         function updateNoteVoiceUI() {}
@@ -2979,11 +3431,22 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
                 let mediaHTML = '';
                 let filesToRender = msg.files && msg.files.length > 0 ? msg.files : (msg.file ? [msg.file] : []);
                 if (filesToRender.length > 0 && displayMediaHTML) {
-                    mediaHTML = `<div class="flex flex-wrap gap-2 mb-3">` + filesToRender.map(f => {
+                    mediaHTML = `<div class="flex flex-wrap gap-3 mb-3">` + filesToRender.map(f => {
                         if (f.category === 'image' && f.data) {
-                            return `<div class="relative group max-w-[200px] w-full">
-                                <img src="${f.data}" class="rounded-lg border border-slate-700/50 shadow-sm w-full object-contain bg-slate-900">
-                                <a href="${f.data}" download="${escapeHtml(f.name || 'image.png')}" class="absolute top-2 right-2 bg-blue-600/90 hover:bg-blue-500 text-white p-2 rounded-lg shadow-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 backdrop-blur-md" title="下載圖片"><i class="ph-bold ph-download-simple"></i> 下載</a>
+                            const fname = escapeHtml(f.name || 'image.png');
+                            const fsrc = f.data.replace(/'/g, "\\'");
+                            return `<div class="relative group w-full max-w-xs md:max-w-sm cursor-pointer"
+                                onclick="openImgPreview('${fsrc}','${fname}')"
+                                ontouchstart="window._lpTimer=setTimeout(()=>{downloadDataUriFile('${fsrc}','${fname}');window._lpFired=true;},600);window._lpFired=false;"
+                                ontouchend="clearTimeout(window._lpTimer);"
+                                ontouchmove="clearTimeout(window._lpTimer);"
+                                title="點擊放大 / 長按下載">
+                                <img src="${f.data}" class="rounded-xl border border-slate-700/50 shadow-lg w-full object-contain bg-slate-900 transition-transform active:scale-95 hover:brightness-90" style="max-height:360px;">
+                                <div class="absolute inset-0 rounded-xl flex items-end justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none">
+                                    <span class="text-white text-[10px] font-bold drop-shadow truncate max-w-[60%]">${fname}</span>
+                                    <span class="text-white/80 text-[10px] flex items-center gap-1"><i class="ph-bold ph-magnifying-glass-plus"></i>點擊放大</span>
+                                </div>
+                                <button onclick="event.stopPropagation();downloadDataUriFile('${fsrc}','${fname}');" class="absolute top-2 right-2 bg-blue-600/90 hover:bg-blue-500 text-white p-1.5 rounded-lg shadow-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 backdrop-blur-md pointer-events-auto" title="下載圖片"><i class="ph-bold ph-download-simple"></i></button>
                             </div>`;
                         } else {
                             let iconType = f.category === 'image' ? 'ph-image' : 'ph-file';
@@ -3031,10 +3494,10 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
                 return `<div class="group flex ${isUser ? 'justify-end' : 'justify-start items-start space-x-3'} fade-in relative mb-4">
                     ${!isUser ? `<div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${modelInfo?.bg||'bg-slate-700'}"><i class="ph-fill ${modelInfo?.icon||'ph-robot'} text-white text-sm"></i></div>` : ''}
                     <div class="msg-group relative max-w-[90%] md:max-w-[80%] rounded-2xl p-4 shadow-sm ${isUser ? 'bg-slate-800 text-white rounded-br-none' : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'}">
-                        ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-1 block ${modelInfo?.color||'text-slate-400'} opacity-80">${modelInfo?.name||'System'}</span>` : ''}
+                        ${!isUser ? `<span class="text-[10px] font-bold uppercase mb-2 block ${modelInfo?.color||'text-slate-400'} opacity-80 pr-24 leading-tight">${modelInfo?.name||'System'}</span>` : ''}
                         ${mediaHTML} <div class="msg-content text-sm leading-relaxed">${formatMessage(msg.text)}</div> ${actionCardHtml} ${sourcesHTML}
                         <p class="text-[10px] mt-2 text-right text-slate-500 opacity-60">${msg.time}</p>
-                        <div class="msg-actions absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="msg-actions absolute top-1.5 right-1.5 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <button onclick="playMessageAudio(${msg.id})" class="p-1.5 ${isPlayingMsg ?'text-blue-400':'text-slate-500'} hover:text-purple-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm shadow" title="語音朗讀(點擊可停止)"><i class="ph-bold ${isPlayingMsg ?'ph-stop-circle animate-pulse':'ph-speaker-high'} text-xs"></i></button>
                             <button onclick="copyMessageText(${msg.id})" class="p-1.5 text-slate-500 hover:text-white transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm shadow" title="複製文字"><i class="ph-bold ph-copy text-xs"></i></button>
                             <button onclick="generatePPTFromMessage(${msg.id})" class="p-1.5 text-slate-500 hover:text-emerald-400 transition-colors bg-slate-950/80 rounded-full backdrop-blur-sm shadow" title="製作 PPT"><i class="ph-bold ph-presentation-chart text-xs"></i></button>
@@ -4894,7 +5357,8 @@ window.startMultiAgentResearch = async function() {
             try {
                 const actionKeywords = ['打開', '開啟', 'open', '播放', '傳', '發', '發送', '導航', '帶我', '撥打', 'call', '打給', '幫我'];
                 const isAction = actionKeywords.some(kw => text.toLowerCase().startsWith(kw));
-                const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(text.trim());
+                const _imgTest = (s) => /(畫|生成|產生|製作|幫我畫|幫你畫|create|make|draw|generate).{0,200}(圖片|照片|圖像|picture|image|impage|photo)|(圖片|照片|圖像|picture|image|impage|photo).{0,50}(生成|產生|製作|畫出)/i.test(s);
+                const isImageIntent = _imgTest(text.trim());
 
                 if (isAction && !isImageIntent && appState.currentModel === 'gemini' && appState.keys.gemini && !hasChatFile && !appState.isLiveMode && appState.translateMode === 'off') {
                     const sysMsgId = Date.now();
@@ -4998,10 +5462,38 @@ input.value = ''; autoResizeInput(input); chatInitialInput = ''; clearChatFile()
                          }
                      return;
                 }
-                const reminderMatch = text.match(/^(?:提醒|reminder)(.*)$/i);
+                const reminderMatch = text.match(/^(?:提醒我?|幫我提醒我?|請提醒我?|提醒一下|幫我設提醒|reminder)\s*(.*)$/i);
                 if (reminderMatch) {
-                    const content = reminderMatch[1].trim() || "未命名事項"; const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false, alertEnabled: true };
-                    appState.todos.push(newTodo); saveToDB('todos', newTodo); appState.pendingReminder = newTodo.id; appState.reminderStage = 1; renderTodos(); addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？需要每隔多久重複一次嗎？(例如：明天下午三點，每天重複)`, 'system'); speakText(` 已將「${content}」加入行程，請問什麼時候提醒？需要每隔多久重複一次嗎？(例如：明天下午三點，每天重複)`); return; } let systemPromptAddon = "【系統強烈約束指令：請優先且專注地回答使用者的「最新問題」。前文紀錄僅供代名詞解析參考，嚴禁被舊話題干擾而給出無關的答覆。】\n";
+                    // 取得原始內容，剔除開頭殘留的「我」字
+                    let rawContent = reminderMatch[1].trim().replace(/^我\s*/, '');
+
+                    // 嘗試直接從句子解析時間
+                    const timeInfo = parseTimeNatural(rawContent);
+
+                    // 萃取「事件名稱」：去掉時間片段，剩下的是事件內容
+                    const timeTokensPattern = /(?:[今明後大]+天|上午|下午|早上|凌晨|晚上|\d{1,2}月\d{1,2}[日號]?|\d{1,2}\/\d{1,2}|[一二三四五六七八九十]+點(?:[一二三四五六七八九十\d]+分)?|\d+(?:點|時)(?:\d+分)?|半小時後|[一兩\d]+小時後|\d+分(?:後|鐘後)?|每天|每週|每日|每月|每年|每\d+小時|每\d+分|不重複|單次)/g;
+                    let content = rawContent.replace(timeTokensPattern, '').replace(/[的去要來做在]+$/g, '').replace(/[，。、！!？? ]+/g, '').trim() || "未命名事項";
+
+                    const newTodo = { id: Date.now(), text: content, done: false, time: '詢問中...', alerted: false, alertEnabled: true };
+
+                    if (timeInfo.complete) {
+                        // 句子中已包含完整時間，直接設定，再詢問是否重複
+                        newTodo.time = new Date(timeInfo.timestamp).toLocaleString();
+                        newTodo.alertTime = timeInfo.timestamp;
+                        newTodo.alerted = false;
+                        newTodo.repeatInterval = getIntervalMs(rawContent);
+                        appState.todos.push(newTodo); saveToDB('todos', newTodo); renderTodos();
+                        appState.pendingReminder = newTodo.id; appState.reminderStage = 3;
+                        addMessage(`📝 已將「${content}」加入行程，提醒時間：${newTodo.time}。\n請問需要重複提醒嗎？(例如：每天、每週，或回答「不重複」)`, 'system');
+                        speakText(`已將「${content}」加入行程。請問需要重複提醒嗎？`);
+                    } else {
+                        appState.todos.push(newTodo); saveToDB('todos', newTodo);
+                        appState.pendingReminder = newTodo.id; appState.reminderStage = 1; renderTodos();
+                        addMessage(`📝 已將「${content}」加入行程，請問什麼時候提醒？(例如：明天下午三點)`, 'system');
+                        speakText(`已將「${content}」加入行程，請問什麼時候提醒？`);
+                    }
+                    return;
+                } let systemPromptAddon = "【系統強烈約束指令：請優先且專注地回答使用者的「最新問題」。前文紀錄僅供代名詞解析參考，嚴禁被舊話題干擾而給出無關的答覆。】\n";
 if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 最高強制指令】：\n1. 絕對脫離被動機器人模式！你現在是一位極具主動性、思維敏捷的真人頂級顧問。\n2. 【動態語意斷橋機制】：每次收到新問題時，請務必先在內心判斷「最新問題是否與歷史對話相關」。若判定為『全新獨立話題』，請立刻切斷與前文的關聯，完全忽略舊對話的情境與設定，以乾淨的狀態回答新問題！\n3. 當使用者提出需求時，必須主動連網搜尋資料並給出洞察。\n4. **絕對強制**：每一次的回覆最後，都必須自主挖掘盲點，主動向使用者提出「一個引導式的好問題」，像人類對話一樣持續追問深挖。\n5. 除非使用者明確表示滿意、停止，否則不准單方面結束對話！\n"; } 
 
             // --- 新增：攔截 PPT 簡報意圖，強制回傳 JSON 格式 ---
@@ -5020,10 +5512,10 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                 }
 
                 // 🌟 擴充關鍵字：把「位置」、「座標」、「定位」加進去
-                let enableSearchTool = appState.isSearchEnabled || appState.deepDiveMode || /附近|最近|在哪|地點|地址|導航|怎麼走|距離|位置|座標|定位/.test(text);
+                let enableSearchTool = appState.isSearchEnabled || appState.deepDiveMode || /附近|最近|在哪|地點|地址|導航|怎麼走|距離|位置|座標|定位|查尋|尋找|離我|幫我找/.test(text);
                 
                 // --- 2. 判斷是否為地點搜尋或導航意圖 ---
-                const isLocationIntent = text.includes('附近') || text.includes('最近') || text.includes('導航') || text.includes('帶我') || text.includes('怎麼走') || text.includes('路線') || text.includes('距離') || text.includes('位置') || text.includes('座標') || text.includes('定位');
+                const isLocationIntent = /附近|最近|導航|帶我|怎麼走|路線|距離|位置|座標|定位|離我|查尋|尋找/.test(text) || /幫我找.{0,10}(?:店|餐廳|咖啡|超商|醫院|學校|公園|銀行|加油|藥局|便利)/.test(text);
                 
                 // 🌟 攔截歷史紀錄中最後一筆（使用者剛輸入的訊息）
                 let originalUserMessage = "";
@@ -5044,10 +5536,60 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                     }
                     text = finalPromptNoGPS; // 🌟 覆寫
                 } 
-                else if (isLocationIntent && appState.keys.gmaps && appState.lastLat && appState.lastLon) {
+                else if (isLocationIntent && appState.keys.gmaps) {
+                    addMessage(`📡 正在重新取得 GPS 精確位置...`, 'system');
+                    // 每次搜尋前強制重新取得 GPS 座標
+                    await new Promise((resolve) => {
+                        if (!navigator.geolocation) {
+                            addMessage(`⚠️ 裝置不支援 GPS 定位。`, 'system'); resolve(); return;
+                        }
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                appState.lastLat = pos.coords.latitude;
+                                appState.lastLon = pos.coords.longitude;
+                                const acc = pos.coords.accuracy ? `（精度 ±${Math.round(pos.coords.accuracy)}m）` : '';
+                                addMessage(`✅ GPS 定位成功 ${acc}，開始搜尋...`, 'system');
+                                resolve();
+                            },
+                            (err) => {
+                                addMessage(`⚠️ GPS 重新定位失敗（${err.message}），使用上次位置繼續搜尋。`, 'system');
+                                resolve(); // 失敗也繼續，不卡住
+                            },
+                            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                        );
+                    });
+                    if (!appState.lastLat || !appState.lastLon) {
+                        addMessage(`⚠️ 無法取得任何定位資料，無法執行地點搜尋。`, 'system');
+                        return;
+                    }
                     addMessage(`🗺️ 正在透過 Google Maps API 精確檢索周邊與規劃路線...`, 'system');
                     try { 
-                        const userQueryTarget = text.replace(/離我最近的|離我最近|離我|附近有什麼|我附近|附近|最近的|最近|在哪裡|在哪|地點|地址|導航|怎麼走|距離|我的位置|幫我找|告訴我|位置|座標|定位/g, '').trim() || '地標與商家'; 
+                        const chNumMap = {'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
+                        let searchRadiusMeters = 5000; // 預設 5 公里
+                        const kmMatchCh = text.match(/([一二兩三四五六七八九十]+)公里/);
+                        const kmMatchNum = text.match(/(\d+(?:\.\d+)?)公里/);
+                        const mMatchNum = text.match(/(\d+(?:\.\d+)?)(?:公尺|米|m)/);
+                        if (text.includes('半公里')) { searchRadiusMeters = 500; }
+                        else if (kmMatchCh) { searchRadiusMeters = (chNumMap[kmMatchCh[1]] || 1) * 1000; }
+                        else if (kmMatchNum) { searchRadiusMeters = parseFloat(kmMatchNum[1]) * 1000; }
+                        else if (mMatchNum) { searchRadiusMeters = parseFloat(mMatchNum[1]); }
+
+                        // 解析使用者指定筆數（如「10間」「5家」「三筆」「20個」）
+                        let searchMaxCount = 5; // 預設 5 筆
+                        const countMatchNum = text.match(/(\d+)\s*(?:間|家|筆|個|處|結果|條)/);
+                        const countMatchCh = text.match(/([一二兩三四五六七八九十百]+)\s*(?:間|家|筆|個|處)/);
+                        if (countMatchNum) { searchMaxCount = Math.min(Math.max(parseInt(countMatchNum[1]), 1), 20); }
+                        else if (countMatchCh) {
+                            const raw = countMatchCh[1].replace(/[一二兩三四五六七八九十百]+/g, m => {
+                                if(m==='十') return '10'; if(m.length===1) return chNumMap[m]||m;
+                                if(m[0]==='十') return 10+(chNumMap[m[1]]||0);
+                                if(m[1]==='十') return (chNumMap[m[0]]||0)*10+(m[2]?chNumMap[m[2]]||0:0);
+                                return m;
+                            });
+                            searchMaxCount = Math.min(Math.max(parseInt(raw)||5, 1), 20);
+                        }
+
+                        const userQueryTarget = text.replace(/離我最近的?|離我|附近有什麼|我附近|附近(?:[一二兩三四五六七八九十\d\.]+(?:公里|公尺|米|m)內?)?|[一二兩三四五六七八九十\d\.]+(?:公里|公尺|米|m)(?:內|以內)?|\d+\s*(?:間|家|筆|個|處|結果|條)|[一二兩三四五六七八九十百]+\s*(?:間|家|筆|個|處)|最近的?|在哪裡?|地點|地址|導航|怎麼走|距離|我的位置|幫我找|查尋|尋找|告訴我|位置|座標|定位/g, '').trim() || '地標與商家'; 
                         
                         const userLat = parseFloat(appState.lastLat);
                         const userLon = parseFloat(appState.lastLon);
@@ -5066,9 +5608,6 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                         } catch (err) { console.warn("Geocoding failed", err.message); }
 
                         // 2. 取得周邊地點 (Places API)
-                        const latDelta = 5.0 / 111.32;
-                        const lonDelta = 5.0 / (111.32 * Math.cos(userLat * Math.PI / 180));
-
                         const placeRes = await fetch('https://places.googleapis.com/v1/places:searchText', { 
                             method: 'POST', 
                             headers: { 
@@ -5078,10 +5617,11 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                             }, 
                             body: JSON.stringify({ 
                                 textQuery: userQueryTarget, 
-                                locationRestriction: { 
-                                    rectangle: { 
-                                        low: { latitude: userLat - latDelta, longitude: userLon - lonDelta }, 
-                                        high: { latitude: userLat + latDelta, longitude: userLon + lonDelta } 
+                                maxResultCount: searchMaxCount,
+                                locationBias: { 
+                                    circle: { 
+                                        center: { latitude: userLat, longitude: userLon }, 
+                                        radius: searchRadiusMeters 
                                     } 
                                 } 
                             }) 
@@ -5100,7 +5640,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                         mapContext += `🏠 目前所在真實地址：${realAddress}\n\n`;
                         
                         if (placeData.places && placeData.places.length > 0) { 
-                            const topPlaces = placeData.places.slice(0, 3);
+                            const topPlaces = placeData.places.slice(0, searchMaxCount);
                             for (let i = 0; i < topPlaces.length; i++) { 
                                 const p = topPlaces[i]; 
                                 mapContext += `🚩 ${i+1}. ${p.displayName?.text || '未知名稱'} (評分: ${p.rating||'無'})\n地址: ${p.formattedAddress || '無'}\n`; 
@@ -5150,8 +5690,9 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                             systemPromptAddon += `\n【系統強制指令】：你現在是純粹的資料排版助理，只能使用上述提供的真實數據，絕對禁止使用內部知識或網路搜尋補充。\n`; 
                             enableSearchTool = false;
                         } else {
-                            addMessage(`⚠️ 附近 5 公里內找不到相關地點。`, 'system');
-                            const finalPromptEmpty = `【系統強制指令】Google API 搜尋「${userQueryTarget}」結果為 0 筆。請直接告訴使用者：在目前位置 (${realAddress}) 半徑 5 公里內找不到此地點。絕對禁止自行捏造任何假資料。`;
+                            const radiusDisplay = searchRadiusMeters >= 1000 ? `${(searchRadiusMeters/1000).toFixed(1)} 公里` : `${searchRadiusMeters} 公尺`;
+                            addMessage(`⚠️ 附近 ${radiusDisplay} 內找不到相關地點。`, 'system');
+                            const finalPromptEmpty = `【系統強制指令】Google API 搜尋「${userQueryTarget}」結果為 0 筆。請直接告訴使用者：在目前位置 (${realAddress}) 半徑 ${radiusDisplay} 內找不到此地點。絕對禁止自行捏造任何假資料。`;
                             
                             if (lastMsgIndex !== -1) { appState.currentChat.messages[lastMsgIndex].content = finalPromptEmpty; } 
                             text = finalPromptEmpty; // 🌟 覆寫
@@ -5186,7 +5727,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                         
                         if (serpMapData && serpMapData.local_results && serpMapData.local_results.length > 0) {
                             let mapContext = "【SerpApi Google Maps 備援真實數據】\n";
-                            const topPlaces = serpMapData.local_results.slice(0, 3);
+                            const topPlaces = serpMapData.local_results.slice(0, searchMaxCount);
                             for (let i = 0; i < topPlaces.length; i++) {
                                 const p = topPlaces[i];
                                 mapContext += `${i+1}. 店名: ${p.title} (評價: ${p.rating||'無'})\n地址: ${p.address||'未提供'}\n導航連結: https://www.google.com/maps/dir/?api=1&origin=${appState.lastLat},${appState.lastLon}&destination=${p.gps_coordinates?.latitude||''},${p.gps_coordinates?.longitude||''}\n\n`;
@@ -5402,28 +5943,61 @@ if (appState.pendingAnalyzeContextId) {
                 // 如果是雙 AI 協作模式 (有帶入自訂歷史)
                 if (options.customHistory) {
                     chatHistory = options.customHistory;
-                } else if (appState.enableContext && appState.translateMode === 'off') {
-                    chatHistory = appState.messages.filter(m => m.sender === 'user' || m.sender === 'ai').slice(-4);
-                }
+                } else if (appState.enableLongMemory && appState.translateMode === 'off') {
+                // 長文記憶功能：獲取同一對話 (sessionId) 下的所有歷史紀錄，各自獨立不干擾
+                chatHistory = appState.messages.filter(m => (m.sender === 'user' || m.sender === 'ai') && String(m.sessionId || 'legacy') === String(appState.currentSessionId || 'legacy'));
+                // 賦予系統提示，使其能根據當下對話決定是否提起歷史，並保持人設
+                userText = `【系統記憶提示：在此對話中你具有長期記憶。請自然地依據我們過去的對話歷史與你被賦予的人設來回應。判斷當下我的問題是否跟前文有關：若無關，請直接針對新問題做出回答，切勿強行拉回舊話題，但必須繼續維持你的人設語氣。】\n\n` + userText;
+            } else if (appState.enableContext && appState.translateMode === 'off') {
+                // 原有的短記憶也修正為同一對話內才觸發，避免互相干擾
+                chatHistory = appState.messages.filter(m => (m.sender === 'user' || m.sender === 'ai') && String(m.sessionId || 'legacy') === String(appState.currentSessionId || 'legacy')).slice(-4);
+            }
 
                 let finalPrompt = userText;
                 if (!options.isAnalysis && !options.isCollab) {
-                    if (appState.replyLength === 'short') finalPrompt += "\n【限制：請使用極簡短的篇幅回覆，將字數控制在50字以內。】";
-                    else if (appState.replyLength === 'medium') finalPrompt += "\n【限制：請使用中等長度的篇幅回覆，扼要說明重點即可。】";
+                if (appState.replyLength === 'short') finalPrompt += "\n【限制：請使用極簡短的篇幅回覆，將字數控制在50字以內。】";
+                else if (appState.replyLength === 'medium') finalPrompt += "\n【限制：請使用中等長度的篇幅回覆，扼要說明重點即可。】";
+            }
+            
+            const _imgTestF = (s) => /(畫|生成|產生|製作|幫我畫|幫你畫|create|make|draw|generate).{0,200}(圖片|照片|圖像|picture|image|impage|photo)|(圖片|照片|圖像|picture|image|impage|photo).{0,50}(生成|產生|製作|畫出)/i.test(s);
+            const isImageIntent = _imgTestF(finalPrompt.trim());
+            
+            if(model === 'gemini') {
+                let selectedModelName = appState.geminiModel;
+                let isAutoRouted = false;
 
-                }
+                    // ============================================================
+                    // 🎨 圖片生成自動路由邏輯
+                    // 優先順序：Gemini 2.5 Flash-Image → Gemini 3.1 Flash-Image
+                    //           → Grok Image Pro (備援)
+                    // Gemini 3 Pro-Image：已知無法產出圖片，禁止自動路由
+                    // Imagen Standard/Fast：會生成無關圖片，禁止自動路由（手動選擇才使用）
+                    // ============================================================
+                    if (isImageIntent) {
+                        const isAlreadyImageModel = selectedModelName.includes('image') && 
+                                                    !selectedModelName.includes('gemini-3-pro-image'); // 3 Pro-Image 已知損壞
+                        const isImagenModel = selectedModelName.includes('imagen');
+                        const isProImageModel = selectedModelName.includes('gemini-3-pro-image');
+                        
+                        if (isProImageModel) {
+                            // Gemini 3 Pro-Image 已知只會回覆「為我創作中請稍後」，強制改用 Flash-Image
+                            selectedModelName = 'gemini-2.5-flash-image';
+                            isAutoRouted = true;
+                        // === 修改處：調整 Imagen 的判斷與路由 ===
+                        } else if (isImagenModel && (selectedModelName.includes('fast') || (selectedModelName.includes('generate-001') && !selectedModelName.includes('ultra')))) {
+                            // Imagen 4.0 Standard / Fast 會生成無關圖片，若手動選到則強制升級為 Imagen 4.0 Ultra
+                            selectedModelName = 'imagen-4.0-ultra-generate-001';
+                            isAutoRouted = true;
+                        // ==========================================
+                        } else if (!isAlreadyImageModel && !isImagenModel) {
+                            // 目前是一般文字模型，自動切換至 Gemini 2.5 Flash-Image
+                            selectedModelName = 'gemini-2.5-flash-image';
+                            isAutoRouted = true;
+                        }
+                        // Imagen 4.0 Ultra：手動選擇時照常使用（品質較好）
+                    }
 
-                const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(finalPrompt.trim());
-
-                if(model === 'gemini') {
-                    let selectedModelName = appState.geminiModel;
-                    let isAutoRouted = false;
-
-                    if (isImageIntent && !selectedModelName.includes('imagen') && !selectedModelName.includes('image')) {
-                        selectedModelName = 'imagen-4.0-generate-001'; 
-                        isAutoRouted = true;
-                    } 
-                    else if (selectedModelName === 'gemini-multi') {
+                    if (!isImageIntent && selectedModelName === 'gemini-multi') {
                         isAutoRouted = true;
                         selectedModelName = 'gemini-3-flash-preview'; 
                         if (finalPrompt.length > 500 || /(深入|詳細|分析|總結|論文|報告|程式碼|複雜|重點摘要|結構化)/.test(finalPrompt) || (options.file && options.file.category === 'media')) {
@@ -5491,19 +6065,38 @@ if (appState.pendingAnalyzeContextId) {
                     }
                     if (currentRole) contents.push({ role: currentRole, parts: currentParts });
 
+                    const isGeminiImageModel = selectedModelName.includes('image') && !selectedModelName.includes('imagen');
                     const payload = { contents: contents, generationConfig: { temperature: 0.7, maxOutputTokens: 8192 } };
-                    if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) { payload.tools = [{ google_search: {} }]; }
+                    // 🎨 Gemini 圖片生成模型需要明確啟用 IMAGE 輸出模式，且不可同時開啟 Google Search
+                    if (isGeminiImageModel) {
+                        payload.generationConfig.responseModalities = ["TEXT", "IMAGE"];
+                    } else if ((appState.isSearchEnabled || options.enableSearch) && !options.disableSearch && !options.file) {
+                        payload.tools = [{ google_search: {} }];
+                    }
                     
                     let endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:generateContent?key=${key}`;
                     let res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     let data = await res.json();
                     
+                    // 🔄 Gemini image model 失敗時：先試 3.1 Flash-Image，再試 2.5 Flash-Image
+                    if (!res.ok && isGeminiImageModel) {
+                        const fallbackImageModel = selectedModelName.includes('3.1') ? 'gemini-2.5-flash-image' : 'gemini-3.1-flash-image-preview';
+                        console.warn(`[Image Fallback] ${selectedModelName} failed, trying ${fallbackImageModel}`);
+                        selectedModelName = fallbackImageModel;
+                        apiVersion = fallbackImageModel.includes('preview') ? 'v1alpha' : 'v1beta';
+                        endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:generateContent?key=${key}`;
+                        res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        data = await res.json();
+                        isAutoRouted = true;
+                    }
+
                     if (!res.ok && data.error && data.error.code === 404 && (selectedModelName.includes('preview') || selectedModelName.includes('3.'))) {
                         console.warn(`[Auto-Fallback] Model ${selectedModelName} not found, retrying with 2.5 series.`);
                         let fallbackModel = 'gemini-2.5-flash';
                         if (selectedModelName.includes('pro')) fallbackModel = 'gemini-2.5-pro';
                         selectedModelName = fallbackModel;
                         apiVersion = 'v1beta';
+                        payload.generationConfig.responseModalities = undefined;
                         endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${selectedModelName}:generateContent?key=${key}`;
                         res = await fetchWithTimeout(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         data = await res.json();
@@ -5527,6 +6120,33 @@ if (appState.pendingAnalyzeContextId) {
                                 name: 'AI_Generated_Image.png'
                             };
                         }
+                    }
+
+                    // 🔄 Gemini 圖片模型未回傳圖片時，嘗試以 Grok 作為備援
+                    if (isGeminiImageModel && isImageIntent && !responseImageFile && appState.keys.grok) {
+                        console.warn(`[Grok Backup] Gemini image model returned no image, falling back to Grok...`);
+                        const grokKey = appState.keys.grok;
+                        const myProxy = 'https://grokcaller.kirishimatoka00.workers.dev/';
+                        const grokImageModel = 'grok-imagine-image-pro';
+                        const grokApiUrl = 'https://api.x.ai/v1/images/generations';
+                        const grokPayload = { model: grokImageModel, prompt: finalPrompt, response_format: "b64_json" };
+                        try {
+                            const grokRes = await fetchWithTimeout(`${myProxy}?url=${encodeURIComponent(grokApiUrl)}`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${grokKey}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify(grokPayload)
+                            });
+                            if (grokRes.ok) {
+                                const grokData = await grokRes.json();
+                                if (grokData.data && grokData.data[0]) {
+                                    const imgData = grokData.data[0].b64_json 
+                                        ? `data:image/png;base64,${grokData.data[0].b64_json}` 
+                                        : grokData.data[0].url;
+                                    responseImageFile = { category: 'image', data: imgData, name: 'Grok_Backup_Image.png' };
+                                    outputText = `✨ 圖片生成成功！已為您附在下方。\n\n*(備援提示：Gemini 圖片模型本次未回傳圖片，已自動切換至 **Grok Imagine Image Pro** 備援生成)*`;
+                                }
+                            }
+                        } catch(grokErr) { console.warn("Grok backup failed:", grokErr); }
                     }
 
                     let sources = []; if (candidate.groundingMetadata?.groundingAttributions) { candidate.groundingMetadata.groundingAttributions.forEach(attr => { if (attr.web?.uri) sources.push({ title: attr.web.title || "參考連結", uri: attr.web.uri }); }); }
@@ -5867,16 +6487,18 @@ if (t.repeatInterval && t.repeatInterval > 0) { t.alertTime += t.repeatInterval;
                         // 判斷任務類型：自動化任務 vs 一般鬧鐘
                         if ((t.isAutoTask && t.taskQuery) || (t.isAutoSearch && t.searchQuery)) {
                             const query = t.taskQuery || t.searchQuery;
-                            addMessage(`🔄 [排程任務觸發] 正在為您執行：${query}...`, 'system');
-                            try {
-                                const isImageIntent = /^(畫|生成|產生|draw|generate)\s*(一張|一個|圖片|照片|圖|image|photo)/i.test(query.trim());
-                                let prompt = query;
-                                // 針對舊版資料相容，或者純文字找資料意圖強化搜尋提示
-                                if (!isImageIntent && t.isAutoSearch) {
-                                    prompt = `請連網搜尋最新資訊：「${query}」，並根據搜尋結果，為我整理一份簡潔的重點回報。`;
-                                }
-                                
-                                let res = await fetchAIResponse(prompt, appState.currentModel, { enableSearch: !isImageIntent });
+                        addMessage(`🔄 [排程任務觸發] 正在為您執行：${query}...`, 'system');
+                        try {
+                            const _imgTestR = (s) => /(畫|生成|產生|製作|幫我畫|幫你畫|create|make|draw|generate).{0,200}(圖片|照片|圖像|picture|image|impage|photo)|(圖片|照片|圖像|picture|image|impage|photo).{0,50}(生成|產生|製作|畫出)/i.test(s);
+                            const isImageIntent = _imgTestR(query.trim());
+                            let prompt = query;
+                            
+                            // 針對舊版資料相容，或者純文字找資料意圖強化搜尋提示
+                            if (!isImageIntent && t.isAutoSearch) {
+                                prompt = `請連網搜尋最新資訊：「${query}」，並根據搜尋結果，為我整理一份簡潔的重點回報。`;
+                            }
+                            
+                            let res = await fetchAIResponse(prompt, appState.currentModel, { enableSearch: !isImageIntent });
                                 let finalOutputText = typeof res === 'string' ? res : (res.text || "(無文字)");
                                 
                                 if (finalOutputText && finalOutputText !== "(無文字)") {
