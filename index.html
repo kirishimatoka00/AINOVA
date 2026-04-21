@@ -1188,7 +1188,7 @@ async function encodeMp3(audioBuffer) {
 
 
         // --- IndexedDB 資料庫初始化與操作 ---
-        const DB_NAME = 'NovaDB'; const DB_VERSION = 3; let db;
+        const DB_NAME = 'NovaDB'; const DB_VERSION = 2; let db;
 
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -1200,7 +1200,6 @@ async function encodeMp3(audioBuffer) {
                     if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' });
                     if (!db.objectStoreNames.contains('todos')) db.createObjectStore('todos', { keyPath: 'id' });
                     if (!db.objectStoreNames.contains('audioRecords')) db.createObjectStore('audioRecords', { keyPath: 'id' });
-                    if (!db.objectStoreNames.contains('audioBlobs')) db.createObjectStore('audioBlobs', { keyPath: 'id' });
                 };
                 req.onsuccess = (e) => { db = e.target.result; resolve(db); };
                 req.onerror = (e) => reject(e.target.error);
@@ -1219,84 +1218,6 @@ async function encodeMp3(audioBuffer) {
             } catch(e) { console.warn("Delete DB Error:", e); } 
         }
         function clearStoreDB(storeName) { if (!db) return; try { db.transaction(storeName, 'readwrite').objectStore(storeName).clear(); } catch(e) {} }
-
-        // ─── 音訊 Blob 獨立儲存層 ─────────────────────────────────────────────
-        // 將音訊原始 Blob 存在 audioBlobs store，與中繼資料分離，避免記憶體爆炸
-        function saveAudioBlob(id, blob) {
-            if (!db) return Promise.resolve();
-            return new Promise((resolve, reject) => {
-                try {
-                    const numId = Number(id);
-                    const key = (!isNaN(numId) && numId > 0) ? numId : id;
-                    const tx = db.transaction('audioBlobs', 'readwrite');
-                    const req = tx.objectStore('audioBlobs').put({ id: key, blob: blob });
-                    req.onsuccess = () => resolve();
-                    req.onerror = (e) => reject(e.target.error);
-                } catch(e) { reject(e); }
-            });
-        }
-
-        function loadAudioBlob(id) {
-            if (!db) return Promise.resolve(null);
-            return new Promise((resolve) => {
-                try {
-                    const numId = Number(id);
-                    const key = (!isNaN(numId) && numId > 0) ? numId : id;
-                    const tx = db.transaction('audioBlobs', 'readonly');
-                    const req = tx.objectStore('audioBlobs').get(key);
-                    req.onsuccess = () => resolve(req.result ? req.result.blob : null);
-                    req.onerror = () => resolve(null);
-                } catch(e) { resolve(null); }
-            });
-        }
-
-        function deleteAudioBlob(id) {
-            if (!db) return;
-            try {
-                const numId = Number(id);
-                const key = (!isNaN(numId) && numId > 0) ? numId : id;
-                db.transaction('audioBlobs', 'readwrite').objectStore('audioBlobs').delete(key);
-            } catch(e) {}
-        }
-
-        // Blob URL 快取（id → ObjectURL），避免重複建立
-        const _audioBlobUrlCache = {};
-
-        async function getAudioBlobUrl(id) {
-            const cacheKey = String(id);
-            if (_audioBlobUrlCache[cacheKey]) return _audioBlobUrlCache[cacheKey];
-            const blob = await loadAudioBlob(id);
-            if (!blob) return null;
-            const url = URL.createObjectURL(blob);
-            _audioBlobUrlCache[cacheKey] = url;
-            return url;
-        }
-
-        function revokeAudioBlobUrl(id) {
-            const cacheKey = String(id);
-            if (_audioBlobUrlCache[cacheKey]) {
-                URL.revokeObjectURL(_audioBlobUrlCache[cacheKey]);
-                delete _audioBlobUrlCache[cacheKey];
-            }
-        }
-
-        // 渲染後異步為所有 audio[data-audio-id] 元素掛載 Blob URL
-        async function attachAudioPlayers() {
-            const audioEls = document.querySelectorAll('audio[data-audio-id]');
-            for (const el of audioEls) {
-                if (el.src && el.src.startsWith('blob:')) continue; // 已掛載
-                const id = el.getAttribute('data-audio-id');
-                const url = await getAudioBlobUrl(id);
-                if (url) {
-                    el.src = url;
-                } else {
-                    // 本地無資料（僅從雲端同步的中繼資料）
-                    const wrapper = el.closest('[data-audio-wrapper]') || el.parentElement;
-                    if (wrapper) wrapper.innerHTML = '<p class="text-xs text-slate-500 italic py-1 px-1"><i class="ph-bold ph-cloud-slash mr-1"></i>音訊僅存於雲端，請下載後匯入</p>';
-                }
-            }
-        }
-        // ─────────────────────────────────────────────────────────────────────
 
 // --- 新增：Google Drive 即時同步引擎 ---
         let liveSyncTimeout = null;
@@ -1319,10 +1240,7 @@ async function encodeMp3(audioBuffer) {
                     translateBTimeout: appState.translateBTimeout, vadMultiplier: appState.vadMultiplier, 
                     replyLength: appState.replyLength, ttsRate: appState.ttsRate, ttsVoice: appState.ttsVoice, 
                     hideLiveCapture: appState.hideLiveCapture, autoTTS: appState.autoTTS, noteFolders: appState.noteFolders,
-                    messages: appState.messages, 
-                    notes: appState.notes.map(n => { const {audioData, ...rest} = n; return rest; }), 
-                    todos: appState.todos, 
-                    audioRecords: appState.audioRecords.map(r => { const {audioData, ...rest} = r; return rest; }),
+                    messages: appState.messages, notes: appState.notes, todos: appState.todos, audioRecords: appState.audioRecords, 
                     currentSessionId: appState.currentSessionId, chatTitles: appState.chatTitles, pinnedSessions: appState.pinnedSessions
                 };
                 try {
@@ -3017,8 +2935,6 @@ handleSendMessage(); }
             if(confirm('確定要刪除這則筆記嗎？')) { 
                 appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
                 appState.notes = appState.notes.filter(x => String(x.id) !== String(id)); 
-                deleteFromDB('notes', id);
-                deleteAudioBlob(id); revokeAudioBlobUrl(id); // 釋放音訊 Blob 記憶體
                 renderNotes(); 
             }
         };
@@ -3048,19 +2964,8 @@ handleSendMessage(); }
             
             try {
                 let payloadObj = {};
-                if (n.type === 'audio') {
-                    const audioBlob = await loadAudioBlob(n.id);
-                    if (!audioBlob) {
-                        alert("找不到本地音訊資料，無法備份音訊。\n請確認音訊已存於本機 IndexedDB 中。");
-                        if(btn) { btn.innerHTML = '<i class="ph-bold ph-cloud-arrow-up"></i> 雲端備份'; btn.disabled = false; }
-                        return;
-                    }
-                    const base64data = await new Promise((res, rej) => {
-                        const fr = new FileReader();
-                        fr.onloadend = () => res(fr.result.split(',')[1]);
-                        fr.onerror = rej;
-                        fr.readAsDataURL(audioBlob);
-                    });
+                if (n.type === 'audio' && n.audioData) {
+                    const base64data = n.audioData.split(',')[1];
                     payloadObj = { filename: n.filename || `NOVA_VoiceNote_${n.id}.mp3`, mimeType: n.mimeType || 'audio/mpeg', data: base64data };
                 } else {
                     let htmlContent = `<!DOCTYPE html><html><head><meta charset='utf-8'><title>${n.title}</title></head><body style="font-family: sans-serif; padding: 20px;"><h1>${n.title}</h1><p style="color: gray;">${n.date}</p><hr><div style="line-height: 1.6;">${n.isHtml ? n.content : n.content.replace(/\n/g, '<br>')}</div>`;
@@ -3097,7 +3002,7 @@ handleSendMessage(); }
         };
 
         window.deleteAudioRecord = function(id) {
-            if(confirm('確定要刪除這筆錄音紀錄嗎？')) { appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds)); appState.audioRecords = appState.audioRecords.filter(x => String(x.id) !== String(id)); deleteFromDB('audioRecords', id); deleteAudioBlob(id); revokeAudioBlobUrl(id); renderAudioRecords(); }
+            if(confirm('確定要刪除這筆錄音紀錄嗎？')) { appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds)); appState.audioRecords = appState.audioRecords.filter(x => String(x.id) !== String(id)); deleteFromDB('audioRecords', id); renderAudioRecords(); }
         };
 
         function updateNoteVoiceUI() {}
@@ -3483,29 +3388,19 @@ const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
         appState.audioRecords.find(x => String(x.id) === String(id)) : 
         appState.notes.find(x => String(x.id) === String(id));
 
-    if (!record) { alert("找不到紀錄"); return; }
-
-    showToast("🎵 正在載入音訊資料，請稍候...");
-
-    // 優先從 IndexedDB audioBlobs store 讀取
-    let audioBlob = await loadAudioBlob(record.id);
-
-    // 降級：舊版資料可能仍以 base64 存在 record.audioData
-    if (!audioBlob && record.audioData) {
-        audioBlob = base64ToBlob(record.audioData);
-    }
-
-    if (!audioBlob) {
-        alert("找不到本地音檔資料。\n若音檔已刪除或為雲端同步的中繼資料，請從 Google Drive 重新下載。");
-        return;
+    if (!record || !record.audioData) { 
+        alert("找不到本地音檔資料"); 
+        return; 
     }
 
     showToast("🎵 正在準備 MP3 轉換，請稍候...");
 
     try {
-        const arrayBuffer = await audioBlob.arrayBuffer();
+        // 1. 將 Base64 轉回 Blob [cite: 853, 861]
+        const webmBlob = base64ToBlob(record.audioData);
+        const arrayBuffer = await webmBlob.arrayBuffer();
 
-        // 2. 使用 AudioContext 解碼成 PCM
+        // 2. 使用 AudioContext 解碼 WebM 成 PCM [cite: 291]
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
@@ -3513,7 +3408,7 @@ const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
         const mp3Blob = await encodeMp3(audioBuffer);
         const blobUrl = URL.createObjectURL(mp3Blob);
 
-        // 4. 產生檔名並觸發下載
+        // 4. 產生檔名並觸發下載 [cite: 860]
         const dateObj = new Date(Number(id));
         const dateStr = `${dateObj.getFullYear()}${String(dateObj.getMonth() + 1).padStart(2, '0')}${String(dateObj.getDate()).padStart(2, '0')}`;
         const finalFilename = `NOVA_${dateStr}_${id}.mp3`;
@@ -3535,13 +3430,13 @@ const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
     } catch (e) {
         console.error("MP3 Conversion Error:", e);
         alert("轉換 MP3 失敗，改為原格式下載。錯誤：" + e.message);
-        // 降級方案：下載原始格式
-        const url = URL.createObjectURL(audioBlob);
+        // 降級方案：如果轉碼失敗，則下載原始 weba [cite: 860]
+        const blob = base64ToBlob(record.audioData);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = record.filename || `NOVA_Audio_${id}.mp3`;
         a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
     }
 };
 
@@ -3549,7 +3444,6 @@ const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
             renderWeather(); 
             if(typeof renderChatHistoryList === 'function') renderChatHistoryList(); 
             if(typeof applyTheme === 'function') applyTheme(appState.theme);
-            attachAudioPlayers(); // 異步掛載音訊 Blob URL（不阻塞渲染）
         }
         
         // --- UI 渲染功能 (訊息) ---
@@ -3899,7 +3793,7 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
                     imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
                 }
 
-                let audioPlayerHtml = (n.type === 'audio') ? `<div class="mt-3 mb-2" data-audio-wrapper><audio controls class="w-full h-10 rounded-lg bg-slate-800 shadow-inner" data-audio-id="${n.id}"></audio></div>` : '';
+                let audioPlayerHtml = n.audioData ? `<div class="mt-3 mb-2"><audio controls src="${n.audioData}" class="w-full h-10 rounded-lg bg-slate-800 shadow-inner"></audio></div>` : '';
                 let linkHtml = (n.driveUrl && !n.driveUrl.startsWith('blob:')) ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-cloud"></i> 在雲端查看已備份筆記</a></div>` : '';
                 
                 let renderedContent = n.isHtml ? n.content : formatMessage(n.content);
@@ -3911,19 +3805,17 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
                 let plainText = n.isHtml ? n.content.replace(/<[^>]+>/g, ' ') : n.content;
                 return `<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 cursor-pointer hover:border-slate-700" onclick="switchTab('notes')"><h4 class="text-slate-300 text-xs font-bold mb-1 truncate flex items-center gap-1">${n.type==='audio'?'<i class="ph-fill ph-microphone text-purple-400"></i>':''}${escapeHtml(n.title)}</h4><p class="text-slate-500 text-[10px] line-clamp-1">${escapeHtml(plainText)}</p></div>`;
             }).join('')||'<p class="text-xs text-slate-500 text-center">無筆記</p>'; 
-            attachAudioPlayers(); // 異步掛載音訊 Blob URL
         }
 
         // --- UI 渲染功能 (錄音紀錄) ---
         function renderAudioRecords() {
             const el = document.getElementById('audio-records-list'); if(!el) return;
             el.innerHTML = appState.audioRecords.map(r => {
-                let audioPlayerHtml = `<div class="mb-3 w-full" data-audio-wrapper><audio controls class="w-full h-10 rounded-lg bg-slate-800 shadow-inner" data-audio-id="${r.id}"></audio></div>`;
+                let audioPlayerHtml = r.audioData ? `<div class="mb-3 w-full"><audio controls src="${r.audioData}" class="w-full h-10 rounded-lg bg-slate-800 shadow-inner"></audio></div>` : '';
                 let linkHtml = (r.driveUrl && !r.driveUrl.startsWith('blob:')) ? `<a href="${r.driveUrl}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-cloud-arrow-down"></i> 雲端備份</a>` : '';
 
                 return `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group"><div class="flex justify-between items-start mb-3"><div><h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph-fill ph-file-audio text-red-400"></i> ${escapeHtml(r.title)}</h3><p class="text-xs text-slate-500">${r.date}</p></div><button onclick="deleteAudioRecord('${r.id}')" class="text-slate-500 hover:text-red-400 p-2"><i class="ph-bold ph-trash"></i></button></div>${audioPlayerHtml}<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-4"><p class="text-xs text-slate-400 font-bold mb-1">即時逐字稿：</p><p class="text-sm text-slate-300 max-h-32 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript) || '<span class="text-slate-600 italic">無文字紀錄</span>'}</p></div><div class="flex flex-wrap items-center gap-3">${linkHtml}<button onclick="downloadLocalAudio('${r.id}', 'record')" class="flex items-center gap-1 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-download-simple"></i> 下載 .MP3</button><button onclick="summarizeAudioRecord('${r.id}')" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i> AI 深度分析</button></div></div>`;
             }).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
-            attachAudioPlayers(); // 異步掛載音訊 Blob URL
         }
 
         function renderWeather() { 
@@ -4735,11 +4627,7 @@ try {
 
             let recordDuration = Date.now() - (appState.recordingStartTime || Date.now());
             const actualMimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
-            // 立刻清空全域 audioChunks，釋放分段記憶體
-            const chunksSnapshot = [...audioChunks];
-            audioChunks = [];
-
-            let audioBlob = new Blob(chunksSnapshot, { type: actualMimeType });
+            let audioBlob = new Blob(audioChunks, { type: actualMimeType });
             
             // 修復 WebM duration
             if (actualMimeType.includes('webm') && typeof ysFixWebmDuration !== 'undefined') {
@@ -4758,22 +4646,26 @@ try {
             const displayDate = dateObj.toLocaleString();
             const recordId = Date.now();
 
-            // ✅ 【記憶體優化】將音訊 Blob 直接存入 IndexedDB audioBlobs store
-            // 中繼資料物件中不再包含 audioData base64 字串，大幅減少記憶體佔用
-            await saveAudioBlob(recordId, audioBlob);
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            const base64dataWithPrefix = await new Promise((resolve, reject) => { 
+                reader.onloadend = () => resolve(reader.result); 
+                reader.onerror = reject;
+            });
 
-            // 一般錄音存檔處理（不含 audioData）
+            // 一般錄音存檔處理
             const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
             
+            // 【修復】提早宣告變數，讓下方的 Google Drive 同步程式能讀取到資料
             let newNote = null;
             let newRecord = null;
 
             if (appState.recordingContext === 'note') {
-                newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType, filename: filename, images: [], image: null, folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder };
+                newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript, audioData: base64dataWithPrefix, mimeType: actualMimeType, filename: filename, images: [], image: null, folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder };
                 appState.notes.unshift(newNote); saveToDB('notes', newNote);
                 addMessage(`📝 語音筆記已安全儲存至本地「筆記/文件」分頁。`, 'system'); renderNotes();
             } else {
-                newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType };
+                newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: "", transcript: capturedTranscript, audioData: base64dataWithPrefix, mimeType: actualMimeType };
                 appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
                 addMessage(`📼 錄音已安全儲存至本地「錄音紀錄」分頁。`, 'system'); renderAudioRecords();
             }
@@ -4784,14 +4676,16 @@ try {
     try {
         let payloadObj = {};
 
-        // ✅ 音訊類型：先嘗試轉 MP3 再上傳（直接使用 audioBlob，不再依賴 base64dataWithPrefix）
+        // ✅ 音訊類型：先轉 MP3 再上傳
         const isAudioUpload = (appState.recordingContext === 'note' && newNote && newNote.type === 'audio')
                            || (appState.recordingContext !== 'note');
 
         if (isAudioUpload) {
+            // 轉換成 MP3 Blob，再轉 base64
             let mp3Base64 = null;
             try {
-                const arrayBuf = await audioBlob.arrayBuffer();
+                const webmBlob = base64ToBlob(base64dataWithPrefix);
+                const arrayBuf = await webmBlob.arrayBuffer();
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
                 const mp3Blob = await encodeMp3(audioBuffer);
@@ -4807,16 +4701,12 @@ try {
             }
 
             if (mp3Base64) {
+                // ✅ MP3 轉換成功 → 上傳 MP3
                 payloadObj = { filename: filename, mimeType: 'audio/mpeg', data: mp3Base64 };
             } else {
-                // 備援：MP3 失敗則上傳原始 WebM（即時讀取，不佔用額外記憶體）
-                const rawBase64 = await new Promise((res, rej) => {
-                    const fr = new FileReader();
-                    fr.onloadend = () => res(fr.result.split(',')[1]);
-                    fr.onerror = rej;
-                    fr.readAsDataURL(audioBlob);
-                });
-                payloadObj = { filename: filename.replace('.mp3', '.weba'), mimeType: actualMimeType, data: rawBase64 };
+                // 🔄 備援：MP3 失敗則上傳原始 WebM
+                const base64data = base64dataWithPrefix.split(',')[1];
+                payloadObj = { filename: filename.replace('.mp3', '.weba'), mimeType: actualMimeType, data: base64data };
             }
                     } else if (appState.recordingContext === 'note' && newNote && newNote.type !== 'audio') {
                         let htmlContent = `<!DOCTYPE html><html><head><meta charset='utf-8'><title>${newNote.title}</title></head><body style="font-family: sans-serif; padding: 20px;"><h1>${newNote.title}</h1><p style="color: gray;">${newNote.date}</p><hr><div style="line-height: 1.6;">${newNote.isHtml ? newNote.content : newNote.content.replace(/\n/g, '<br>')}</div>`;
@@ -4832,13 +4722,8 @@ try {
                         const base64Text = btoa(unescape(encodeURIComponent(htmlContent)));
                         payloadObj = { filename: `${newNote.title}.html`, mimeType: 'text/html', data: base64Text };
                     } else {
-                        const rawBase64 = await new Promise((res, rej) => {
-                            const fr = new FileReader();
-                            fr.onloadend = () => res(fr.result.split(',')[1]);
-                            fr.onerror = rej;
-                            fr.readAsDataURL(audioBlob);
-                        });
-                        payloadObj = { filename: filename, mimeType: actualMimeType, data: rawBase64 };
+                        const base64data = base64dataWithPrefix.split(',')[1];
+                        payloadObj = { filename: filename, mimeType: actualMimeType, data: base64data };
                     }
                     
                     const payload = JSON.stringify(payloadObj);
@@ -4885,25 +4770,19 @@ try {
             appState.pendingAnalyzeType = 'audioRecord';
             appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。`;
             
-            if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
-                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
-            }
-
-            // 從 IndexedDB audioBlobs 讀取，按需轉 base64，分析後立即釋放
-            loadAudioBlob(r.id).then(async (audioBlob) => {
-                // 降級：舊版資料可能仍有 audioData 字串
-                if (!audioBlob && r.audioData) audioBlob = base64ToBlob(r.audioData);
-                if (audioBlob) {
-                    const reader = new FileReader();
-                    const base64 = await new Promise((res, rej) => { reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(audioBlob); });
-                    appState.chatFiles = [{ category: 'media', data: base64, mime: r.mimeType || 'audio/webm', name: r.filename || 'audio.mp3' }];
-                    renderChatFilePreview(); switchTab('dashboard');
-                    document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
-                } else {
-                    alert("找不到本地音訊資料，請手動選取音檔。");
-                    document.getElementById('audio-analyze-input').click();
+            if (r.audioData) {
+                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) {
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
                 }
-            });
+                appState.chatFiles = [{ category: 'media', data: r.audioData, mime: r.mimeType || 'audio/webm', name: r.filename || 'audio.mp3' }];
+                renderChatFilePreview(); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+            } else {
+                if(!confirm(`即將對「${r.title}」進行深度分析。\n\n請在接下來的視窗中，手動選取您的音檔 (.mp3, .webm 等)。`)) {
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
+                }
+                document.getElementById('audio-analyze-input').click();
+            }
         }
 
         function summarizeVoiceNote(id) {
@@ -4914,24 +4793,19 @@ try {
             appState.pendingAnalyzeType = 'voiceNote';
             appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。`;
             
-            if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
-                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
-            }
-
-            // 從 IndexedDB audioBlobs 讀取，按需轉 base64，分析後立即釋放
-            loadAudioBlob(n.id).then(async (audioBlob) => {
-                if (!audioBlob && n.audioData) audioBlob = base64ToBlob(n.audioData);
-                if (audioBlob) {
-                    const reader = new FileReader();
-                    const base64 = await new Promise((res, rej) => { reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(audioBlob); });
-                    appState.chatFiles = [{ category: 'media', data: base64, mime: n.mimeType || 'audio/webm', name: n.filename || 'audio.mp3' }];
-                    renderChatFilePreview(); switchTab('dashboard');
-                    document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
-                } else {
-                    alert("找不到本地音訊資料，請手動選取音檔。");
-                    document.getElementById('audio-analyze-input').click();
+            if (n.audioData) {
+                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統已偵測到您的本地檔案，將直接進行自動化分析！`)) {
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
                 }
-            });
+                appState.chatFiles = [{ category: 'media', data: n.audioData, mime: n.mimeType || 'audio/webm', name: n.filename || 'audio.mp3' }];
+                renderChatFilePreview(); switchTab('dashboard');
+                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+            } else {
+                if(!confirm(`即將對「${n.title}」進行深度分析。\n\n請在接下來的視窗中，選取該語音筆記的原始音檔。`)) {
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
+                }
+                document.getElementById('audio-analyze-input').click();
+            }
         }
 
         function summarizeTextNote(id) {
