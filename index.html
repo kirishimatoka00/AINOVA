@@ -21,7 +21,22 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
     <!-- 引入 Google 字體 Inter -->
-    <script src="./telegram.js"></script>
+    <!-- telegram.js 外部引用已移除，改為內建安全 stub，防止缺少檔案導致頁面崩潰 -->
+    <script>
+        // Telegram 推播功能 stub：若有填寫 tgToken/tgChatId 則實際發送，否則靜默忽略
+        window.pushToTelegram = async function(message) {
+            try {
+                const token = localStorage.getItem('nova_tg_token');
+                const chatId = localStorage.getItem('nova_tg_chatid');
+                if (!token || !chatId) return;
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
+                });
+            } catch(e) { console.warn('Telegram push failed:', e); }
+        };
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS 自訂設定檔 -->
@@ -1024,7 +1039,7 @@
   <!-- ================= JavaScript 邏輯與功能實作 ================= -->
     <script>
         // --- 全域變數與狀態初始化 ---
-        let recognition = null; let noteRecognition = null; let voiceTimer = null; 
+        let recognition = null; let noteRecognition = null; let voiceTimer = null; let noteVoiceTimer = null;
         let chatInitialInput = ""; let noteInitialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
         let liveVideoStream = null; 
@@ -1515,7 +1530,9 @@ async function encodeMp3(audioBuffer) {
             noteFolders: JSON.parse(localStorage.getItem('nova_folders')) || ['未分類', '工作', '生活'],
             currentNoteFolder: '全部',
             // 雙 AI 協作狀態
-            isDualAIRunning: false
+            isDualAIRunning: false,
+            // currentChat: 供地圖/位置功能暫存當前訊息上下文，避免 TypeError
+            currentChat: { messages: [] }
         };
         
         const MODEL_CONFIG = {
