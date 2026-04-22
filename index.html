@@ -2641,16 +2641,14 @@ handleSendMessage(); }
             renderChatFilePreview();
             document.getElementById('plus-menu').classList.add('hidden'); document.getElementById('plus-icon').classList.remove('rotate-45');
         };
-        window.handleAudioAnalyzeSelect = function(e) {
+        window.handleAudioAnalyzeSelect = async function(e) {
             const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                appState.chatFiles = [{ category: 'media', name: file.name, mime: file.type, data: evt.target.result }];
-                renderChatFilePreview(); switchTab('dashboard');
-                document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
-            };
-            reader.readAsDataURL(file);
+            if (!file) return;
+            e.target.value = ''; // 重置讓同一檔案可再次選取
+            const audioBlob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/webm' });
+            const title = file.name || '上傳音檔';
+            // 直接走分段逐字稿引擎；itemType 用 'audioRecord'，itemId 為 null（不儲存，只顯示）
+            await runChunkedTranscription(audioBlob, file.type || 'audio/webm', 'uploadOnly', null, title);
         };
 
         window.toggleSearch = function() { appState.isSearchEnabled = !appState.isSearchEnabled; updateModelUI(); };
@@ -5001,29 +4999,155 @@ try {
         }
 
         // --- 深度分析功能 (AI 針對音檔或筆記進行分析) ---
+
+        // ══════════════════════════════════════════════════════════════
+        // 【核心輔助】將 AudioBuffer 的指定時間範圍切出並編碼成 MP3 base64
+        // startSec, endSec：秒數；回傳 "data:audio/mp3;base64,..." 字串
+        // ══════════════════════════════════════════════════════════════
+        async function sliceAudioToBase64(audioBuffer, startSec, endSec) {
+            const sr = audioBuffer.sampleRate;
+            const ch = audioBuffer.numberOfChannels;
+            const startFrame = Math.floor(startSec * sr);
+            const endFrame = Math.min(Math.ceil(endSec * sr), audioBuffer.length);
+            const frameCount = endFrame - startFrame;
+            if (frameCount <= 0) return null;
+
+            // 建立只含這段的 AudioBuffer
+            const sliced = new AudioContext().createBuffer(ch, frameCount, sr);
+            for (let c = 0; c < ch; c++) {
+                sliced.copyToChannel(audioBuffer.getChannelData(c).subarray(startFrame, endFrame), c);
+            }
+            const mp3Blob = await encodeMp3(sliced);
+            return await new Promise((res, rej) => {
+                const fr = new FileReader();
+                fr.onloadend = () => res(fr.result);
+                fr.onerror = rej;
+                fr.readAsDataURL(mp3Blob);
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // 【核心主流程】分段逐字稿引擎
+        //   - 每段 CHUNK_SECS 秒（預設 5 分鐘），逐段送 Gemini 只要逐字稿
+        //   - 全部逐字稿拼接完畢後，再送一次 AI 做摘要/會議紀錄
+        //   - 完全不依賴 %%CONTINUE%% 標記或 finishReason 兜底
+        // ══════════════════════════════════════════════════════════════
+        async function runChunkedTranscription(audioBlob, mimeType, itemType, itemId, itemTitle) {
+            const CHUNK_SECS = 300; // 每段 5 分鐘
+            const key = appState.keys.gemini;
+            if (!key) { addMessage('⚠️ 請先設定 Gemini API Key！', 'system'); return; }
+
+            switchTab('dashboard');
+
+            // 1. 解碼音檔
+            addMessage(`🎙️ **分段逐字稿引擎啟動**｜正在解碼音檔「${itemTitle}」…`, 'system');
+            let audioBuffer;
+            try {
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                audioCtx.close();
+            } catch(e) {
+                addMessage(`⚠️ 音檔解碼失敗（${e.message}），請確認格式是否支援。`, 'system');
+                return;
+            }
+
+            const totalSecs = audioBuffer.duration;
+            const totalChunks = Math.ceil(totalSecs / CHUNK_SECS);
+            addMessage(`📊 音檔總長 **${Math.round(totalSecs/60)} 分 ${Math.round(totalSecs%60)} 秒**，將自動分為 **${totalChunks} 段**（每段最多 5 分鐘）逐段轉錄。`, 'system');
+
+            // 2. 逐段呼叫 Gemini 取得逐字稿
+            const transcriptParts = [];
+            for (let i = 0; i < totalChunks; i++) {
+                const startSec = i * CHUNK_SECS;
+                const endSec = Math.min(startSec + CHUNK_SECS, totalSecs);
+                const startLabel = `${Math.floor(startSec/60)}:${String(Math.floor(startSec%60)).padStart(2,'0')}`;
+                const endLabel   = `${Math.floor(endSec/60)}:${String(Math.floor(endSec%60)).padStart(2,'0')}`;
+
+                // 進度訊息（可即時更新）
+                const progressId = Date.now() + i;
+                appState.messages.push({ id: progressId, sessionId: appState.currentSessionId, text: `⏳ [${i+1}/${totalChunks}] 正在轉錄 ${startLabel} – ${endLabel}…`, sender: 'system', time: getTime(), sources: [], files: [] });
+                renderMessages();
+                const chatEl = document.getElementById('chat-container');
+                if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+
+                let base64Chunk;
+                try {
+                    base64Chunk = await sliceAudioToBase64(audioBuffer, startSec, endSec);
+                } catch(e) {
+                    addMessage(`⚠️ 第 ${i+1} 段音訊切割失敗：${e.message}`, 'system');
+                    transcriptParts.push(`[第 ${i+1} 段：切割失敗]`);
+                    continue;
+                }
+
+                const chunkPrompt = `你是專業逐字稿員。請將這段音訊（${startLabel} – ${endLabel}）完整逐字轉錄成繁體中文，保留所有說話者的每一句話，不要摘要、不要省略、不要添加任何評論，直接輸出逐字稿文字即可。`;
+
+                try {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+                    const payload = {
+                        contents: [{ role: 'user', parts: [
+                            { text: chunkPrompt },
+                            { inlineData: { mimeType: 'audio/mp3', data: base64Chunk.split(',')[1] } }
+                        ]}],
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+                    };
+                    const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error?.message || res.status);
+                    const partText = data.candidates?.[0]?.content?.parts?.filter(p => p.text).map(p => p.text).join('') || '';
+                    transcriptParts.push(`【${startLabel} – ${endLabel}】\n${partText}`);
+
+                    // 更新進度訊息為完成
+                    const pm = appState.messages.find(x => x.id === progressId);
+                    if (pm) { pm.text = `✅ [${i+1}/${totalChunks}] ${startLabel} – ${endLabel} 轉錄完成（${partText.length} 字）`; renderMessages(); }
+                } catch(e) {
+                    const pm = appState.messages.find(x => x.id === progressId);
+                    if (pm) { pm.text = `⚠️ [${i+1}/${totalChunks}] ${startLabel} – ${endLabel} 轉錄失敗：${e.message}`; renderMessages(); }
+                    transcriptParts.push(`[第 ${i+1} 段：API 錯誤 - ${e.message}]`);
+                }
+            }
+
+            // 3. 合併完整逐字稿
+            const fullTranscript = transcriptParts.join('\n\n');
+            addMessage(`📝 **完整逐字稿（共 ${totalChunks} 段合併，${fullTranscript.length} 字）**\n\n${fullTranscript}`, 'ai', 'gemini');
+
+            // 4. 根據完整逐字稿，送 AI 做摘要/會議紀錄
+            addMessage(`🔍 逐字稿完成，正在根據全文產生摘要與重點整理…`, 'system');
+            const summaryPrompt = itemType === 'audioRecord'
+                ? `以下是一段錄音的完整逐字稿，請根據此逐字稿整理出【重點摘要】與【結構化會議紀錄】（含主題、決議、待辦事項）。\n\n【嚴格約束】：僅根據逐字稿內容摘要，不可自行補充或腦補任何外部資訊。\n\n完整逐字稿如下：\n\n${fullTranscript}`
+                : `以下是一段語音筆記的完整逐字稿，請根據此逐字稿整理出條理分明的【重點摘要】。\n\n【嚴格約束】：僅根據逐字稿內容摘要，不可自行補充或腦補。\n\n完整逐字稿如下：\n\n${fullTranscript}`;
+
+            let summaryText = '';
+            try {
+                const summaryRes = await fetchAIResponse(summaryPrompt, 'gemini', { isAnalysis: true });
+                summaryText = typeof summaryRes === 'string' ? summaryRes : (summaryRes.text || '');
+                addMessage(summaryText, 'ai', 'gemini');
+            } catch(e) {
+                addMessage(`⚠️ 摘要產生失敗：${e.message}`, 'system');
+            }
+
+            // 5. 自動儲存逐字稿與摘要
+            const fullAnalysis = `【完整逐字稿】\n${fullTranscript}${summaryText ? '\n\n【AI 摘要與重點整理】\n' + summaryText : ''}`;
+            if (itemType === 'voiceNote') {
+                const n = appState.notes.find(x => String(x.id) === String(itemId));
+                if (n) { n.content += `\n\n====================\n[AI 分段完整轉錄與分析]\n${fullAnalysis}`; saveToDB('notes', n); renderNotes(); addMessage(`✅ 完整逐字稿與摘要已自動儲存至筆記「${n.title}」。`, 'system'); }
+            } else if (itemType === 'audioRecord') {
+                const rec = appState.audioRecords.find(x => String(x.id) === String(itemId));
+                if (rec) { rec.transcript = (rec.transcript ? rec.transcript + '\n\n' : '') + `[AI 分段完整轉錄]\n${fullTranscript}`; saveToDB('audioRecords', rec); renderAudioRecords(); addMessage(`✅ 完整逐字稿已自動儲存至錄音紀錄「${rec.title}」。`, 'system'); }
+            } else if (itemType === 'uploadOnly') {
+                addMessage(`✅ 分析完成！以上為上傳音檔「${itemTitle}」的完整逐字稿與摘要（未綁定紀錄，如需儲存請複製上方內容）。`, 'system');
+            }
+        }
+
         function summarizeAudioRecord(id) {
             const r = appState.audioRecords.find(x => String(x.id) === String(id)); if (!r) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
-            
-            appState.pendingAnalyzeContextId = id;
-            appState.pendingAnalyzeType = 'audioRecord';
-            appState.pendingAnalyzeDuration = r.duration || 0; // 錄音秒數，用於判斷輸出是否完整
-            appState.pendingAnalyzePrompt = `【重要覆寫指令：本任務為音訊深度分析，所有回覆長度限制在本任務中均無效，請忽略任何簡短或中等長度的限制，必須輸出完整內容。】\n\n請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
-            
-            if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
-                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
-            }
+            if (!confirm(`即將對「${r.title}」進行深度分析。\n\n系統將把音檔自動分段（每段 5 分鐘），逐段轉錄後合成完整逐字稿，再產生摘要與會議紀錄。`)) return;
 
-            // 從 IndexedDB audioBlobs 讀取，按需轉 base64，分析後立即釋放
             loadAudioBlob(r.id).then(async (audioBlob) => {
-                // 降級：舊版資料可能仍有 audioData 字串
                 if (!audioBlob && r.audioData) audioBlob = base64ToBlob(r.audioData);
                 if (audioBlob) {
-                    const reader = new FileReader();
-                    const base64 = await new Promise((res, rej) => { reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(audioBlob); });
-                    appState.chatFiles = [{ category: 'media', data: base64, mime: r.mimeType || 'audio/webm', name: r.filename || 'audio.mp3' }];
-                    renderChatFilePreview(); switchTab('dashboard');
-                    document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+                    await runChunkedTranscription(audioBlob, r.mimeType || 'audio/webm', 'audioRecord', id, r.title);
                 } else {
                     alert("找不到本地音訊資料，請手動選取音檔。");
                     document.getElementById('audio-analyze-input').click();
@@ -5034,25 +5158,12 @@ try {
         function summarizeVoiceNote(id) {
             const n = appState.notes.find(x => String(x.id) === String(id)); if (!n) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
-            
-            appState.pendingAnalyzeContextId = id;
-            appState.pendingAnalyzeType = 'voiceNote';
-            appState.pendingAnalyzeDuration = n.duration || 0; // 錄音秒數，用於判斷輸出是否完整
-            appState.pendingAnalyzePrompt = `【重要覆寫指令：本任務為音訊深度分析，所有回覆長度限制在本任務中均無效，請忽略任何簡短或中等長度的限制，必須輸出完整內容。】\n\n請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
-            
-            if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
-                appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
-            }
+            if (!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將把音檔自動分段（每段 5 分鐘），逐段轉錄後合成完整逐字稿，再產生摘要。`)) return;
 
-            // 從 IndexedDB audioBlobs 讀取，按需轉 base64，分析後立即釋放
             loadAudioBlob(n.id).then(async (audioBlob) => {
                 if (!audioBlob && n.audioData) audioBlob = base64ToBlob(n.audioData);
                 if (audioBlob) {
-                    const reader = new FileReader();
-                    const base64 = await new Promise((res, rej) => { reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(audioBlob); });
-                    appState.chatFiles = [{ category: 'media', data: base64, mime: n.mimeType || 'audio/webm', name: n.filename || 'audio.mp3' }];
-                    renderChatFilePreview(); switchTab('dashboard');
-                    document.getElementById('user-input').value = appState.pendingAnalyzePrompt; handleSendMessage();
+                    await runChunkedTranscription(audioBlob, n.mimeType || 'audio/webm', 'voiceNote', id, n.title);
                 } else {
                     alert("找不到本地音訊資料，請手動選取音檔。");
                     document.getElementById('audio-analyze-input').click();
@@ -6193,13 +6304,14 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
         //    則依序顯示各段（前 N-1 段），最後一段（即 finalOutputText）作為正常 AI 訊息顯示
         const analysisChunks = (!finalRes || typeof finalRes === 'string') ? null : finalRes.chunks;
         if (analysisChunks && analysisChunks.length > 0) {
-            // 先將各前段作為 AI 訊息顯示（不含最後一段，最後一段由後續正常流程處理）
+            // analysisChunks = 前 N-1 段；最後一段由後續 addMessage(finalOutputText) 顯示
+            const totalParts = analysisChunks.length + 1;
             analysisChunks.forEach((chunkText, idx) => {
-                const segLabel = `\n\n---\n*(第 ${idx + 1} 段，共 ${analysisChunks.length + 1} 段)*`;
+                const segLabel = `\n\n---\n*(第 ${idx + 1} 段，共 ${totalParts} 段)*`;
                 addMessage(chunkText + segLabel, 'ai', modelToUse, [], null);
             });
-            // 最後一段也加上標記
-            finalOutputText += `\n\n---\n*(第 ${analysisChunks.length + 1} 段，共 ${analysisChunks.length + 1} 段 — 已輸出完畢)*`;
+            // 最後一段加上完結標記
+            finalOutputText += `\n\n---\n*(第 ${totalParts} 段，共 ${totalParts} 段 — 已輸出完畢)*`;
         }
 
         if(typeof finalRes === 'string') addMessage(finalOutputText, 'ai', modelToUse);
@@ -6481,50 +6593,49 @@ if (appState.pendingAnalyzeContextId) {
                         }
                     }
 
-                    // 🔄 自動多段續寫：雙重偵測機制
+                    // 🔄 自動多段續寫：四重偵測機制
                     //    ① 標記協議：prompt 要求 AI 在末尾加 %%CONTINUE%% 或 %%DONE%%（最可靠）
                     //    ② finishReason 兜底：MAX_TOKENS（字串或數字 2 均支援）
-                    //    ③ 長度兜底：輸出長度超過 ~30000 字元時也嘗試續寫
+                    //    ③ 時長估算：根據錄音秒數推算應有字數，若累積不足則繼續
+                    //    ④ 長度兜底：單段超過 28000 字元且結尾無標點
                     if (options.isAnalysis && !responseImageFile) {
-                        const MAX_CONTINUATION_PARTS = 8; // 🔧 增加最大續寫段數，支援更長音檔
-                        let contCurrentCandidate = currentCandidate;
-                        let contAccumulated = outputText;
-                        // 🔧 修正：用獨立變數追蹤「全部已累積的總文字」，供時長閾值判斷使用
-                        let totalAccumulatedText = outputText;
+                        const MAX_CONTINUATION_PARTS = 8; // 最多 8 次續寫，支援超長音檔
 
                         const stripMarkers = (text) =>
                             text.replace(/\s*%%CONTINUE%%\s*$/g, '').replace(/\s*%%DONE%%\s*$/g, '');
 
-                        const needsContinuation = (latestSegText, allAccumText, cand) => {
-                            if (!latestSegText) return false;
-                            const trimmed = latestSegText.trimEnd();
+                        // totalAccumulatedText：所有已產生段落合併（純文字，無標記），用於時長閾值判斷與送回 AI 接續
+                        let totalAccumulatedText = stripMarkers(outputText);
+                        let contCurrentCandidate = currentCandidate;
+                        let contAccumulated = outputText; // 最新一段原始輸出（含標記，用於判斷）
 
-                            // ① 標記協議（最明確）：AI 在末尾自報 %%CONTINUE%% 或 %%DONE%%
+                        const needsContinuation = (latestRaw, totalClean, cand) => {
+                            if (!latestRaw) return false;
+                            const trimmed = latestRaw.trimEnd();
+
+                            // ① 標記協議（最優先）
                             if (trimmed.endsWith('%%CONTINUE%%')) return true;
                             if (trimmed.endsWith('%%DONE%%')) return false;
 
-                            // ② finishReason 兜底（字串或整數均支援）—— 優先於時長估算，避免多餘請求
-                            const fr = cand?.finishReason;
-                            if (fr === 'MAX_TOKENS' || fr === 2) return true;
-
-                            // ③ 錄音時長推算（核心邏輯）：
-                            //    中文語速約 200-250 字/分，保守取 160 字/分作為最低預估基準
-                            //    逐字稿 + 摘要 = 約 1.3x 倍數；
-                            //    🔧 改用「總累積長度」與「預估最低字數」比較，閾值從 55% 調高至 70%（更積極偵測截斷）
+                            // ② 時長估算（積極偵測：比 finishReason 更早發現問題）
+                            //    用「已累積總字數」與「預期最低字數」比較，閾值 72%（比 fix7 的 55% 更積極）
                             const durationSecs = appState.pendingAnalyzeDuration || 0;
                             if (durationSecs > 60) {
-                                const charsPerMin = 160;
-                                const expectedChars = Math.round(durationSecs / 60 * charsPerMin * 1.3);
-                                const truncationThreshold = Math.round(expectedChars * 0.70); // 🔧 從 55% 調高至 70%
-                                console.log(`[多段分析] 錄音 ${Math.round(durationSecs/60)} 分鐘，預估最低字數: ${truncationThreshold}，目前總累積: ${allAccumText.length}`);
-                                if (allAccumText.length < truncationThreshold) {
-                                    console.log('[多段分析] ✅ 時長判定為截斷，觸發續寫');
+                                const expectedChars = Math.round(durationSecs / 60 * 170 * 1.3); // 170字/分 × 1.3倍（含摘要）
+                                const threshold = Math.round(expectedChars * 0.72);
+                                console.log(`[多段分析] 錄音 ${Math.round(durationSecs/60)} 分鐘，預期最低: ${threshold} 字，已累積: ${totalClean.length} 字`);
+                                if (totalClean.length < threshold) {
+                                    console.log('[多段分析] ✅ 時長不足，觸發續寫');
                                     return true;
                                 }
                             }
 
-                            // ④ 長度兜底：單段超過 28000 字元且結尾無標點，視為截斷
-                            if (latestSegText.length > 28000 && !/[。！？.!?」』]\s*$/.test(trimmed)) return true;
+                            // ③ finishReason 兜底
+                            const fr = cand?.finishReason;
+                            if (fr === 'MAX_TOKENS' || fr === 2) return true;
+
+                            // ④ 長度兜底：單段過長且結尾無標點
+                            if (stripMarkers(latestRaw).length > 28000 && !/[。！？.!?」』]\s*$/.test(trimmed)) return true;
 
                             return false;
                         };
@@ -6533,21 +6644,20 @@ if (appState.pendingAnalyzeContextId) {
                             needsContinuation(contAccumulated, totalAccumulatedText, contCurrentCandidate) &&
                             outputChunks.length < MAX_CONTINUATION_PARTS
                         ) {
-                            // 🔧 清除標記後存入 chunks（記錄本段乾淨文字）
-                            const cleanedSegment = stripMarkers(contAccumulated);
-                            outputChunks.push(cleanedSegment);
+                            // 將本段（已清除標記）存入 chunks，供後續顯示與儲存用
+                            outputChunks.push(stripMarkers(contAccumulated));
                             const partNum = outputChunks.length + 1;
 
                             if (typeof addMessage === 'function') {
-                                addMessage(`⏳ 逐字稿尚未完成，正在自動取得第 ${partNum} 段…（最多可自動續寫 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
+                                addMessage(`⏳ 逐字稿尚未完成，正在自動取得第 ${partNum} 段…（最多 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
                             }
-                            console.log(`[多段分析] 續寫第 ${partNum} 段，finishReason=${contCurrentCandidate?.finishReason}, 本段長度=${cleanedSegment.length}, 總累積長度=${totalAccumulatedText.length}`);
+                            console.log(`[多段分析] 請求第 ${partNum} 段，已累積: ${totalAccumulatedText.length} 字, finishReason=${contCurrentCandidate?.finishReason}`);
 
-                            // 建立續寫 contents：原始請求（含音訊 base64）＋ 目前全部累積內容 ＋ 續寫指令
-                            // 🔧 修正：將已累積的「所有段落」一起送回，讓 AI 知道已輸出多少，準確接續
+                            // 【關鍵】續寫 context：原始音檔請求 + 「僅最後一段」作為 model 回覆（避免 token 爆炸）
+                            // 最後一段已包含最新的斷點，AI 只需從此處接續即可
                             const continuationContents = [
                                 ...contents,
-                                { role: 'model', parts: [{ text: stripMarkers(totalAccumulatedText) }] },
+                                { role: 'model', parts: [{ text: stripMarkers(contAccumulated) }] },
                                 { role: 'user', parts: [{ text: `請繼續從上文結束處直接接續輸出剩餘的逐字稿與摘要內容，不需重複已輸出的部分，直接接著寫即可。同樣地，若這次回覆後仍有剩餘，請在最後加上 %%CONTINUE%%；若已完整結束請加上 %%DONE%%。` }] }
                             ];
                             const contPayload = {
@@ -6569,32 +6679,30 @@ if (appState.pendingAnalyzeContextId) {
                                 const contData = await contHttpRes.json();
                                 contCurrentCandidate = contData.candidates?.[0];
                                 if (!contCurrentCandidate?.content?.parts) {
-                                    console.warn('[多段分析] 續寫回傳無 parts，停止', JSON.stringify(contData).slice(0, 300));
+                                    console.warn('[多段分析] 續寫回傳無 parts，停止');
                                     break;
                                 }
                                 contAccumulated = contCurrentCandidate.content.parts.filter(p => p.text).map(p => p.text).join('');
-                                // 🔧 修正：totalAccumulatedText 持續累積，用於下一輪的時長閾值判斷
-                                totalAccumulatedText = stripMarkers(totalAccumulatedText) + '\n\n' + contAccumulated;
-                                console.log(`[多段分析] 第 ${partNum} 段完成，本段長度=${contAccumulated.length}, 總累積長度=${totalAccumulatedText.length}, finishReason=${contCurrentCandidate?.finishReason}`);
+                                // 累積總文字（不含標記），用於下輪時長判斷
+                                totalAccumulatedText += '\n\n' + stripMarkers(contAccumulated);
+                                console.log(`[多段分析] 第 ${partNum} 段完成，本段: ${stripMarkers(contAccumulated).length} 字，總累積: ${totalAccumulatedText.length} 字`);
                             } catch(contErr) {
                                 console.warn('[多段分析] 續寫請求例外:', contErr);
                                 break;
                             }
                         }
 
-                        // 🔧 修正合併邏輯：
-                        //    - outputChunks 儲存「前 N-1 段」各自的乾淨文字（供顯示用）
-                        //    - outputText 設為「最後一段」（由後續 addMessage 正常顯示）
-                        //    - 儲存至筆記時，用 outputChunks.join + outputText 才是完整全文
+                        // 合併結果：
+                        // - outputChunks 存「前 N-1 段」（已在 while 迴圈中 push）
+                        // - outputText 設為最後一段，由後續 addMessage 正常顯示
+                        // - 上層 analysisChunks.join('\n\n') + finalRes.text = 完整全文（不重複）
                         if (outputChunks.length > 0) {
-                            outputChunks.push(stripMarkers(contAccumulated)); // 最後一段也加入，讓儲存邏輯可取到全文
-                            outputText = stripMarkers(contAccumulated);       // 最後一段作為最終訊息顯示
+                            outputText = stripMarkers(contAccumulated); // 最後一段給 addMessage 顯示（不再 push 進 outputChunks，避免重複）
                         } else {
-                            // 只有一段：清除標記即可
-                            outputText = stripMarkers(outputText);
+                            outputText = stripMarkers(outputText); // 只有一段，清除標記即可
                         }
                     } else {
-                        // 非分析模式不清標記（通常不含標記）
+                        // 非分析模式：不清標記
                     }
 
                     const candidate = currentCandidate; // 保持後續程式碼相容性
