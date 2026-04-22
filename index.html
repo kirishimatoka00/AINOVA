@@ -5811,7 +5811,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
 
             // --- 新增：攔截 PPT 簡報意圖，強制回傳 JSON 格式 ---
             if (text.includes("簡報") || text.includes("PPT") || text.includes("ppt") || text.includes("Ppt")) {
-                systemPromptAddon += `\n【💡 特殊技能觸發】：使用者希望製作 PPT 簡報。\n【強制規定】：\n1. 必須閱讀使用者提供的「完整內容」，不得只取前段，每個章節/段落都必須有對應投影片。\n2. 嚴格在對話最後面使用以下 JSON 格式輸出(並用 \`\`\`json 和 \`\`\` 包著)，系統會自動攔截並轉換為真正的 .pptx 檔案給使用者下載：\n\`\`\`json\n{\n  "title": "簡報主標題",\n  "subtitle": "簡報副標題 (選填)",\n  "slides": [\n    { "title": "第一頁標題", "content": ["重點項目1", "重點項目2"], "imageQuery": "3-5 English keywords for stock photo (e.g. teamwork meeting office)" },\n    { "title": "第二頁標題", "content": ["段落或重點..."], "imageQuery": "relevant image keywords" }\n  ]\n}\n\`\`\`\n3. slides 陣列必須涵蓋所有章節，不得遺漏。\n4. 每一頁都必須填寫 imageQuery（3~5 個英文關鍵字），用於自動搜尋配圖。\n5. 絕對要保證 JSON 格式正確！\n`;
+                systemPromptAddon += `\n【💡 特殊技能觸發】：使用者希望製作 PPT 簡報。\n【強制規定】：\n1. 必須閱讀使用者提供的「完整內容」，不得只取前段，每個章節/段落都必須有對應投影片。\n2. 嚴格在對話最後面使用以下 JSON 格式輸出(並用 \`\`\`json 和 \`\`\` 包著)，系統會自動攔截並轉換為真正的 .pptx 檔案給使用者下載：\n\`\`\`json\n{\n  "title": "簡報主標題",\n  "subtitle": "簡報副標題 (選填)",\n  "slides": [\n    { "title": "第一頁標題", "content": ["重點項目1", "重點項目2"], "imageQuery": "3-5 English keywords for stock photo (e.g. teamwork meeting office)" },\n    { "title": "第二頁標題", "content": ["段落或重點..."], "imageQuery": "relevant image keywords" }\n  ]\n}\n\`\`\`\n3. slides 陣列必須涵蓋所有章節，不得遺漏。\n4. 每一頁都必須填寫 imageQuery（3~5 個英文關鍵字），用於自動搜尋配圖。\n5. 絕對要保證 JSON 格式正確！\n6. 【嚴格禁止】：回覆中絕對不可提及任何 GPS 座標、緯度、經度或地理定位數值，此資訊與簡報製作無關，請忽略歷史訊息中任何位置相關的系統數據。\n`;
             }
                 
                 // --- 1. 變數初始化 (確保整個函式只宣告這一次，絕不重複) ---
@@ -6291,6 +6291,18 @@ if (appState.pendingAnalyzeContextId) {
                 chatHistory = appState.messages.filter(m => (m.sender === 'user' || m.sender === 'ai') && String(m.sessionId || 'legacy') === String(appState.currentSessionId || 'legacy')).slice(-4);
             }
 
+                // 🔧 修正：PPT 製作時，清除歷史訊息中殘留的 GPS 座標文字，
+                //         防止 AI 讀到舊的位置數據後將其混入簡報回覆
+                const _isPPTContext = userText.includes('簡報') || userText.includes('PPT') || userText.includes('ppt') || userText.includes('Ppt') || userText.includes('投影片');
+                if (_isPPTContext && chatHistory.length > 0) {
+                    chatHistory = chatHistory.map(m => {
+                        if (m.text && /GPS 座標|緯度 \d|經度 \d|lastLat|lastLon/.test(m.text)) {
+                            return { ...m, text: m.text.replace(/\n?【系統真實數據】使用者目前的 GPS 座標為：緯度 [\d.]+, 經度 [\d.]+。[^\n]*\n?/g, '') };
+                        }
+                        return m;
+                    });
+                }
+
                 let finalPrompt = userText;
                 if (!options.isAnalysis && !options.isCollab) {
                 if (appState.replyLength === 'short') finalPrompt += "\n【限制：請使用極簡短的篇幅回覆，將字數控制在50字以內。】";
@@ -6474,63 +6486,68 @@ if (appState.pendingAnalyzeContextId) {
                     //    ② finishReason 兜底：MAX_TOKENS（字串或數字 2 均支援）
                     //    ③ 長度兜底：輸出長度超過 ~30000 字元時也嘗試續寫
                     if (options.isAnalysis && !responseImageFile) {
-                        const MAX_CONTINUATION_PARTS = 6;
+                        const MAX_CONTINUATION_PARTS = 8; // 🔧 增加最大續寫段數，支援更長音檔
                         let contCurrentCandidate = currentCandidate;
                         let contAccumulated = outputText;
+                        // 🔧 修正：用獨立變數追蹤「全部已累積的總文字」，供時長閾值判斷使用
+                        let totalAccumulatedText = outputText;
 
-                        const needsContinuation = (text, cand) => {
-                            if (!text) return false;
-                            const trimmed = text.trimEnd();
+                        const stripMarkers = (text) =>
+                            text.replace(/\s*%%CONTINUE%%\s*$/g, '').replace(/\s*%%DONE%%\s*$/g, '');
+
+                        const needsContinuation = (latestSegText, allAccumText, cand) => {
+                            if (!latestSegText) return false;
+                            const trimmed = latestSegText.trimEnd();
 
                             // ① 標記協議（最明確）：AI 在末尾自報 %%CONTINUE%% 或 %%DONE%%
                             if (trimmed.endsWith('%%CONTINUE%%')) return true;
                             if (trimmed.endsWith('%%DONE%%')) return false;
 
-                            // ② 錄音時長推算（核心邏輯）：
-                            //    中文語速約 200-250 字/分，保守取 180 字/分作為最低預估基準
-                            //    逐字稿 + 摘要 = 約 1.3x 倍數；若輸出低於預期的 55% 則視為截斷
+                            // ② finishReason 兜底（字串或整數均支援）—— 優先於時長估算，避免多餘請求
+                            const fr = cand?.finishReason;
+                            if (fr === 'MAX_TOKENS' || fr === 2) return true;
+
+                            // ③ 錄音時長推算（核心邏輯）：
+                            //    中文語速約 200-250 字/分，保守取 160 字/分作為最低預估基準
+                            //    逐字稿 + 摘要 = 約 1.3x 倍數；
+                            //    🔧 改用「總累積長度」與「預估最低字數」比較，閾值從 55% 調高至 70%（更積極偵測截斷）
                             const durationSecs = appState.pendingAnalyzeDuration || 0;
                             if (durationSecs > 60) {
-                                const charsPerMin = 180;
+                                const charsPerMin = 160;
                                 const expectedChars = Math.round(durationSecs / 60 * charsPerMin * 1.3);
-                                const truncationThreshold = Math.round(expectedChars * 0.55);
-                                console.log(`[多段分析] 錄音 ${Math.round(durationSecs/60)} 分鐘，預估最低字數: ${truncationThreshold}，實際輸出: ${text.length}`);
-                                if (text.length < truncationThreshold) {
-                                    console.log('[多段分析] ✅ 判定為截斷，觸發續寫');
+                                const truncationThreshold = Math.round(expectedChars * 0.70); // 🔧 從 55% 調高至 70%
+                                console.log(`[多段分析] 錄音 ${Math.round(durationSecs/60)} 分鐘，預估最低字數: ${truncationThreshold}，目前總累積: ${allAccumText.length}`);
+                                if (allAccumText.length < truncationThreshold) {
+                                    console.log('[多段分析] ✅ 時長判定為截斷，觸發續寫');
                                     return true;
                                 }
                             }
 
-                            // ③ finishReason 兜底（字串或整數均支援）
-                            const fr = cand?.finishReason;
-                            if (fr === 'MAX_TOKENS' || fr === 2) return true;
-
-                            // ④ 長度兜底：超過 30000 字元且結尾無標點
-                            if (text.length > 30000 && !/[。！？.!?]\s*$/.test(trimmed)) return true;
+                            // ④ 長度兜底：單段超過 28000 字元且結尾無標點，視為截斷
+                            if (latestSegText.length > 28000 && !/[。！？.!?」』]\s*$/.test(trimmed)) return true;
 
                             return false;
                         };
 
-                        const stripMarkers = (text) =>
-                            text.replace(/\s*%%CONTINUE%%\s*$/g, '').replace(/\s*%%DONE%%\s*$/g, '');
-
                         while (
-                            needsContinuation(contAccumulated, contCurrentCandidate) &&
+                            needsContinuation(contAccumulated, totalAccumulatedText, contCurrentCandidate) &&
                             outputChunks.length < MAX_CONTINUATION_PARTS
                         ) {
-                            // 清除標記後再存入 chunks
-                            outputChunks.push(stripMarkers(contAccumulated));
+                            // 🔧 清除標記後存入 chunks（記錄本段乾淨文字）
+                            const cleanedSegment = stripMarkers(contAccumulated);
+                            outputChunks.push(cleanedSegment);
                             const partNum = outputChunks.length + 1;
 
                             if (typeof addMessage === 'function') {
-                                addMessage(`⏳ 分析內容超過單次輸出上限，正在自動取得第 ${partNum} 段…（最多可自動續寫 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
+                                addMessage(`⏳ 逐字稿尚未完成，正在自動取得第 ${partNum} 段…（最多可自動續寫 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
                             }
-                            console.log(`[多段分析] 續寫第 ${partNum} 段，finishReason=${contCurrentCandidate?.finishReason}, 已輸出長度=${stripMarkers(contAccumulated).length}`);
+                            console.log(`[多段分析] 續寫第 ${partNum} 段，finishReason=${contCurrentCandidate?.finishReason}, 本段長度=${cleanedSegment.length}, 總累積長度=${totalAccumulatedText.length}`);
 
-                            // 建立續寫 contents：原始請求（含音訊 base64）＋ 本段輸出 ＋ 續寫指令
+                            // 建立續寫 contents：原始請求（含音訊 base64）＋ 目前全部累積內容 ＋ 續寫指令
+                            // 🔧 修正：將已累積的「所有段落」一起送回，讓 AI 知道已輸出多少，準確接續
                             const continuationContents = [
                                 ...contents,
-                                { role: 'model', parts: [{ text: stripMarkers(contAccumulated) }] },
+                                { role: 'model', parts: [{ text: stripMarkers(totalAccumulatedText) }] },
                                 { role: 'user', parts: [{ text: `請繼續從上文結束處直接接續輸出剩餘的逐字稿與摘要內容，不需重複已輸出的部分，直接接著寫即可。同樣地，若這次回覆後仍有剩餘，請在最後加上 %%CONTINUE%%；若已完整結束請加上 %%DONE%%。` }] }
                             ];
                             const contPayload = {
@@ -6556,19 +6573,24 @@ if (appState.pendingAnalyzeContextId) {
                                     break;
                                 }
                                 contAccumulated = contCurrentCandidate.content.parts.filter(p => p.text).map(p => p.text).join('');
-                                console.log(`[多段分析] 第 ${partNum} 段完成，長度=${contAccumulated.length}, finishReason=${contCurrentCandidate?.finishReason}`);
+                                // 🔧 修正：totalAccumulatedText 持續累積，用於下一輪的時長閾值判斷
+                                totalAccumulatedText = stripMarkers(totalAccumulatedText) + '\n\n' + contAccumulated;
+                                console.log(`[多段分析] 第 ${partNum} 段完成，本段長度=${contAccumulated.length}, 總累積長度=${totalAccumulatedText.length}, finishReason=${contCurrentCandidate?.finishReason}`);
                             } catch(contErr) {
                                 console.warn('[多段分析] 續寫請求例外:', contErr);
                                 break;
                             }
                         }
 
-                        // 合併：若有多段，把最後一段也清理後加入
+                        // 🔧 修正合併邏輯：
+                        //    - outputChunks 儲存「前 N-1 段」各自的乾淨文字（供顯示用）
+                        //    - outputText 設為「最後一段」（由後續 addMessage 正常顯示）
+                        //    - 儲存至筆記時，用 outputChunks.join + outputText 才是完整全文
                         if (outputChunks.length > 0) {
-                            outputChunks.push(stripMarkers(contAccumulated));
-                            outputText = stripMarkers(contAccumulated);
+                            outputChunks.push(stripMarkers(contAccumulated)); // 最後一段也加入，讓儲存邏輯可取到全文
+                            outputText = stripMarkers(contAccumulated);       // 最後一段作為最終訊息顯示
                         } else {
-                            // 即使只有一段，也清除標記
+                            // 只有一段：清除標記即可
                             outputText = stripMarkers(outputText);
                         }
                     } else {
