@@ -21,22 +21,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
     <!-- 引入 Google 字體 Inter -->
-    <!-- telegram.js 外部引用已移除，改為內建安全 stub，防止缺少檔案導致頁面崩潰 -->
-    <script>
-        // Telegram 推播功能 stub：若有填寫 tgToken/tgChatId 則實際發送，否則靜默忽略
-        window.pushToTelegram = async function(message) {
-            try {
-                const token = localStorage.getItem('nova_tg_token');
-                const chatId = localStorage.getItem('nova_tg_chatid');
-                if (!token || !chatId) return;
-                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
-                });
-            } catch(e) { console.warn('Telegram push failed:', e); }
-        };
-    </script>
+    <script src="./telegram.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS 自訂設定檔 -->
@@ -1039,7 +1024,7 @@
   <!-- ================= JavaScript 邏輯與功能實作 ================= -->
     <script>
         // --- 全域變數與狀態初始化 ---
-        let recognition = null; let noteRecognition = null; let voiceTimer = null; let noteVoiceTimer = null;
+        let recognition = null; let noteRecognition = null; let voiceTimer = null; 
         let chatInitialInput = ""; let noteInitialInput = "";
         let alarmInterval = null; let alarmAudioCtx = null; let mediaRecorder = null; let audioChunks = [];
         let liveVideoStream = null; 
@@ -1530,9 +1515,7 @@ async function encodeMp3(audioBuffer) {
             noteFolders: JSON.parse(localStorage.getItem('nova_folders')) || ['未分類', '工作', '生活'],
             currentNoteFolder: '全部',
             // 雙 AI 協作狀態
-            isDualAIRunning: false,
-            // currentChat: 供地圖/位置功能暫存當前訊息上下文，避免 TypeError
-            currentChat: { messages: [] }
+            isDualAIRunning: false
         };
         
         const MODEL_CONFIG = {
@@ -4900,7 +4883,7 @@ try {
             
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'audioRecord';
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。`;
             
             if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
@@ -4929,7 +4912,7 @@ try {
             
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'voiceNote';
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
+            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。`;
             
             if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
@@ -6354,51 +6337,28 @@ if (appState.pendingAnalyzeContextId) {
                         }
                     }
 
-                    // 🔄 自動多段續寫：雙重偵測機制
-                    //    ① 標記協議：prompt 要求 AI 在末尾加 %%CONTINUE%% 或 %%DONE%%（最可靠）
-                    //    ② finishReason 兜底：MAX_TOKENS（字串或數字 2 均支援）
-                    //    ③ 長度兜底：輸出長度超過 ~30000 字元時也嘗試續寫
+                    // 🔄 自動多段續寫：若 isAnalysis 且 finishReason 為 MAX_TOKENS，自動請求後續輸出
                     if (options.isAnalysis && !responseImageFile) {
                         const MAX_CONTINUATION_PARTS = 6;
                         let contCurrentCandidate = currentCandidate;
                         let contAccumulated = outputText;
 
-                        const needsContinuation = (text, cand) => {
-                            if (!text) return false;
-                            const trimmed = text.trimEnd();
-                            // ① 明確標記協議
-                            if (trimmed.endsWith('%%CONTINUE%%')) return true;
-                            if (trimmed.endsWith('%%DONE%%')) return false;
-                            // ② finishReason（字串或數字）
-                            const fr = cand?.finishReason;
-                            if (fr === 'MAX_TOKENS' || fr === 2) return true;
-                            // ③ 長度兜底：超過 30000 字元且結尾不像自然結束（非句號、問號、感嘆號）
-                            if (text.length > 30000 && !/[。！？.!?
-]$/.test(trimmed)) return true;
-                            return false;
-                        };
-
-                        const stripMarkers = (text) =>
-                            text.replace(/\s*%%CONTINUE%%\s*$/g, '').replace(/\s*%%DONE%%\s*$/g, '');
-
                         while (
-                            needsContinuation(contAccumulated, contCurrentCandidate) &&
+                            contCurrentCandidate?.finishReason === 'MAX_TOKENS' &&
                             outputChunks.length < MAX_CONTINUATION_PARTS
                         ) {
-                            // 清除標記後再存入 chunks
-                            outputChunks.push(stripMarkers(contAccumulated));
+                            outputChunks.push(contAccumulated);
                             const partNum = outputChunks.length + 1;
-
+                            // 通知 UI 正在取得下一段
                             if (typeof addMessage === 'function') {
-                                addMessage(`⏳ 分析內容超過單次輸出上限，正在自動取得第 ${partNum} 段…（最多可自動續寫 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
+                                addMessage(`⏳ 分析內容超過單次輸出上限，正在自動取得第 ${partNum} 段…（共可自動續寫最多 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
                             }
-                            console.log(`[多段分析] 續寫第 ${partNum} 段，finishReason=${contCurrentCandidate?.finishReason}, 已輸出長度=${stripMarkers(contAccumulated).length}`);
 
-                            // 建立續寫 contents：原始請求（含音訊 base64）＋ 本段輸出 ＋ 續寫指令
+                            // 建立續寫用的 contents：原始請求（含音訊）＋ 已輸出部分 ＋ 續寫指令
                             const continuationContents = [
                                 ...contents,
-                                { role: 'model', parts: [{ text: stripMarkers(contAccumulated) }] },
-                                { role: 'user', parts: [{ text: `請繼續從上文結束處直接接續輸出剩餘的逐字稿與摘要內容，不需重複已輸出的部分，直接接著寫即可。同樣地，若這次回覆後仍有剩餘，請在最後加上 %%CONTINUE%%；若已完整結束請加上 %%DONE%%。` }] }
+                                { role: 'model', parts: [{ text: contAccumulated }] },
+                                { role: 'user', parts: [{ text: '請繼續從上文結束處直接接續輸出剩餘的逐字稿與摘要內容，不需重複已輸出的部分，直接接著寫即可。' }] }
                             ];
                             const contPayload = {
                                 contents: continuationContents,
@@ -6411,35 +6371,22 @@ if (appState.pendingAnalyzeContextId) {
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify(contPayload)
                                 });
-                                if (!contHttpRes.ok) {
-                                    const errData = await contHttpRes.json().catch(() => ({}));
-                                    console.warn('[多段分析] 續寫 API 失敗:', contHttpRes.status, errData?.error?.message);
-                                    break;
-                                }
                                 const contData = await contHttpRes.json();
                                 contCurrentCandidate = contData.candidates?.[0];
-                                if (!contCurrentCandidate?.content?.parts) {
-                                    console.warn('[多段分析] 續寫回傳無 parts，停止', JSON.stringify(contData).slice(0, 300));
-                                    break;
-                                }
+                                if (!contCurrentCandidate?.content?.parts) break;
                                 contAccumulated = contCurrentCandidate.content.parts.filter(p => p.text).map(p => p.text).join('');
-                                console.log(`[多段分析] 第 ${partNum} 段完成，長度=${contAccumulated.length}, finishReason=${contCurrentCandidate?.finishReason}`);
                             } catch(contErr) {
-                                console.warn('[多段分析] 續寫請求例外:', contErr);
+                                console.warn('[多段分析] 續寫請求失敗:', contErr);
                                 break;
                             }
                         }
 
-                        // 合併：若有多段，把最後一段也清理後加入
+                        // 若有多段，將最後一段也加入，合併成完整輸出
                         if (outputChunks.length > 0) {
-                            outputChunks.push(stripMarkers(contAccumulated));
-                            outputText = stripMarkers(contAccumulated);
-                        } else {
-                            // 即使只有一段，也清除標記
-                            outputText = stripMarkers(outputText);
+                            outputChunks.push(contAccumulated);
+                            outputText = contAccumulated; // handleSendMessage 顯示最後一段作為 AI 訊息
+                            // 透過特殊欄位回傳所有段落供 handleSendMessage 分段儲存
                         }
-                    } else {
-                        // 非分析模式不清標記（通常不含標記）
                     }
 
                     const candidate = currentCandidate; // 保持後續程式碼相容性
