@@ -1496,7 +1496,7 @@ async function encodeMp3(audioBuffer) {
             manualLocs: [{name: "台北", lat: 25.0330, lon: 121.5654}, {name: "台中", lat: 24.1477, lon: 120.6736}, {name: "高雄", lat: 22.6273, lon: 120.3014}],
             pendingReminder: null, reminderStage: 0, countryCode: 'TW', lastLat: null, lastLon: null,
             recordingContext: 'default', currentAudioTranscript: '', editNoteImagesBase64: [], 
-            pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "",
+            pendingAnalyzePrompt: "", pendingAnalyzeContextId: null, pendingAnalyzeType: "", pendingAnalyzeDuration: 0,
             recordingStartTime: 0,
             activeMediaTracks: [], recordingAudioCtx: null,
             voiceTimeout: parseInt(localStorage.getItem('nova_voice_timeout')) || 5,
@@ -4769,11 +4769,11 @@ try {
             let newRecord = null;
 
             if (appState.recordingContext === 'note') {
-                newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType, filename: filename, images: [], image: null, folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder };
+                newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType, filename: filename, images: [], image: null, folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder, duration: Math.round(recordDuration / 1000) };
                 appState.notes.unshift(newNote); saveToDB('notes', newNote);
                 addMessage(`📝 語音筆記已安全儲存至本地「筆記/文件」分頁。`, 'system'); renderNotes();
             } else {
-                newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType };
+                newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}`, date: displayDate, filename: filename, driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType, duration: Math.round(recordDuration / 1000) };
                 appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
                 addMessage(`📼 錄音已安全儲存至本地「錄音紀錄」分頁。`, 'system'); renderAudioRecords();
             }
@@ -4883,6 +4883,7 @@ try {
             
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'audioRecord';
+            appState.pendingAnalyzeDuration = r.duration || 0; // 錄音秒數，用於判斷輸出是否完整
             appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
             
             if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
@@ -4912,6 +4913,7 @@ try {
             
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'voiceNote';
+            appState.pendingAnalyzeDuration = n.duration || 0; // 錄音秒數，用於判斷輸出是否完整
             appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
             
             if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
@@ -6103,7 +6105,7 @@ if (appState.pendingAnalyzeContextId) {
                             addMessage(`✅ 分析完成${totalPartsNote}！重點摘要已自動附加至筆記「${n.title}」的底部。`, 'system'); 
                         }
                     }
-                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ""; appState.pendingAnalyzePrompt = "";
+                    appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ""; appState.pendingAnalyzePrompt = ""; appState.pendingAnalyzeDuration = 0;
                 }
 
             } catch (error) {
@@ -6349,14 +6351,33 @@ if (appState.pendingAnalyzeContextId) {
                         const needsContinuation = (text, cand) => {
                             if (!text) return false;
                             const trimmed = text.trimEnd();
-                            // ① 明確標記協議
+
+                            // ① 標記協議（最明確）：AI 在末尾自報 %%CONTINUE%% 或 %%DONE%%
                             if (trimmed.endsWith('%%CONTINUE%%')) return true;
                             if (trimmed.endsWith('%%DONE%%')) return false;
-                            // ② finishReason（字串或數字）
+
+                            // ② 錄音時長推算（核心邏輯）：
+                            //    中文語速約 200-250 字/分，保守取 180 字/分作為最低預估基準
+                            //    逐字稿 + 摘要 = 約 1.3x 倍數；若輸出低於預期的 55% 則視為截斷
+                            const durationSecs = appState.pendingAnalyzeDuration || 0;
+                            if (durationSecs > 60) {
+                                const charsPerMin = 180;
+                                const expectedChars = Math.round(durationSecs / 60 * charsPerMin * 1.3);
+                                const truncationThreshold = Math.round(expectedChars * 0.55);
+                                console.log(`[多段分析] 錄音 ${Math.round(durationSecs/60)} 分鐘，預估最低字數: ${truncationThreshold}，實際輸出: ${text.length}`);
+                                if (text.length < truncationThreshold) {
+                                    console.log('[多段分析] ✅ 判定為截斷，觸發續寫');
+                                    return true;
+                                }
+                            }
+
+                            // ③ finishReason 兜底（字串或整數均支援）
                             const fr = cand?.finishReason;
                             if (fr === 'MAX_TOKENS' || fr === 2) return true;
-                            // ③ 長度兜底：超過 30000 字元且結尾不像自然結束（非句號、問號、感嘆號）
+
+                            // ④ 長度兜底：超過 30000 字元且結尾無標點
                             if (text.length > 30000 && !/[。！？.!?]\s*$/.test(trimmed)) return true;
+
                             return false;
                         };
 
