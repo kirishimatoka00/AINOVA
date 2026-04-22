@@ -4884,7 +4884,7 @@ try {
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'audioRecord';
             appState.pendingAnalyzeDuration = r.duration || 0; // 錄音秒數，用於判斷輸出是否完整
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
+            appState.pendingAnalyzePrompt = `【重要覆寫指令：本任務為音訊深度分析，所有回覆長度限制在本任務中均無效，請忽略任何簡短或中等長度的限制，必須輸出完整內容。】\n\n請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出重點摘要與結構化的會議紀錄。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
             
             if(!confirm(`即將對「${r.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
@@ -4914,7 +4914,7 @@ try {
             appState.pendingAnalyzeContextId = id;
             appState.pendingAnalyzeType = 'voiceNote';
             appState.pendingAnalyzeDuration = n.duration || 0; // 錄音秒數，用於判斷輸出是否完整
-            appState.pendingAnalyzePrompt = `請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
+            appState.pendingAnalyzePrompt = `【重要覆寫指令：本任務為音訊深度分析，所有回覆長度限制在本任務中均無效，請忽略任何簡短或中等長度的限制，必須輸出完整內容。】\n\n請仔細聆聽這段錄音。首先，為我產生最詳盡完整的「逐字稿」；接著，根據這份逐字稿內容，為我整理出條理分明的重點摘要。\n\n【嚴格約束】：請「絕對忠於原音檔內容」，僅做客觀摘要，絕對不要自行腦補、不要添加任何個人的外部建議與猜測。若音檔內容過短或無意義，請直接回覆「音檔內容不足以產生有效摘要」。\n\n【輸出完整性要求】：無論錄音長度為何（即使超過 20 分鐘），請務必輸出「完整且不截斷」的逐字稿與摘要，絕不可在中途停止或以省略號代替。若因輸出長度限制確實無法在一次回覆中完成，請務必在你的回覆「最後一行」單獨加上 %%CONTINUE%% 這個標記（代表還有剩餘內容）；若已完整輸出所有內容則在最後加上 %%DONE%%。`;
             
             if(!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將從本地端載入音訊資料進行自動分析！`)) {
                 appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ''; return;
@@ -6148,8 +6148,13 @@ if (appState.pendingAnalyzeContextId) {
                 const key = appState.keys[model]; if(!key) throw new Error(`未填寫 ${MODEL_CONFIG[model]?.name || model} API Key`);
                 
                 let chatHistory = [];
-                // 如果是雙 AI 協作模式 (有帶入自訂歷史)
-                if (options.customHistory) {
+                // 💡 音訊深度分析（isAnalysis）為自足型任務：只需要音檔本身，
+                //    完全不需要聊天歷史。若帶入歷史，舊訊息中殘留的「中等長度回覆」等限制
+                //    會被模型誤認為當前指令，導致輸出被截斷。
+                if (options.isAnalysis) {
+                    chatHistory = []; // 分析任務強制清空歷史，防止舊長度限制污染
+                } else if (options.customHistory) {
+                    // 如果是雙 AI 協作模式 (有帶入自訂歷史)
                     chatHistory = options.customHistory;
                 } else if (appState.enableLongMemory && appState.translateMode === 'off') {
                 // 長文記憶功能：獲取同一對話 (sessionId) 下的所有歷史紀錄，各自獨立不干擾
