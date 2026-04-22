@@ -2460,20 +2460,59 @@ msg.files : (msg.file ? [msg.file] : []);
             });
         };
 
+        // ── 超長文 PPT 輔助：分段提取重點後再合併生成 ──────────────────────
+        window._pptChunkSummarize = async function(fullText) {
+            const CHUNK_SIZE = 5000;          // 每段字元數
+            const MAX_DIRECT = 12000;         // 短文直接傳送上限
+            if (fullText.length <= MAX_DIRECT) return fullText; // 短文直接回傳
+
+            showToast("⏳ 長文分析中，正在提取各段重點…");
+
+            // 切分段落
+            const chunks = [];
+            for (let i = 0; i < fullText.length; i += CHUNK_SIZE) {
+                chunks.push(fullText.slice(i, i + CHUNK_SIZE));
+            }
+
+            // 使用現有 fetchAIResponse 對每段提取重點（隔離模式，不污染歷史）
+            const summaries = [];
+            for (let idx = 0; idx < chunks.length; idx++) {
+                showToast(`⏳ 分析第 ${idx + 1}/${chunks.length} 段…`);
+                try {
+                    const chunkPrompt = `以下是一篇長文的第 ${idx + 1}/${chunks.length} 段內容，請提取這段的所有重要概念、數據、論點，以條列式輸出（中文），不要遺漏任何重點：\n\n${chunks[idx]}`;
+                    const res = await fetchAIResponse(chunkPrompt, appState.currentModel, { isAnalysis: true });
+                    const txt = typeof res === 'string' ? res : (res.text || '');
+                    if (txt) summaries.push(`【第${idx + 1}段重點】\n${txt}`);
+                } catch(e) {
+                    console.warn(`PPT chunk ${idx + 1} 失敗:`, e);
+                }
+            }
+
+            if (summaries.length === 0) {
+                // 退路：直接截取前 12000 字元
+                return fullText.slice(0, MAX_DIRECT);
+            }
+            return `（以下為全文各段重點摘要，請據此製作完整 PPT，確保每段內容都有對應投影片）\n\n` + summaries.join('\n\n');
+        };
+
         window.generatePPTFromMessage = function(id) {
             const msg = appState.messages.find(m => String(m.id) === String(id));
             if (!msg || !msg.text) return;
+            const isLong = msg.text.length > 12000;
             showConfirmDialog({
                 title: '製作投影片',
-                message: '確定要將此訊息內容傳送給 AI 製作 PPT 投影片嗎？',
+                message: isLong
+                    ? `此訊息較長（${msg.text.length.toLocaleString()} 字元），系統將自動分段摘要後製作完整 PPT，確定繼續？`
+                    : '確定要將此訊息內容傳送給 AI 製作 PPT 投影片嗎？',
                 okText: '確定製作',
                 okClass: 'bg-emerald-600 hover:bg-emerald-500',
                 icon: 'ph-presentation-chart',
                 iconBg: 'bg-emerald-500/20',
                 iconColor: 'text-emerald-400',
-                onConfirm: function() {
+                onConfirm: async function() {
                     switchTab('dashboard');
-                    document.getElementById('user-input').value = `幫我把這些內容做成簡報 (PPT)：\n\n${msg.text.substring(0, 3000)}`;
+                    const content = await window._pptChunkSummarize(msg.text);
+                    document.getElementById('user-input').value = `幫我把這些內容做成簡報 (PPT)，請務必覆蓋所有段落與章節，不要遺漏任何重點：\n\n${content}`;
                     handleSendMessage();
                     showToast("✅ 已發送製作 PPT 指令");
                 }
@@ -2483,18 +2522,22 @@ msg.files : (msg.file ? [msg.file] : []);
         window.generatePPTFromNote = function(id) {
             const n = appState.notes.find(x => String(x.id) === String(id));
             if (!n) return;
+            let contentText = n.isHtml ? n.content.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ') : n.content;
+            const isLong = contentText.length > 12000;
             showConfirmDialog({
                 title: '製作投影片',
-                message: `確定要將筆記「${n.title || '(未命名)'}」製作成 PPT 投影片嗎？`,
+                message: isLong
+                    ? `筆記「${n.title || '(未命名)'}」內容較長（${contentText.length.toLocaleString()} 字元），系統將自動分段摘要後製作完整 PPT，確定繼續？`
+                    : `確定要將筆記「${n.title || '(未命名)'}」製作成 PPT 投影片嗎？`,
                 okText: '確定製作',
                 okClass: 'bg-emerald-600 hover:bg-emerald-500',
                 icon: 'ph-presentation-chart',
                 iconBg: 'bg-emerald-500/20',
                 iconColor: 'text-emerald-400',
-                onConfirm: function() {
+                onConfirm: async function() {
                     switchTab('dashboard');
-                    let contentText = n.isHtml ? n.content.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ') : n.content;
-                    document.getElementById('user-input').value = `幫我把這篇筆記做成簡報 (PPT)：\n\n【${n.title}】\n${contentText.substring(0, 3000)}`;
+                    const content = await window._pptChunkSummarize(contentText);
+                    document.getElementById('user-input').value = `幫我把這篇筆記做成簡報 (PPT)，請務必覆蓋所有段落與章節，不要遺漏任何重點：\n\n【${n.title}】\n${content}`;
                     handleSendMessage();
                     showToast("✅ 已發送製作 PPT 指令");
                 }
@@ -5687,7 +5730,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
 
             // --- 新增：攔截 PPT 簡報意圖，強制回傳 JSON 格式 ---
             if (text.includes("簡報") || text.includes("PPT") || text.includes("ppt") || text.includes("Ppt")) {
-                systemPromptAddon += `\n【💡 特殊技能觸發】：使用者希望製作 PPT 簡報。請你蒐集並整理完資訊後，嚴格在對話最後面使用以下 JSON 格式輸出(並用 \`\`\`json 和 \`\`\` 包著)，系統會自動攔截並轉換為真正的 .pptx 檔案給使用者下載：\n\`\`\`json\n{\n  "title": "簡報主標題",\n  "subtitle": "簡報副標題 (選填)",\n  "slides": [\n    { "title": "第一頁標題", "content": ["重點項目1", "重點項目2"] },\n    { "title": "第二頁標題", "content": ["段落或重點..."] }\n  ]\n}\n\`\`\`\n絕對要保證 JSON 格式正確！\n`;
+                systemPromptAddon += `\n【💡 特殊技能觸發】：使用者希望製作 PPT 簡報。\n【強制規定】：\n1. 必須閱讀使用者提供的「完整內容」，不得只取前段，每個章節/段落都必須有對應投影片。\n2. 嚴格在對話最後面使用以下 JSON 格式輸出(並用 \`\`\`json 和 \`\`\` 包著)，系統會自動攔截並轉換為真正的 .pptx 檔案給使用者下載：\n\`\`\`json\n{\n  "title": "簡報主標題",\n  "subtitle": "簡報副標題 (選填)",\n  "slides": [\n    { "title": "第一頁標題", "content": ["重點項目1", "重點項目2"] },\n    { "title": "第二頁標題", "content": ["段落或重點..."] }\n  ]\n}\n\`\`\`\n3. slides 陣列必須涵蓋所有章節，不得遺漏。\n4. 絕對要保證 JSON 格式正確！\n`;
             }
                 
                 // --- 1. 變數初始化 (確保整個函式只宣告這一次，絕不重複) ---
