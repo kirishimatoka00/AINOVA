@@ -6062,26 +6062,45 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
             } catch(e) {}
         }
 
+        // 💡 多段分析支援：若 fetchAIResponse 回傳 chunks（表示輸出超過單次上限被自動分段），
+        //    則依序顯示各段（前 N-1 段），最後一段（即 finalOutputText）作為正常 AI 訊息顯示
+        const analysisChunks = (!finalRes || typeof finalRes === 'string') ? null : finalRes.chunks;
+        if (analysisChunks && analysisChunks.length > 0) {
+            // 先將各前段作為 AI 訊息顯示（不含最後一段，最後一段由後續正常流程處理）
+            analysisChunks.forEach((chunkText, idx) => {
+                const segLabel = `\n\n---\n*(第 ${idx + 1} 段，共 ${analysisChunks.length + 1} 段)*`;
+                addMessage(chunkText + segLabel, 'ai', modelToUse, [], null);
+            });
+            // 最後一段也加上標記
+            finalOutputText += `\n\n---\n*(第 ${analysisChunks.length + 1} 段，共 ${analysisChunks.length + 1} 段 — 已輸出完畢)*`;
+        }
+
         if(typeof finalRes === 'string') addMessage(finalOutputText, 'ai', modelToUse);
         else addMessage(finalOutputText, 'ai', modelToUse, finalRes.sources, finalRes.file);
         
         const aiMsgId = appState.messages[appState.messages.length - 1].id;
         speakText(textToSpeak, false, String(aiMsgId));
 if (appState.pendingAnalyzeContextId) {
+                    // 完整分析文字 = 所有段落合併（若有多段）
+                    const fullAnalysisText = analysisChunks
+                        ? analysisChunks.join('\n\n') + '\n\n' + (finalRes.text || finalRes)
+                        : (finalRes.text || finalRes);
+                    const totalPartsNote = analysisChunks ? ` [共 ${analysisChunks.length + 1} 段合併]` : '';
+
                     if (appState.pendingAnalyzeType === 'voiceNote') {
                         const n = appState.notes.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
-                        if (n) { n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})]\n${finalRes.text||finalRes}`; saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system'); }
+                        if (n) { n.content += `\n\n====================\n[AI 完整轉錄與分析 (${MODEL_CONFIG[modelToUse]?.name})${totalPartsNote}]\n${fullAnalysisText}`; saveToDB('notes', n); renderNotes(); addMessage(`✅ 分析完成${totalPartsNote}！逐字稿與摘要已自動儲存至筆記「${n.title}」的內文中。`, 'system'); }
                     } else if (appState.pendingAnalyzeType === 'audioRecord') {
                         const r = appState.audioRecords.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
-                        if (r) { r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析]\n${finalRes.text||finalRes}`; saveToDB('audioRecords', r); renderAudioRecords(); addMessage(`✅ 分析完成！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system'); }
+                        if (r) { r.transcript = (r.transcript ? r.transcript + "\n\n" : "") + `[AI 完整轉錄與分析${totalPartsNote}]\n${fullAnalysisText}`; saveToDB('audioRecords', r); renderAudioRecords(); addMessage(`✅ 分析完成${totalPartsNote}！逐字稿與摘要已自動儲存至錄音紀錄「${r.title}」。`, 'system'); }
                     } else if (appState.pendingAnalyzeType === 'textNote') {
                         const n = appState.notes.find(x => String(x.id) === String(appState.pendingAnalyzeContextId));
                         if (n) { 
-                            const analysisHtml = `\n\n<hr><div style="margin-top:1em; padding:1em; background:rgba(147,51,234,0.1); border-left:4px solid #9333ea; border-radius:0.5em;"><strong>🤖 AI 深度分析摘要 (${MODEL_CONFIG[modelToUse]?.name})</strong><br>${(finalRes.text||finalRes).replace(/\n/g, '<br>')}</div>`;
+                            const analysisHtml = `\n\n<hr><div style="margin-top:1em; padding:1em; background:rgba(147,51,234,0.1); border-left:4px solid #9333ea; border-radius:0.5em;"><strong>🤖 AI 深度分析摘要 (${MODEL_CONFIG[modelToUse]?.name})${totalPartsNote}</strong><br>${fullAnalysisText.replace(/\n/g, '<br>')}</div>`;
                             if(n.isHtml) n.content += analysisHtml;
-                            else n.content += `\n\n====================\n[🤖 AI 深度分析摘要 (${MODEL_CONFIG[modelToUse]?.name})]\n${finalRes.text||finalRes}`; 
+                            else n.content += `\n\n====================\n[🤖 AI 深度分析摘要 (${MODEL_CONFIG[modelToUse]?.name})${totalPartsNote}]\n${fullAnalysisText}`; 
                             saveToDB('notes', n); renderNotes(); 
-                            addMessage(`✅ 分析完成！重點摘要已自動附加至筆記「${n.title}」的底部。`, 'system'); 
+                            addMessage(`✅ 分析完成${totalPartsNote}！重點摘要已自動附加至筆記「${n.title}」的底部。`, 'system'); 
                         }
                     }
                     appState.pendingAnalyzeContextId = null; appState.pendingAnalyzeType = ""; appState.pendingAnalyzePrompt = "";
@@ -6299,14 +6318,16 @@ if (appState.pendingAnalyzeContextId) {
 
                     if (!res.ok) throw new Error(`${data.error?.message || res.status}`);
 
-                    const candidate = data.candidates?.[0]; if (!candidate) return "⚠️ API 未回傳內容，請檢查設定。";
-                    
+                    let currentCandidate = data.candidates?.[0]; if (!currentCandidate) return "⚠️ API 未回傳內容，請檢查設定。";
+
                     let outputText = "";
                     let responseImageFile = null;
+                    // 💡 多段輸出：用於收集各段文字（isAnalysis 模式下若 MAX_TOKENS 則自動續寫）
+                    const outputChunks = [];
 
-                    if (candidate.content && candidate.content.parts) {
-                        outputText = candidate.content.parts.filter(p => p.text).map(p => p.text).join("");
-                        const imgPart = candidate.content.parts.find(p => p.inlineData);
+                    if (currentCandidate.content && currentCandidate.content.parts) {
+                        outputText = currentCandidate.content.parts.filter(p => p.text).map(p => p.text).join("");
+                        const imgPart = currentCandidate.content.parts.find(p => p.inlineData);
                         if (imgPart) {
                             responseImageFile = {
                                 category: 'image',
@@ -6315,6 +6336,60 @@ if (appState.pendingAnalyzeContextId) {
                             };
                         }
                     }
+
+                    // 🔄 自動多段續寫：若 isAnalysis 且 finishReason 為 MAX_TOKENS，自動請求後續輸出
+                    if (options.isAnalysis && !responseImageFile) {
+                        const MAX_CONTINUATION_PARTS = 6;
+                        let contCurrentCandidate = currentCandidate;
+                        let contAccumulated = outputText;
+
+                        while (
+                            contCurrentCandidate?.finishReason === 'MAX_TOKENS' &&
+                            outputChunks.length < MAX_CONTINUATION_PARTS
+                        ) {
+                            outputChunks.push(contAccumulated);
+                            const partNum = outputChunks.length + 1;
+                            // 通知 UI 正在取得下一段
+                            if (typeof addMessage === 'function') {
+                                addMessage(`⏳ 分析內容超過單次輸出上限，正在自動取得第 ${partNum} 段…（共可自動續寫最多 ${MAX_CONTINUATION_PARTS} 段）`, 'system');
+                            }
+
+                            // 建立續寫用的 contents：原始請求（含音訊）＋ 已輸出部分 ＋ 續寫指令
+                            const continuationContents = [
+                                ...contents,
+                                { role: 'model', parts: [{ text: contAccumulated }] },
+                                { role: 'user', parts: [{ text: '請繼續從上文結束處直接接續輸出剩餘的逐字稿與摘要內容，不需重複已輸出的部分，直接接著寫即可。' }] }
+                            ];
+                            const contPayload = {
+                                contents: continuationContents,
+                                generationConfig: { temperature: 0.7, maxOutputTokens: analysisMaxTokens }
+                            };
+
+                            try {
+                                const contHttpRes = await fetchWithTimeout(endpoint, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(contPayload)
+                                });
+                                const contData = await contHttpRes.json();
+                                contCurrentCandidate = contData.candidates?.[0];
+                                if (!contCurrentCandidate?.content?.parts) break;
+                                contAccumulated = contCurrentCandidate.content.parts.filter(p => p.text).map(p => p.text).join('');
+                            } catch(contErr) {
+                                console.warn('[多段分析] 續寫請求失敗:', contErr);
+                                break;
+                            }
+                        }
+
+                        // 若有多段，將最後一段也加入，合併成完整輸出
+                        if (outputChunks.length > 0) {
+                            outputChunks.push(contAccumulated);
+                            outputText = contAccumulated; // handleSendMessage 顯示最後一段作為 AI 訊息
+                            // 透過特殊欄位回傳所有段落供 handleSendMessage 分段儲存
+                        }
+                    }
+
+                    const candidate = currentCandidate; // 保持後續程式碼相容性
 
                     // 🔄 Gemini 圖片模型未回傳圖片時，嘗試以 Grok 作為備援
                     if (isGeminiImageModel && isImageIntent && !responseImageFile && appState.keys.grok) {
@@ -6347,7 +6422,7 @@ if (appState.pendingAnalyzeContextId) {
                     if (!outputText && !responseImageFile && sources.length > 0) outputText = "已為您搜尋到相關資訊，請參考來源連結。"; 
                     if (isAutoRouted && appState.translateMode === 'off' && !appState.isLiveMode && !options.isAnalysis) { outputText += `\n\n*(系統提示：已為您動態調配至 **${selectedModelName}** 執行此任務)*`; }
 
-                    return { text: outputText || (responseImageFile ? "✨ 圖片生成成功！已為您附在下方。" : "(無回傳文字)"), sources: sources, file: responseImageFile };
+                    return { text: outputText || (responseImageFile ? "✨ 圖片生成成功！已為您附在下方。" : "(無回傳文字)"), sources: sources, file: responseImageFile, chunks: outputChunks.length > 0 ? outputChunks : null };
                     
                 } 
                 else if (model === 'groq' || model === 'gpt') {
