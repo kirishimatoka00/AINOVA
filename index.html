@@ -2462,22 +2462,44 @@ msg.files : (msg.file ? [msg.file] : []);
 
         // ── 超長文 PPT 輔助：分段提取重點後再合併生成 ──────────────────────
         window._pptChunkSummarize = async function(fullText) {
-            const CHUNK_SIZE = 5000;          // 每段字元數
-            const MAX_DIRECT = 12000;         // 短文直接傳送上限
-            if (fullText.length <= MAX_DIRECT) return fullText; // 短文直接回傳
+            const CHUNK_SIZE = 5000;
+            const MAX_DIRECT = 12000;
+            if (fullText.length <= MAX_DIRECT) return fullText;
 
-            showToast("⏳ 長文分析中，正在提取各段重點…");
-
-            // 切分段落
             const chunks = [];
             for (let i = 0; i < fullText.length; i += CHUNK_SIZE) {
                 chunks.push(fullText.slice(i, i + CHUNK_SIZE));
             }
 
-            // 使用現有 fetchAIResponse 對每段提取重點（隔離模式，不污染歷史）
+            // 在對話區插入可即時更新的進度訊息
+            const progressId = Date.now();
+            const scrollToBottom = () => {
+                const c = document.getElementById('chat-container');
+                if (c) c.scrollTop = c.scrollHeight;
+            };
+            const progressEntry = {
+                id: progressId,
+                sessionId: appState.currentSessionId,
+                text: `📊 **PPT 長文分析啟動**｜共 ${chunks.length} 段，正在處理第 1 段…`,
+                sender: 'system', time: getTime(), sources: [], files: []
+            };
+            appState.messages.push(progressEntry);
+            renderMessages();
+            scrollToBottom();
+
+            const updateProgress = (done, total, note = '') => {
+                const m = appState.messages.find(x => x.id === progressId);
+                const bar = '█'.repeat(done) + '░'.repeat(total - done);
+                if (m) {
+                    m.text = `📊 **PPT 長文分析中** [${bar}] ${done}/${total} 段${note}`;
+                    renderMessages();
+                    scrollToBottom();
+                }
+            };
+
             const summaries = [];
             for (let idx = 0; idx < chunks.length; idx++) {
-                showToast(`⏳ 分析第 ${idx + 1}/${chunks.length} 段…`);
+                updateProgress(idx, chunks.length, `｜⏳ 分析第 ${idx + 1} 段…`);
                 try {
                     const chunkPrompt = `以下是一篇長文的第 ${idx + 1}/${chunks.length} 段內容，請提取這段的所有重要概念、數據、論點，以條列式輸出（中文），不要遺漏任何重點：\n\n${chunks[idx]}`;
                     const res = await fetchAIResponse(chunkPrompt, appState.currentModel, { isAnalysis: true });
@@ -2488,10 +2510,15 @@ msg.files : (msg.file ? [msg.file] : []);
                 }
             }
 
-            if (summaries.length === 0) {
-                // 退路：直接截取前 12000 字元
-                return fullText.slice(0, MAX_DIRECT);
+            // 完成：更新進度訊息顯示結果
+            const m = appState.messages.find(x => x.id === progressId);
+            if (m) {
+                m.text = `✅ **PPT 長文分析完成**｜${chunks.length} 段全部處理完畢（成功 ${summaries.length} 段），正在交由 AI 生成投影片…`;
+                renderMessages();
+                scrollToBottom();
             }
+
+            if (summaries.length === 0) return fullText.slice(0, MAX_DIRECT);
             return `（以下為全文各段重點摘要，請據此製作完整 PPT，確保每段內容都有對應投影片）\n\n` + summaries.join('\n\n');
         };
 
@@ -3443,50 +3470,104 @@ return; }
         };
 
         // --- 新增：PPT 生成與下載函數 ---
-        window.downloadGeneratedPPT = function(base64Data) {
+        window.downloadGeneratedPPT = async function(base64Data) {
             try {
                 let jsonStr = decodeURIComponent(escape(atob(base64Data)));
                 let pptData = JSON.parse(jsonStr);
-                
+
+                // ── 圖片預載輔助（Picsum Photos，CORS 開放，無需 API Key）──
+                const fetchImgBase64 = async (query) => {
+                    if (!query) return null;
+                    const seed = encodeURIComponent((query + '').replace(/\s+/g, '-').substring(0, 60));
+                    try {
+                        const res = await Promise.race([
+                            fetch(`https://picsum.photos/seed/${seed}/800/450`),
+                            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+                        ]);
+                        const blob = await res.blob();
+                        return await new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch(e) { return null; }
+                };
+
                 let pptx = new PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
-                
-                // 封面頁
+
+                // ── 封面頁（全幅背景圖 + 深色蒙層）──
+                const coverImg = await fetchImgBase64(pptData.title || 'business presentation');
                 let coverSlide = pptx.addSlide();
-                coverSlide.background = { color: "1E293B" }; // 深色背景
-                coverSlide.addText(pptData.title || "AI 生成簡報", { x: 1, y: 2, w: "80%", h: 1.5, fontSize: 44, bold: true, color: "FFFFFF", align: "center" });
-                if(pptData.subtitle) {
-                    coverSlide.addText(pptData.subtitle, { x: 1, y: 3.5, w: "80%", h: 1, fontSize: 24, color: "94A3B8", align: "center" });
+                coverSlide.background = { color: "0F172A" };
+                if (coverImg) {
+                    coverSlide.addImage({ data: coverImg, x: 0, y: 0, w: '100%', h: '100%', transparency: 65 });
+                }
+                // 底部藍色橫條裝飾
+                coverSlide.addShape(pptx.ShapeType.rect, { x: 0, y: 6.8, w: '100%', h: 0.7, fill: { color: '1E3A5F', transparency: 20 } });
+                coverSlide.addShape(pptx.ShapeType.rect, { x: 0, y: 6.78, w: '100%', h: 0.08, fill: { color: '3B82F6' } });
+                coverSlide.addText(pptData.title || "AI 生成簡報", {
+                    x: 0.8, y: 1.8, w: "85%", h: 2.0,
+                    fontSize: 44, bold: true, color: "FFFFFF", align: "center",
+                    shadow: { type: 'outer', color: '000000', blur: 12, offset: 3, angle: 270, opacity: 0.8 }
+                });
+                if (pptData.subtitle) {
+                    coverSlide.addText(pptData.subtitle, { x: 0.8, y: 4.0, w: "85%", h: 1.0, fontSize: 22, color: "93C5FD", align: "center" });
                 }
 
-                // 內容頁
+                // ── 內容頁 ──
                 if (pptData.slides && Array.isArray(pptData.slides)) {
-                    pptData.slides.forEach(slideData => {
+                    for (const slideData of pptData.slides) {
+                        const imgQuery = slideData.imageQuery || slideData.title || 'business';
+                        const imgData = await fetchImgBase64(imgQuery);
                         let slide = pptx.addSlide();
-                        slide.background = { color: "F8FAFC" }; // 淺色背景
-                        
-                        // 標題
-                        if (slideData.title) {
-                            slide.addText(slideData.title, { x: 0.5, y: 0.5, w: "90%", h: 1, fontSize: 32, bold: true, color: "0F172A" });
-                            slide.addShape(pptx.ShapeType.line, { x: 0.5, y: 1.4, w: "90%", h: 0, line: { color: "3B82F6", width: 2 } });
-                        }
-                        
-                        // 內文
-                        if (slideData.content) {
-                            let yPos = 1.6;
-                            if (Array.isArray(slideData.content)) {
-                                let bulletData = slideData.content.map(text => ({ text: text, options: { bullet: true, color: "334155", fontSize: 20, breakLine: true } }));
-                                slide.addText(bulletData, { x: 0.5, y: yPos, w: "90%", h: 3.5, align: "left", valign: "top", lineSpacing: 32 });
-                            } else {
-                                slide.addText(slideData.content, { x: 0.5, y: yPos, w: "90%", h: 3.5, fontSize: 20, color: "334155", align: "left", valign: "top" });
+
+                        if (imgData) {
+                            // 圖文並茂版：左圖（40%）右文（55%）
+                            slide.background = { color: "F8FAFC" };
+
+                            // 左側藍色背景區塊
+                            slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 4.45, h: '100%', fill: { color: 'EFF6FF' } });
+                            // 左側圖片
+                            slide.addImage({ data: imgData, x: 0.18, y: 1.35, w: 4.08, h: 5.55 });
+                            // 藍色左邊條
+                            slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.08, h: '100%', fill: { color: '3B82F6' } });
+
+                            // 標題橫跨全寬（上方）
+                            if (slideData.title) {
+                                slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 1.2, fill: { color: '1E293B' } });
+                                slide.addText(slideData.title, { x: 0.3, y: 0.15, w: "95%", h: 0.9, fontSize: 26, bold: true, color: "FFFFFF" });
+                            }
+
+                            // 右側文字
+                            if (slideData.content) {
+                                const items = Array.isArray(slideData.content) ? slideData.content : [slideData.content];
+                                const bulletData = items.map(t => ({
+                                    text: t,
+                                    options: { bullet: { type: 'bullet', characterCode: '25B6', color: '3B82F6' }, color: "1E293B", fontSize: 17, breakLine: true, paraSpaceBefore: 10 }
+                                }));
+                                slide.addText(bulletData, { x: 4.65, y: 1.35, w: 5.15, h: 5.6, align: "left", valign: "top", lineSpacing: 26 });
+                            }
+                        } else {
+                            // 純文字版（圖片載入失敗退路）
+                            slide.background = { color: "F8FAFC" };
+                            if (slideData.title) {
+                                slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 1.2, fill: { color: '1E293B' } });
+                                slide.addShape(pptx.ShapeType.rect, { x: 0, y: 1.18, w: '100%', h: 0.06, fill: { color: '3B82F6' } });
+                                slide.addText(slideData.title, { x: 0.5, y: 0.15, w: "90%", h: 0.9, fontSize: 30, bold: true, color: "FFFFFF" });
+                            }
+                            if (slideData.content) {
+                                const items = Array.isArray(slideData.content) ? slideData.content : [slideData.content];
+                                const bulletData = items.map(t => ({ text: t, options: { bullet: true, color: "334155", fontSize: 20, breakLine: true } }));
+                                slide.addText(bulletData, { x: 0.5, y: 1.45, w: "90%", h: 5.6, align: "left", valign: "top", lineSpacing: 32 });
                             }
                         }
-                    });
+                    }
                 }
-                
+
                 let filename = (pptData.title || "NOVA_Presentation") + ".pptx";
-                pptx.writeFile({ fileName: filename });
-                showToast("✅ PPT 下載中...");
+                await pptx.writeFile({ fileName: filename });
+                showToast("✅ 圖文簡報下載中...");
             } catch (e) {
                 console.error("PPT Generation Error:", e);
                 alert("❌ PPT 產生失敗: " + e.message);
@@ -5730,7 +5811,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
 
             // --- 新增：攔截 PPT 簡報意圖，強制回傳 JSON 格式 ---
             if (text.includes("簡報") || text.includes("PPT") || text.includes("ppt") || text.includes("Ppt")) {
-                systemPromptAddon += `\n【💡 特殊技能觸發】：使用者希望製作 PPT 簡報。\n【強制規定】：\n1. 必須閱讀使用者提供的「完整內容」，不得只取前段，每個章節/段落都必須有對應投影片。\n2. 嚴格在對話最後面使用以下 JSON 格式輸出(並用 \`\`\`json 和 \`\`\` 包著)，系統會自動攔截並轉換為真正的 .pptx 檔案給使用者下載：\n\`\`\`json\n{\n  "title": "簡報主標題",\n  "subtitle": "簡報副標題 (選填)",\n  "slides": [\n    { "title": "第一頁標題", "content": ["重點項目1", "重點項目2"] },\n    { "title": "第二頁標題", "content": ["段落或重點..."] }\n  ]\n}\n\`\`\`\n3. slides 陣列必須涵蓋所有章節，不得遺漏。\n4. 絕對要保證 JSON 格式正確！\n`;
+                systemPromptAddon += `\n【💡 特殊技能觸發】：使用者希望製作 PPT 簡報。\n【強制規定】：\n1. 必須閱讀使用者提供的「完整內容」，不得只取前段，每個章節/段落都必須有對應投影片。\n2. 嚴格在對話最後面使用以下 JSON 格式輸出(並用 \`\`\`json 和 \`\`\` 包著)，系統會自動攔截並轉換為真正的 .pptx 檔案給使用者下載：\n\`\`\`json\n{\n  "title": "簡報主標題",\n  "subtitle": "簡報副標題 (選填)",\n  "slides": [\n    { "title": "第一頁標題", "content": ["重點項目1", "重點項目2"], "imageQuery": "3-5 English keywords for stock photo (e.g. teamwork meeting office)" },\n    { "title": "第二頁標題", "content": ["段落或重點..."], "imageQuery": "relevant image keywords" }\n  ]\n}\n\`\`\`\n3. slides 陣列必須涵蓋所有章節，不得遺漏。\n4. 每一頁都必須填寫 imageQuery（3~5 個英文關鍵字），用於自動搜尋配圖。\n5. 絕對要保證 JSON 格式正確！\n`;
             }
                 
                 // --- 1. 變數初始化 (確保整個函式只宣告這一次，絕不重複) ---
@@ -5738,8 +5819,9 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                 let promptToSent = text;
                 let modelToUse = appState.currentModel;
                 
-                // 🌟 寫入 GPS 座標記憶
-                if (appState.lastLat && appState.lastLon) {
+                // 🌟 寫入 GPS 座標記憶 (PPT 製作時跳過，避免 AI 誤解為需要定位資訊)
+                const _isPPTIntent = text.includes("簡報") || text.includes("PPT") || text.includes("ppt") || text.includes("Ppt");
+                if (appState.lastLat && appState.lastLon && !_isPPTIntent) {
                     injectedContext += `\n【系統真實數據】使用者目前的 GPS 座標為：緯度 ${appState.lastLat}, 經度 ${appState.lastLon}。若使用者問及「我在哪」、「我的位置」或「座標」，請務必直接提供此精確數據給使用者。\n`;
                 }
 
