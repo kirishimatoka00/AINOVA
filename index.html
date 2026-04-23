@@ -5142,9 +5142,11 @@ try {
         async function doAutoSplit() {
             if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
             appState.isAutoSplitting = true;
-            const ctx = appState.recordingContext;
-            addMessage(`✂️ 自動分切：已達 ${appState.recSettings.autoSplitMins} 分鐘，自動截斷並續接錄音…`, 'system');
-            // 停止當前段（uploadAudioRecording 會檢查 isAutoSplitting 並重啟）
+            // 記錄本段的錄音類型（meeting vs regular）
+            appState._autoSplitIsMeeting = !!(appState._meetingMicStream);
+            if (appState._meetingSegIndex) appState._meetingSegIndex++;
+            else appState._meetingSegIndex = 2;
+            addMessage(`✂️ 自動分切：已達 ${appState.recSettings.autoSplitMins} 分鐘，截斷目前段並立即啟動下一段錄音…`, 'system');
             if (mediaRecorder.state === 'recording') mediaRecorder.stop();
         }
 
@@ -5170,8 +5172,44 @@ try {
             appState.recordingContext = context;
             switchTab('dashboard');
             appState.currentAudioTranscript = "";
-            
-            releaseMicrophone(); // 啟動前強制清理乾淨
+
+            // ── 自動分切續接：重用已有的串流，不重新詢問權限 ──
+            const isResumingSplit = appState.isAutoSplitting && appState._meetingMicStream;
+            if (isResumingSplit) {
+                const micStream = appState._meetingMicStream;
+                const sysStream = appState._meetingSysStream;
+                let mixedStream;
+                if (sysStream && sysStream.getAudioTracks().some(t => t.readyState === 'live')) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    const audioCtx = new AudioContextClass();
+                    appState.recordingAudioCtx = audioCtx;
+                    const dest = audioCtx.createMediaStreamDestination();
+                    if (micStream.getAudioTracks().length > 0) audioCtx.createMediaStreamSource(micStream).connect(dest);
+                    audioCtx.createMediaStreamSource(sysStream).connect(dest);
+                    mixedStream = dest.stream;
+                    addMessage(`✂️ 【第 ${appState._meetingSegIndex} 段】雙軌續接錄音啟動（麥克風 + 系統音）`, 'system');
+                } else {
+                    mixedStream = micStream;
+                    addMessage(`✂️ 【第 ${appState._meetingSegIndex} 段】麥克風續接錄音啟動`, 'system');
+                }
+                let actualMimeType = 'audio/webm';
+                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) actualMimeType = 'audio/webm;codecs=opus';
+                else if (MediaRecorder.isTypeSupported('audio/mp4')) actualMimeType = 'audio/mp4';
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(mixedStream, { mimeType: actualMimeType });
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = uploadAudioRecording;
+                appState.recordingStartTime = Date.now();
+                appState.isAutoSplitting = false;
+                mediaRecorder.start(1000);
+                scheduleAutoSplit();
+                document.getElementById('recording-status').classList.remove('hidden');
+                document.getElementById('recording-status').classList.add('flex');
+                document.getElementById('recording-status-text').innerText = "錄音中... (點擊停止)";
+                return;
+            }
+
+            releaseMicrophone(); // 首次啟動前清理
 
             let micStream = null;
             let sysStream = null;
@@ -5181,7 +5219,6 @@ try {
 
             try {
                 const micConstraints = { audio: true };
-
                 micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
                 appState.activeMediaTracks.push(...micStream.getTracks());
 
@@ -5198,23 +5235,18 @@ try {
                     addMessage("⚠️ **系統限制提醒**：手機瀏覽器基於隱私安全，禁止側錄內部系統聲音。\n\n💡 若您要在手機上錄製會議，請**拔下耳機，改用手機擴音播放**，系統會透過麥克風一併收錄會議聲音。", 'system');
                 }
 
+                // 儲存串流供自動分切續接使用
+                appState._meetingMicStream = micStream;
+                appState._meetingSysStream = sysStream;
+                appState._meetingSegIndex = 1;
+
                 if (sysStream && sysStream.getAudioTracks().length > 0) {
                     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                     const audioCtx = new AudioContextClass();
                     appState.recordingAudioCtx = audioCtx;
-                    
                     const dest = audioCtx.createMediaStreamDestination();
-                    
-                    if (micStream.getAudioTracks().length > 0) {
-                        const micSource = audioCtx.createMediaStreamSource(micStream);
-                        micSource.connect(dest);
-                    }
-                    
-                    if (sysStream.getAudioTracks().length > 0) {
-                        const sysSource = audioCtx.createMediaStreamSource(sysStream);
-                        sysSource.connect(dest);
-                    }
-                    
+                    if (micStream.getAudioTracks().length > 0) audioCtx.createMediaStreamSource(micStream).connect(dest);
+                    audioCtx.createMediaStreamSource(sysStream).connect(dest);
                     mixedStream = dest.stream;
                     let titleMsg = appState.recordingContext === 'note' ? "🎙️ 開始【雙軌語音筆記】... (已成功混合麥克風與系統聲音，點擊紅燈結束)" : "🎙️ 開始【雙軌會議錄音】... (已成功混合麥克風與系統聲音，點擊紅燈結束)";
                     addMessage(titleMsg, 'system');
@@ -5235,7 +5267,7 @@ try {
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                 mediaRecorder.onstop = uploadAudioRecording; 
                 appState.recordingStartTime = Date.now();
-                if (!appState.isAutoSplitting) appState.recGroupId = null;
+                appState.recGroupId = null;
                 appState.isAutoSplitting = false;
                 mediaRecorder.start(1000);
                 scheduleAutoSplit();
@@ -5243,8 +5275,6 @@ try {
                 document.getElementById('recording-status').classList.remove('hidden'); 
                 document.getElementById('recording-status').classList.add('flex');
                 document.getElementById('recording-status-text').innerText = "錄音中... (點擊停止)";
-                
-                // 【修復】移除會造成手機音軌切換與電腦自動打字的 recognition.start()
             } catch (err) {
                 addMessage("⚠️ 無法啟動錄音，請檢查麥克風權限或瀏覽器設定。", 'system');
                 console.error(err);
@@ -5298,6 +5328,11 @@ try {
             cancelAutoSplit();         // 取消自動分切計時器
             appState.isAutoSplitting = false; // 確保不會自動重啟
             appState.recGroupId = null;       // 結束群組
+            // 清除會議串流快取（手動停止才清，自動分切不清）
+            appState._meetingMicStream = null;
+            appState._meetingSysStream = null;
+            appState._meetingSegIndex = 1;
+            appState._autoSplitIsMeeting = false;
             releaseMicrophone();
             
             document.getElementById('recording-status').classList.add('hidden'); 
@@ -5316,88 +5351,109 @@ try {
             }
 
             const wasAutoSplitting = appState.isAutoSplitting;
-            const continuationContext = appState.recordingContext; // 保留供自動重啟用
+            const isMeetingSplit   = appState._autoSplitIsMeeting;
+            const continuationCtx  = appState.recordingContext;
 
-            let recordDuration = Date.now() - (appState.recordingStartTime || Date.now());
-            const actualMimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
-            const chunksSnapshot = [...audioChunks];
+            // ── 自動分切：立即啟動下一段，不等待本段處理 ──────────────────
+            if (wasAutoSplitting) {
+                // 把 chunks 快取起來，馬上重置全域 audioChunks 讓新段能用
+                const savedChunks = [...audioChunks];
+                const savedMime   = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+                const savedStart  = appState.recordingStartTime;
+                const savedCtx    = continuationCtx;
+                audioChunks = [];
+
+                // ★ 先啟動下一段（無延遲）
+                appState.isAutoSplitting = true; // 保持 flag 讓 startMeetingRecording 識別
+                if (isMeetingSplit) {
+                    startMeetingRecording(continuationCtx);
+                } else {
+                    startAudioRecordOnly();
+                }
+
+                // 背景處理舊段（不阻塞新段錄音）
+                (async () => {
+                    await processAndSaveAudioSegment(savedChunks, savedMime, savedStart, savedCtx, true);
+                })();
+                return;
+            }
+
+            // ── 正常停止：同步處理 ──────────────────────────────────────────
+            const chunks = [...audioChunks];
             audioChunks = [];
+            await processAndSaveAudioSegment(chunks,
+                (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm',
+                appState.recordingStartTime, continuationCtx, false);
 
-            let audioBlob = new Blob(chunksSnapshot, { type: actualMimeType });
-            
-            // 修復 WebM duration
+            appState.recGroupId = null;
+            appState.recordingContext = 'default';
+            appState.currentAudioTranscript = "";
+        }
+
+        // 實際的音訊儲存處理（可在背景執行）
+        async function processAndSaveAudioSegment(chunksArr, actualMimeType, startTime, ctx, isSegment) {
+            let recordDuration = Date.now() - (startTime || Date.now());
+            let audioBlob = new Blob(chunksArr, { type: actualMimeType });
+
             if (actualMimeType.includes('webm') && typeof ysFixWebmDuration !== 'undefined') {
                 audioBlob = await new Promise(resolve => {
                     try { ysFixWebmDuration(audioBlob, recordDuration, resolve); } catch(e) { resolve(audioBlob); }
                 });
             }
-            
-            const dateObj = new Date();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
-            
-            const recordId = Date.now();
-            const filename = `NOVA_Audio_${month}${day}${year}_${timeStr}.mp3`; 
-            const displayDate = dateObj.toLocaleString();
 
-            // 決定 groupId：首段自身為 leader，後續段使用相同 groupId
+            const dateObj = new Date();
+            const month   = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day     = String(dateObj.getDate()).padStart(2, '0');
+            const year    = dateObj.getFullYear();
+            const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
+            const filename    = `NOVA_Audio_${month}${day}${year}_${timeStr}.mp3`;
+            const displayDate = dateObj.toLocaleString();
+            const recordId    = Date.now();
+
             const groupId = appState.recGroupId || recordId;
             if (!appState.recGroupId) appState.recGroupId = groupId;
 
-            // 存 IndexedDB
             await saveAudioBlob(recordId, audioBlob);
 
-            // 嘗試存入使用者指定的本地資料夾
+            // 存入本地資料夾
             if (appState.recSettings.localDirHandle) {
                 let mp3BlobToSave = audioBlob;
                 try {
                     const arrayBuf = await audioBlob.arrayBuffer();
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const buf = await ctx.decodeAudioData(arrayBuf);
+                    const actx = new (window.AudioContext || window.webkitAudioContext)();
+                    const buf  = await actx.decodeAudioData(arrayBuf);
                     mp3BlobToSave = await encodeMp3(buf);
-                    ctx.close();
-                } catch(e) { /* 轉換失敗保持原格式 */ }
+                    actx.close();
+                } catch(e) { /* 保持原格式 */ }
                 const saved = await saveAudioToLocalDir(filename, mp3BlobToSave);
                 if (saved) addMessage(`📁 已存入本地資料夾「${appState.recSettings.localSaveDirName}」：${filename}`, 'system');
             }
 
             const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
-            
-            let newNote = null;
-            let newRecord = null;
 
-            if (appState.recordingContext === 'note') {
-                newNote = { id: recordId, title: `語音筆記 ${timeStr}`, content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]', date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType, filename: filename, images: [], image: null, folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder, duration: Math.round(recordDuration / 1000), groupId };
+            if (ctx === 'note') {
+                const newNote = {
+                    id: recordId, title: `語音筆記 ${timeStr}`,
+                    content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]',
+                    date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript,
+                    mimeType: actualMimeType, filename, images: [], image: null,
+                    folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder,
+                    duration: Math.round(recordDuration / 1000), groupId
+                };
                 appState.notes.unshift(newNote); saveToDB('notes', newNote);
                 addMessage(`📝 語音筆記已安全儲存至本地「筆記/文件」分頁。`, 'system'); renderNotes();
             } else {
                 const segIndex = appState.audioRecords.filter(r => r.groupId === groupId).length + 1;
-                const segLabel = wasAutoSplitting ? ` (第 ${segIndex} 段)` : '';
-                newRecord = { id: recordId, title: `錄音紀錄 ${timeStr}${segLabel}`, date: displayDate, filename: filename, driveUrl: "", transcript: capturedTranscript, mimeType: actualMimeType, duration: Math.round(recordDuration / 1000), groupId };
+                const segLabel = isSegment ? ` (第 ${segIndex} 段)` : '';
+                const newRecord = {
+                    id: recordId, title: `錄音紀錄 ${timeStr}${segLabel}`,
+                    date: displayDate, filename, driveUrl: "", transcript: capturedTranscript,
+                    mimeType: actualMimeType, duration: Math.round(recordDuration / 1000), groupId
+                };
                 appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
-                const segMsg = wasAutoSplitting ? ` (自動分切第 ${segIndex} 段)` : '';
+                const segMsg = isSegment ? ` (自動分切第 ${segIndex} 段)` : '';
                 addMessage(`📼 錄音已安全儲存至本地「錄音紀錄」分頁${segMsg}。`, 'system'); renderAudioRecords();
             }
-
-            // 自動分切：重啟錄音
-            if (wasAutoSplitting) {
-                appState.isAutoSplitting = true;
-                appState.currentAudioTranscript = "";
-                // 稍微等一下讓 UI 渲染
-                setTimeout(() => {
-                    if (continuationContext === 'record') {
-                        startAudioRecordOnly();
-                    } else {
-                        startMeetingRecording(continuationContext);
-                    }
-                }, 400);
-                return;
-            }
-
-            appState.recGroupId = null;
-            appState.recordingContext = 'default'; appState.currentAudioTranscript = "";
         }
 
         // --- 深度分析功能 (AI 針對音檔或筆記進行分析) ---
@@ -5456,7 +5512,8 @@ try {
 
             const totalSecs = audioBuffer.duration;
             const totalChunks = Math.ceil(totalSecs / CHUNK_SECS);
-            addMessage(`📊 音檔總長 **${Math.round(totalSecs/60)} 分 ${Math.round(totalSecs%60)} 秒**，將自動分為 **${totalChunks} 段**（每段最多 5 分鐘）逐段轉錄。`, 'system');
+            const chunkMins = appState.recSettings?.analysisChunkMins || 5;
+            addMessage(`📊 音檔總長 **${Math.round(totalSecs/60)} 分 ${Math.round(totalSecs%60)} 秒**，將自動分為 **${totalChunks} 段**（每段最多 ${chunkMins} 分鐘）逐段轉錄。`, 'system');
 
             // 2. 逐段呼叫 Gemini 取得逐字稿
             const transcriptParts = [];
@@ -5482,7 +5539,7 @@ try {
                     continue;
                 }
 
-                const chunkPrompt = `你是專業逐字稿員。請將這段音訊（${startLabel} – ${endLabel}）完整逐字轉錄成繁體中文，保留所有說話者的每一句話，不要摘要、不要省略、不要添加任何評論，直接輸出逐字稿文字即可。`;
+                const chunkPrompt = `你是專業逐字稿員。請將這段音訊內容完整逐字轉錄成繁體中文，保留所有說話者的每一句話，不要摘要、不要省略、不要添加任何評論，直接輸出逐字稿文字即可。若整段音訊為靜音或無法辨識，請回覆「[本段無語音]」。`;
 
                 try {
                     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
@@ -5547,10 +5604,11 @@ try {
         }
 
         function summarizeAudioRecord(id) {
-            const r = appState.audioRecords.find(x => String(x.id) === String(id)); if (!r) return;
+            const r = appState.audioRecords.find(x => String(x.id) === String(id));
+            if (!r) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
 
-            // 找出同 groupId 的所有分段（按時間排序）
+            // 找出同 groupId 的所有分段（按時間先後排序）
             const groupId = r.groupId || r.id;
             const groupRecords = appState.audioRecords
                 .filter(x => (x.groupId || x.id) === groupId)
@@ -5559,25 +5617,126 @@ try {
             const segCount = groupRecords.length;
             const totalDuration = groupRecords.reduce((s, x) => s + (x.duration || 0), 0);
             const totalMin = Math.floor(totalDuration / 60);
+            const chunkMins = appState.recSettings?.analysisChunkMins || 5;
+
             const confirmMsg = segCount > 1
-                ? `即將對「${r.title}」（共 ${segCount} 個分段，合計約 ${totalMin} 分鐘）進行深度分析。\n\n系統將合併所有分段音訊後，每 ${appState.recSettings.analysisChunkMins} 分鐘切段逐字稿，再產生摘要。`
-                : `即將對「${r.title}」進行深度分析（每 ${appState.recSettings.analysisChunkMins} 分鐘切段）。`;
+                ? `即將對「${r.title}」（共 ${segCount} 個錄音分段，合計約 ${totalMin} 分鐘）進行深度分析。\n\n系統將依序處理每個分段（每 ${chunkMins} 分鐘切一次），最後合併所有逐字稿並產生摘要。`
+                : `即將對「${r.title}」進行深度分析（每 ${chunkMins} 分鐘切段）。`;
 
             if (!confirm(confirmMsg)) return;
 
+            const key = appState.keys.gemini;
+            if (!key) { addMessage('⚠️ 請先設定 Gemini API Key！', 'system'); return; }
+
             (async () => {
-                // 載入並合併所有分段 blob
-                let mergedChunks = [];
-                let mergedMime = r.mimeType || 'audio/webm';
-                for (const seg of groupRecords) {
-                    let blob = await loadAudioBlob(seg.id);
-                    if (!blob && seg.audioData) blob = base64ToBlob(seg.audioData);
-                    if (blob) mergedChunks.push(blob);
+                switchTab('dashboard');
+                addMessage(`🎙️ **AI 深度分析啟動**｜共 ${segCount} 個錄音段，開始逐段轉錄…`, 'system');
+
+                const allTranscriptParts = [];
+                const CHUNK_SECS = chunkMins * 60;
+
+                for (let si = 0; si < groupRecords.length; si++) {
+                    const seg = groupRecords[si];
+                    let audioBlob = await loadAudioBlob(seg.id);
+                    if (!audioBlob && seg.audioData) audioBlob = base64ToBlob(seg.audioData);
+                    if (!audioBlob) {
+                        addMessage(`⚠️ 第 ${si + 1} 段「${seg.title}」找不到音訊資料，跳過。`, 'system');
+                        continue;
+                    }
+
+                    // 解碼本段音檔
+                    let audioBuffer;
+                    try {
+                        const arrayBuf = await audioBlob.arrayBuffer();
+                        const actx = new (window.AudioContext || window.webkitAudioContext)();
+                        audioBuffer = await actx.decodeAudioData(arrayBuf);
+                        actx.close();
+                    } catch(e) {
+                        addMessage(`⚠️ 第 ${si + 1} 段解碼失敗（${e.message}），跳過。`, 'system');
+                        continue;
+                    }
+
+                    const segTotalSecs = audioBuffer.duration;
+                    const segChunks = Math.ceil(segTotalSecs / CHUNK_SECS);
+                    const segPrefix = segCount > 1 ? `[錄音第 ${si + 1} 段]` : '';
+                    addMessage(`📂 ${segPrefix} 總長 ${Math.round(segTotalSecs/60)}分${Math.round(segTotalSecs%60)}秒，分 ${segChunks} 小段轉錄…`, 'system');
+
+                    for (let i = 0; i < segChunks; i++) {
+                        const startSec  = i * CHUNK_SECS;
+                        const endSec    = Math.min(startSec + CHUNK_SECS, segTotalSecs);
+                        const startLabel = `${Math.floor(startSec/60)}:${String(Math.floor(startSec%60)).padStart(2,'0')}`;
+                        const endLabel   = `${Math.floor(endSec/60)}:${String(Math.floor(endSec%60)).padStart(2,'0')}`;
+
+                        const progressId = Date.now() + si * 1000 + i;
+                        appState.messages.push({ id: progressId, sessionId: appState.currentSessionId, text: `⏳ ${segPrefix}[${i+1}/${segChunks}] 轉錄 ${startLabel}–${endLabel}…`, sender: 'system', time: getTime(), sources: [], files: [] });
+                        renderMessages();
+                        const chatEl = document.getElementById('chat-container');
+                        if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+
+                        let base64Chunk;
+                        try {
+                            base64Chunk = await sliceAudioToBase64(audioBuffer, startSec, endSec);
+                        } catch(e) {
+                            const pm = appState.messages.find(x => x.id === progressId);
+                            if (pm) { pm.text = `⚠️ ${segPrefix}[${i+1}/${segChunks}] 切割失敗：${e.message}`; renderMessages(); }
+                            allTranscriptParts.push(`${segPrefix}【${startLabel}–${endLabel}】\n[切割失敗]`);
+                            continue;
+                        }
+
+                        const chunkPrompt = `你是專業逐字稿員。請將這段音訊內容完整逐字轉錄成繁體中文，保留所有說話者的每一句話，不要摘要、不要省略、不要添加任何評論，直接輸出逐字稿文字即可。若整段音訊為靜音或無法辨識，請回覆「[本段無語音]」。`;
+
+                        try {
+                            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+                            const res = await fetch(endpoint, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ role: 'user', parts: [
+                                        { text: chunkPrompt },
+                                        { inlineData: { mimeType: 'audio/mp3', data: base64Chunk.split(',')[1] } }
+                                    ]}],
+                                    generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+                                })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error?.message || res.status);
+                            const partText = data.candidates?.[0]?.content?.parts?.filter(p => p.text).map(p => p.text).join('') || '';
+                            allTranscriptParts.push(`${segPrefix}【${startLabel}–${endLabel}】\n${partText}`);
+                            const pm = appState.messages.find(x => x.id === progressId);
+                            if (pm) { pm.text = `✅ ${segPrefix}[${i+1}/${segChunks}] ${startLabel}–${endLabel} 完成（${partText.length} 字）`; renderMessages(); }
+                        } catch(e) {
+                            const pm = appState.messages.find(x => x.id === progressId);
+                            if (pm) { pm.text = `⚠️ ${segPrefix}[${i+1}/${segChunks}] 失敗：${e.message}`; renderMessages(); }
+                            allTranscriptParts.push(`${segPrefix}【${startLabel}–${endLabel}】\n[API 錯誤: ${e.message}]`);
+                        }
+                    }
                 }
-                if (mergedChunks.length === 0) { alert("找不到本地音訊資料，請手動選取音檔。"); document.getElementById('audio-analyze-input').click(); return; }
-                const mergedBlob = mergedChunks.length === 1 ? mergedChunks[0] : new Blob(mergedChunks, { type: mergedMime });
-                const analysisTitle = segCount > 1 ? `${r.title} [合併 ${segCount} 段]` : r.title;
-                await runChunkedTranscription(mergedBlob, mergedMime, 'audioRecord', id, analysisTitle);
+
+                // 3. 顯示合併完整逐字稿
+                const fullTranscript = allTranscriptParts.join('\n\n');
+                addMessage(`📝 **完整逐字稿（${segCount > 1 ? segCount + ' 個錄音段合併，' : ''}共 ${allTranscriptParts.length} 小段，${fullTranscript.length} 字）**\n\n${fullTranscript}`, 'ai', 'gemini');
+
+                // 4. 根據完整逐字稿產生摘要
+                addMessage(`🔍 逐字稿完成，正在根據全文產生摘要與重點整理…`, 'system');
+                const summaryPrompt = `以下是一段錄音的完整逐字稿，請根據此逐字稿整理出【重點摘要】與【結構化會議紀錄】（含主題、決議、待辦事項）。\n\n【嚴格約束】：僅根據逐字稿內容摘要，不可自行補充或腦補任何外部資訊。\n\n完整逐字稿如下：\n\n${fullTranscript}`;
+                let summaryText = '';
+                try {
+                    const summaryRes = await fetchAIResponse(summaryPrompt, 'gemini', { isAnalysis: true });
+                    summaryText = typeof summaryRes === 'string' ? summaryRes : (summaryRes.text || '');
+                    addMessage(summaryText, 'ai', 'gemini');
+                } catch(e) {
+                    addMessage(`⚠️ 摘要產生失敗：${e.message}`, 'system');
+                }
+
+                // 5. 儲存回主錄音紀錄（以被點擊的那筆 id 為主）
+                const rec = appState.audioRecords.find(x => String(x.id) === String(id));
+                if (rec) {
+                    rec.transcript = fullTranscript;
+                    if (summaryText) rec.aiSummary = summaryText;
+                    saveToDB('audioRecords', rec);
+                    renderAudioRecords();
+                    addMessage(`✅ 完整逐字稿與 AI 摘要已儲存至錄音紀錄「${rec.title}」。`, 'system');
+                }
             })();
         }
 
