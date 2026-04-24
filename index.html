@@ -5782,54 +5782,127 @@ try {
             if (!appState.driveUrl) { showToast('⚠️ 請先在設定中填入 Google Drive Apps Script URL'); return; }
             const rec = appState.audioRecords.find(x => String(x.id) === String(id));
             if (!rec) return;
-            showToast('☁️ 正在準備上傳，請稍候…');
+
+            // --- 防止重複點擊 ---
+            const cardEl = document.getElementById(`audio-card-${id}`);
+            const uploadBtn = cardEl ? cardEl.querySelector(`button[onclick*="manualUploadToDrive"]`) : null;
+            if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> 上傳中…`; }
+
+            const cleanup = () => {
+                if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.innerHTML = `<i class="ph-bold ph-cloud-arrow-up"></i> 上傳 Drive`; }
+            };
+
             try {
                 let audioBlob = await loadAudioBlob(rec.id);
                 if (!audioBlob && rec.audioData) audioBlob = base64ToBlob(rec.audioData);
-                if (!audioBlob) { showToast('❌ 找不到音訊資料'); return; }
+                if (!audioBlob) { showToast('❌ 找不到音訊資料，請重新錄製'); cleanup(); return; }
 
-                // 嘗試編碼為 MP3
-                let mp3Base64 = null;
-                let uploadFilename = rec.title.replace(/[\\/:*?"<>|]/g, '_') + '.mp3';
+                const rawSizeMB = (audioBlob.size / 1024 / 1024).toFixed(1);
+                showToast(`☁️ 準備上傳（${rawSizeMB} MB），請稍候…`);
+
+                // --- 決定上傳格式 ---
+                // Apps Script POST 上限約 10 MB（base64 比原始大 33%），超過 6 MB raw 時直接用原格式
+                const SIZE_LIMIT_FOR_MP3 = 6 * 1024 * 1024; // 6 MB raw
+                let uploadBlob = audioBlob;
+                let uploadMime = rec.mimeType || 'audio/webm';
+                let uploadExt  = uploadMime.includes('mp4') ? '.m4a' : '.webm';
+                let uploadFilename = rec.title.replace(/[\\/:*?"<>|]/g, '_');
+
+                if (audioBlob.size <= SIZE_LIMIT_FOR_MP3) {
+                    // 小檔：轉 MP3 再上傳
+                    try {
+                        showToast('🔄 正在轉換為 MP3…');
+                        const arrayBuf   = await audioBlob.arrayBuffer();
+                        const audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
+                        uploadBlob = await encodeMp3(audioBuffer);
+                        audioCtx.close();
+                        uploadMime = 'audio/mpeg';
+                        uploadExt  = '.mp3';
+                    } catch(convErr) {
+                        console.warn('MP3 轉換失敗，改用原格式:', convErr);
+                        uploadBlob = audioBlob;
+                    }
+                } else {
+                    showToast(`📦 檔案較大（${rawSizeMB} MB），以原始格式上傳…`);
+                }
+
+                uploadFilename += uploadExt;
+                const finalSizeMB = (uploadBlob.size / 1024 / 1024).toFixed(1);
+
+                // --- base64 編碼 ---
+                showToast(`🔄 編碼中（${finalSizeMB} MB），請耐心等候…`);
+                const base64Data = await new Promise((resolve, reject) => {
+                    const fr = new FileReader();
+                    fr.onloadend = () => resolve(fr.result.split(',')[1]);
+                    fr.onerror   = () => reject(new Error('FileReader 讀取失敗'));
+                    fr.readAsDataURL(uploadBlob);
+                });
+
+                // --- Apps Script 上限預估警告（base64 後約增 33%）---
+                const base64SizeMB = (base64Data.length / 1024 / 1024).toFixed(1);
+                if (parseFloat(base64SizeMB) > 9) {
+                    const proceed = confirm(
+                        `⚠️ 此檔案編碼後約 ${base64SizeMB} MB，可能超過 Google Apps Script 的上傳限制（約 10 MB）。\n\n較大的檔案建議：\n• 先手動下載後自行上傳至 Google Drive\n• 或縮短錄音時長並分段上傳\n\n仍要嘗試上傳嗎？`
+                    );
+                    if (!proceed) { cleanup(); return; }
+                }
+
+                // --- 送出上傳請求 ---
+                showToast(`☁️ 上傳至 Google Drive（${finalSizeMB} MB）…`);
+                const payload = JSON.stringify({ filename: uploadFilename, mimeType: uploadMime, data: base64Data });
+
+                let res;
                 try {
-                    const arrayBuf = await audioBlob.arrayBuffer();
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
-                    const mp3Blob = await encodeMp3(audioBuffer);
-                    audioCtx.close();
-                    mp3Base64 = await new Promise((res, rej) => {
-                        const fr = new FileReader(); fr.onloadend = () => res(fr.result.split(',')[1]); fr.onerror = rej; fr.readAsDataURL(mp3Blob);
+                    res = await fetch(appState.driveUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: payload
                     });
-                } catch(convErr) { console.warn('MP3 轉換失敗，改用原格式:', convErr); }
-
-                let payloadObj;
-                if (mp3Base64) {
-                    payloadObj = { filename: uploadFilename, mimeType: 'audio/mpeg', data: mp3Base64 };
-                } else {
-                    const rawBase64 = await new Promise((res, rej) => {
-                        const fr = new FileReader(); fr.onloadend = () => res(fr.result.split(',')[1]); fr.onerror = rej; fr.readAsDataURL(audioBlob);
-                    });
-                    payloadObj = { filename: uploadFilename.replace('.mp3', '.weba'), mimeType: rec.mimeType || 'audio/webm', data: rawBase64 };
+                } catch(fetchErr) {
+                    // fetch 本身拋例外 = 網路失敗 / CORS 被攔截 → 真正的上傳失敗
+                    throw new Error(`網路或 CORS 錯誤：${fetchErr.message}。請確認 Apps Script 已部署為「所有人可存取」的網路應用程式。`);
                 }
 
-                const res = await fetch(appState.driveUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payloadObj) });
+                if (!res.ok) {
+                    let errBody = '';
+                    try { errBody = await res.text(); } catch(_) {}
+                    throw new Error(`伺服器錯誤 HTTP ${res.status}${errBody ? '：' + errBody.substring(0, 100) : ''}`);
+                }
+
+                // --- 解析回傳 URL ---
+                const rawText = (await res.text()).trim();
                 let finalUrl = '';
-                if (res.ok) {
-                    const txt = await res.text();
-                    try { const j = JSON.parse(txt); finalUrl = j.url || j.link || txt; } catch { finalUrl = txt; }
-                    rec.driveUrl = finalUrl; saveToDB('audioRecords', rec); renderAudioRecords();
-                    showToast('✅ 已成功上傳至 Google Drive！');
-                } else {
-                    throw new Error('HTTP ' + res.status);
+                try {
+                    const j = JSON.parse(rawText);
+                    // 常見回傳格式：{ url: "..." } / { link: "..." } / { webViewLink: "..." } / { id: "..." }
+                    finalUrl = (j.url || j.link || j.webViewLink || '').trim();
+                    if (!finalUrl && j.id) {
+                        finalUrl = `https://drive.google.com/file/d/${j.id}/view`;
+                    }
+                } catch(_) {
+                    // 純文字 URL
+                    finalUrl = rawText;
                 }
+
+                // 確保是有效 URL
+                if (!finalUrl || (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://'))) {
+                    // Apps Script 回傳成功但沒有 URL → 連到 Drive 根目錄讓使用者自行找
+                    finalUrl = 'https://drive.google.com/drive/my-drive';
+                    showToast(`✅ 已上傳！（Apps Script 未回傳直接連結，請至 Google Drive 查看）`);
+                } else {
+                    showToast(`✅ 已成功上傳至 Google Drive（${finalSizeMB} MB）！`);
+                }
+
+                rec.driveUrl = finalUrl;
+                saveToDB('audioRecords', rec);
+                renderAudioRecords(); // 重繪後按鈕已換成連結，cleanup 不再有效
+
             } catch(e) {
-                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-                    rec.driveUrl = 'https://drive.google.com/';
-                    saveToDB('audioRecords', rec); renderAudioRecords();
-                    showToast('✅ 已上傳！（因瀏覽器安全限制無法取得直接連結）');
-                } else {
-                    showToast(`❌ 上傳失敗：${e.message}`);
-                }
+                cleanup();
+                console.error('manualUploadToDrive error:', e);
+                showToast(`❌ 上傳失敗：${e.message}`);
+                // 不設定 rec.driveUrl，保持「上傳 Drive」按鈕可重試
             }
         };
 
