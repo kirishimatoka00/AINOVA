@@ -3733,6 +3733,9 @@ return; }
                     };
 
                     const slideContext = `${slideTitle}${slideContent ? ': ' + (Array.isArray(slideContent) ? slideContent.slice(0,2).join(', ') : String(slideContent)).substring(0, 80) : ''}`;
+                    const slideLabel = slideIndex < 0 ? '封面' : `第 ${slideIndex + 1} 頁`;
+                    
+                    showToast(`🔤 ${slideLabel}：正在生成圖片 Prompt…`);
                     const prompt = await buildPrompt(slideContext);
 
                     // 1️⃣ Grok Image Pro
@@ -3740,6 +3743,7 @@ return; }
                     if (grokKey) {
                         for (const grokModel of ['grok-imagine-image-pro', 'grok-imagine-image']) {
                             try {
+                                showToast(`🎨 ${slideLabel}：呼叫 ${grokModel === 'grok-imagine-image-pro' ? 'Grok Image Pro' : 'Grok Image'} 生成中…`);
                                 const r = await Promise.race([
                                     fetch(`${GROK_PROXY}?url=${encodeURIComponent(GROK_IMG_API)}`, {
                                         method: 'POST',
@@ -3753,10 +3757,16 @@ return; }
                                     const item = d.data?.[0];
                                     if (item) {
                                         const imgData = item.b64_json ? `data:image/png;base64,${item.b64_json}` : item.url;
-                                        if (imgData) { console.log(`[PPT] ${grokModel} 成功 (頁 ${slideIndex+1})`); return imgData; }
+                                        if (imgData) {
+                                            showToast(`✅ ${slideLabel}：${grokModel === 'grok-imagine-image-pro' ? 'Grok Image Pro' : 'Grok Image'} 生成成功！`);
+                                            return imgData;
+                                        }
                                     }
                                 }
-                            } catch(e) { console.warn(`[PPT] ${grokModel} 第${slideIndex+1}頁失敗:`, e.message); }
+                                showToast(`⚠️ ${slideLabel}：${grokModel} 未回傳圖片，嘗試下一個模型…`);
+                            } catch(e) {
+                                showToast(`⚠️ ${slideLabel}：${grokModel} 失敗（${e.message}），嘗試下一個模型…`);
+                            }
                         }
                     }
 
@@ -3764,11 +3774,12 @@ return; }
                     const gKey2 = appState.keys.gemini;
                     if (gKey2) {
                         const gemModels = [
-                            { name: 'gemini-2.5-flash-image',          ver: 'v1beta' },
-                            { name: 'gemini-3.1-flash-image-preview',   ver: 'v1alpha' },
+                            { name: 'gemini-2.5-flash-image',          ver: 'v1beta',  label: 'Gemini 2.5 Flash-Image' },
+                            { name: 'gemini-3.1-flash-image-preview',   ver: 'v1alpha', label: 'Gemini 3.1 Flash-Image' },
                         ];
-                        for (const { name: mName, ver } of gemModels) {
+                        for (const { name: mName, ver, label } of gemModels) {
                             try {
+                                showToast(`🎨 ${slideLabel}：呼叫 ${label} 生成中…`);
                                 const r = await Promise.race([
                                     fetch(`https://generativelanguage.googleapis.com/${ver}/models/${mName}:generateContent?key=${gKey2}`, {
                                         method: 'POST',
@@ -3784,15 +3795,19 @@ return; }
                                     const d = await r.json();
                                     const imgPart = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
                                     if (imgPart?.inlineData?.data) {
-                                        console.log(`[PPT] ${mName} 成功 (頁 ${slideIndex+1})`);
+                                        showToast(`✅ ${slideLabel}：${label} 生成成功！`);
                                         return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
                                     }
                                 }
-                            } catch(e) { console.warn(`[PPT] ${mName} 第${slideIndex+1}頁失敗:`, e.message); }
+                                showToast(`⚠️ ${slideLabel}：${label} 未回傳圖片，嘗試下一個模型…`);
+                            } catch(e) {
+                                showToast(`⚠️ ${slideLabel}：${label} 失敗（${e.message}），嘗試下一個模型…`);
+                            }
                         }
                     }
 
-                    // 4️⃣ Picsum Photos 備援（不需 API Key）
+                    // 4️⃣ Picsum Photos 備援
+                    showToast(`📷 ${slideLabel}：所有 AI 模型失敗，改用 Picsum 備援圖片`);
                     try {
                         const seed = encodeURIComponent(prompt.replace(/\s+/g, '-').substring(0, 50));
                         const r = await Promise.race([
@@ -3808,12 +3823,14 @@ return; }
                     } catch { return null; }
                 };
 
-                showToast(`🎨 正在為每頁投影片生成 AI 配圖（共 ${(pptData.slides||[]).length} 頁）…`);
+                const totalSlides = (pptData.slides || []).length;
+                showToast(`🚀 PPT 生成開始！共 ${totalSlides} 頁投影片 + 封面，正在生成封面配圖…`);
 
                 let pptx = new PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
 
                 // ── 封面頁 ──
+                showToast(`🖼️ [封面] 生成配圖中…`);
                 const coverImg = await genAIImage(pptData.title || 'Presentation Cover', pptData.subtitle || '', -1);
                 let coverSlide = pptx.addSlide();
                 coverSlide.background = { color: "0F172A" };
@@ -3835,6 +3852,7 @@ return; }
                 if (pptData.slides && Array.isArray(pptData.slides)) {
                     for (let si = 0; si < pptData.slides.length; si++) {
                         const slideData = pptData.slides[si];
+                        showToast(`📊 排版投影片 ${si + 1} / ${totalSlides}：生成配圖中…`);
                         const imgData = await genAIImage(slideData.title || 'slide', slideData.content, si);
                         let slide = pptx.addSlide();
 
@@ -3881,6 +3899,7 @@ return; }
                 }
 
                 let filename = (pptData.title || "NOVA_Presentation").replace(/[\\/:*?"<>|]/g, '_') + ".pptx";
+                showToast(`📦 所有配圖完成！正在封裝 ${totalSlides + 1} 頁投影片為 .pptx…`);
                 await pptx.writeFile({ fileName: filename });
                 showToast("✅ AI 圖文簡報下載中...");
             } catch (e) {
@@ -7940,7 +7959,8 @@ if (t.repeatInterval && t.repeatInterval > 0) { t.alertTime += t.repeatInterval;
                                     }
 
                                     if (imgDataUrl) {
-                                        addMessage(`🖼️ **排程圖片生成完成 [${query}]**\n\n![generated](${imgDataUrl})`, 'ai', 'gemini');
+                                        const imgFileObj = { category: 'image', data: imgDataUrl, name: `schedule_image_${Date.now()}.png` };
+                                        addMessage(`🖼️ **排程圖片生成完成 [${query}]**`, 'ai', 'gemini', [], imgFileObj);
                                         if(appState.autoTTS) speakText(`排程圖片任務完成：${query}`);
                                     } else {
                                         addMessage(`⚠️ 排程圖片任務 [${query}] 失敗：所有圖像 API（Grok Image Pro / Grok Image / Gemini 2.5 Flash-Image / Gemini 3.1 Flash-Image）均無法回傳圖片，請確認 API Key 設定。`, 'system');
