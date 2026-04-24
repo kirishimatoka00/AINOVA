@@ -3707,10 +3707,15 @@ return; }
                 let pptData = JSON.parse(jsonStr);
 
                 // ══════════════════════════════════════════════════════════
-                // AI 圖片生成引擎（依序嘗試 Grok → Gemini Flash → Picsum 備援）
+                // AI 圖片生成引擎
+                // 調用順序：Grok Image Pro → Grok Image → Gemini 2.5 Flash-Image
+                //           → Gemini 3.1 Flash-Image → Picsum 備援
                 // ══════════════════════════════════════════════════════════
+                const GROK_PROXY = 'https://grokcaller.kirishimatoka00.workers.dev/';
+                const GROK_IMG_API = 'https://api.x.ai/v1/images/generations';
+
                 const genAIImage = async (slideTitle, slideContent, slideIndex) => {
-                    // 先用 Gemini 把中文主題優化成英文 prompt（避免直接傳中文給圖像 API）
+                    // 先用 Gemini 把中文主題優化成英文 prompt
                     const buildPrompt = async (query) => {
                         const gKey = appState.keys.gemini;
                         if (!gKey) return `Professional business illustration about: ${query}`;
@@ -3719,7 +3724,7 @@ return; }
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text:
-                                    `Create a concise English image generation prompt (max 60 words) for a presentation slide about: "${query}". The image should be professional, clean, modern illustration style. Return only the prompt text, no explanation.` }] }],
+                                    `Create a concise English image generation prompt (max 60 words) for a presentation slide about: "${query}". Professional, clean, modern illustration style. Return only the prompt text.` }] }],
                                     generationConfig: { maxOutputTokens: 100, temperature: 0.5 } })
                             });
                             const d = await r.json();
@@ -3727,55 +3732,69 @@ return; }
                         } catch { return `Professional business illustration: ${query}`; }
                     };
 
-                    const slideContext = `${slideTitle}${slideContent ? ': ' + (Array.isArray(slideContent) ? slideContent.slice(0,2).join(', ') : slideContent).substring(0, 80) : ''}`;
+                    const slideContext = `${slideTitle}${slideContent ? ': ' + (Array.isArray(slideContent) ? slideContent.slice(0,2).join(', ') : String(slideContent)).substring(0, 80) : ''}`;
                     const prompt = await buildPrompt(slideContext);
 
-                    // 1️⃣ 嘗試 Grok Image (aurora)
-                    const grokKey = appState.keys.grok || appState.keys.xai;
+                    // 1️⃣ Grok Image Pro
+                    const grokKey = appState.keys.grok;
                     if (grokKey) {
-                        try {
-                            const r = await Promise.race([
-                                fetch('https://api.x.ai/v1/images/generations', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grokKey}` },
-                                    body: JSON.stringify({ model: 'grok-2-image', prompt: prompt, n: 1, response_format: 'b64_json' })
-                                }),
-                                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 25000))
-                            ]);
-                            if (r.ok) {
-                                const d = await r.json();
-                                const b64 = d.data?.[0]?.b64_json;
-                                if (b64) return `data:image/png;base64,${b64}`;
-                            }
-                        } catch(e) { console.warn(`[PPT] Grok image 第${slideIndex+1}頁失敗:`, e.message); }
+                        for (const grokModel of ['grok-imagine-image-pro', 'grok-imagine-image']) {
+                            try {
+                                const r = await Promise.race([
+                                    fetch(`${GROK_PROXY}?url=${encodeURIComponent(GROK_IMG_API)}`, {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${grokKey}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ model: grokModel, prompt, response_format: 'b64_json' })
+                                    }),
+                                    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 28000))
+                                ]);
+                                if (r.ok) {
+                                    const d = await r.json();
+                                    const item = d.data?.[0];
+                                    if (item) {
+                                        const imgData = item.b64_json ? `data:image/png;base64,${item.b64_json}` : item.url;
+                                        if (imgData) { console.log(`[PPT] ${grokModel} 成功 (頁 ${slideIndex+1})`); return imgData; }
+                                    }
+                                }
+                            } catch(e) { console.warn(`[PPT] ${grokModel} 第${slideIndex+1}頁失敗:`, e.message); }
+                        }
                     }
 
-                    // 2️⃣ 嘗試 Gemini 2.0 Flash 圖像生成
+                    // 2️⃣ Gemini 2.5 Flash-Image → 3️⃣ Gemini 3.1 Flash-Image
                     const gKey2 = appState.keys.gemini;
                     if (gKey2) {
-                        try {
-                            const r = await Promise.race([
-                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${gKey2}`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                                        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-                                    })
-                                }),
-                                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 25000))
-                            ]);
-                            if (r.ok) {
-                                const d = await r.json();
-                                const imgPart = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
-                                if (imgPart?.inlineData?.data) return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
-                            }
-                        } catch(e) { console.warn(`[PPT] Gemini image 第${slideIndex+1}頁失敗:`, e.message); }
+                        const gemModels = [
+                            { name: 'gemini-2.5-flash-image',          ver: 'v1beta' },
+                            { name: 'gemini-3.1-flash-image-preview',   ver: 'v1alpha' },
+                        ];
+                        for (const { name: mName, ver } of gemModels) {
+                            try {
+                                const r = await Promise.race([
+                                    fetch(`https://generativelanguage.googleapis.com/${ver}/models/${mName}:generateContent?key=${gKey2}`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                                            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                                        })
+                                    }),
+                                    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 28000))
+                                ]);
+                                if (r.ok) {
+                                    const d = await r.json();
+                                    const imgPart = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+                                    if (imgPart?.inlineData?.data) {
+                                        console.log(`[PPT] ${mName} 成功 (頁 ${slideIndex+1})`);
+                                        return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+                                    }
+                                }
+                            } catch(e) { console.warn(`[PPT] ${mName} 第${slideIndex+1}頁失敗:`, e.message); }
+                        }
                     }
 
-                    // 3️⃣ Picsum Photos 備援（不需 API Key）
+                    // 4️⃣ Picsum Photos 備援（不需 API Key）
                     try {
-                        const seed = encodeURIComponent((slideTitle + '').replace(/\s+/g, '-').substring(0, 50));
+                        const seed = encodeURIComponent(prompt.replace(/\s+/g, '-').substring(0, 50));
                         const r = await Promise.race([
                             fetch(`https://picsum.photos/seed/${seed}/800/450`),
                             new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
@@ -3823,29 +3842,21 @@ return; }
                             ? (Array.isArray(slideData.content) ? slideData.content : [slideData.content])
                             : [];
 
-                        // 計算最佳字級：依條目數自動縮放
                         const itemCount = items.length;
                         const fontSize = itemCount <= 3 ? 20 : itemCount <= 6 ? 17 : itemCount <= 9 ? 14 : 12;
 
                         if (imgData) {
-                            // 圖文並茂：左圖 42% 右文 53%
                             slide.background = { color: "F8FAFC" };
-                            // 左側淺藍色背景
                             slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 4.62, h: '100%', fill: { color: 'EFF6FF' } });
-                            // 左側藍邊條
                             slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.07, h: '100%', fill: { color: '3B82F6' } });
-                            // 圖片（確保不超出左半區域，留上下 padding）
                             slide.addImage({ data: imgData, x: 0.15, y: 1.28, w: 4.30, h: 5.60, sizing: { type: 'contain', w: 4.30, h: 5.60 } });
 
-                            // 全寬標題列
                             if (slideData.title) {
                                 slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 1.18, fill: { color: '1E293B' } });
-                                // 標題字級依長度調整
                                 const titleFs = slideData.title.length > 30 ? 20 : slideData.title.length > 18 ? 24 : 28;
                                 slide.addText(slideData.title, { x: 0.25, y: 0.12, w: '95%', h: 0.94, fontSize: titleFs, bold: true, color: 'FFFFFF', valign: 'middle' });
                             }
 
-                            // 右側條列文字
                             if (items.length > 0) {
                                 const bulletData = items.map(t => ({
                                     text: String(t),
@@ -3854,7 +3865,6 @@ return; }
                                 slide.addText(bulletData, { x: 4.80, y: 1.28, w: 4.95, h: 5.60, align: 'left', valign: 'top', lineSpacing: itemCount > 8 ? 20 : 26 });
                             }
                         } else {
-                            // 純文字版（AI 圖片全部失敗的退路）
                             slide.background = { color: 'F8FAFC' };
                             if (slideData.title) {
                                 slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 1.2, fill: { color: '1E293B' } });
@@ -7865,58 +7875,75 @@ if (t.repeatInterval && t.repeatInterval > 0) { t.alertTime += t.repeatInterval;
                             addMessage(`🔄 [排程任務觸發] 正在為您執行：${query}…`, 'system');
                             try {
                                 if (taskType === 'image') {
-                                    // ── 生成圖片：呼叫 Grok Image 或 Gemini 圖像 API ──────────
+                                    // ── 生成圖片：依序嘗試正確的圖像 API ─────────────────────
+                                    // 順序：Grok Image Pro → Grok Image → Gemini 2.5 Flash-Image → Gemini 3.1 Flash-Image
                                     addMessage(`🎨 排程任務「${query}」：呼叫 AI 圖像生成…`, 'system');
+                                    const GROK_PROXY = 'https://grokcaller.kirishimatoka00.workers.dev/';
+                                    const GROK_IMG_API = 'https://api.x.ai/v1/images/generations';
                                     let imgDataUrl = null;
 
-                                    // 1️⃣ 嘗試 Grok Image
-                                    const grokKey = appState.keys.grok || appState.keys.xai;
+                                    // 1️⃣ Grok Image Pro → Grok Image（透過 proxy）
+                                    const grokKey = appState.keys.grok;
                                     if (!imgDataUrl && grokKey) {
-                                        try {
-                                            const r = await Promise.race([
-                                                fetch('https://api.x.ai/v1/images/generations', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grokKey}` },
-                                                    body: JSON.stringify({ model: 'grok-2-image', prompt: query, n: 1, response_format: 'b64_json' })
-                                                }),
-                                                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
-                                            ]);
-                                            if (r.ok) {
-                                                const d = await r.json();
-                                                const b64 = d.data?.[0]?.b64_json;
-                                                if (b64) imgDataUrl = `data:image/png;base64,${b64}`;
-                                            }
-                                        } catch(e) { console.warn('[排程圖片] Grok 失敗:', e.message); }
+                                        for (const grokModel of ['grok-imagine-image-pro', 'grok-imagine-image']) {
+                                            try {
+                                                const r = await Promise.race([
+                                                    fetch(`${GROK_PROXY}?url=${encodeURIComponent(GROK_IMG_API)}`, {
+                                                        method: 'POST',
+                                                        headers: { 'Authorization': `Bearer ${grokKey}`, 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ model: grokModel, prompt: query, response_format: 'b64_json' })
+                                                    }),
+                                                    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
+                                                ]);
+                                                if (r.ok) {
+                                                    const d = await r.json();
+                                                    const item = d.data?.[0];
+                                                    if (item) {
+                                                        imgDataUrl = item.b64_json ? `data:image/png;base64,${item.b64_json}` : item.url;
+                                                        if (imgDataUrl) { console.log(`[排程圖片] ${grokModel} 成功`); break; }
+                                                    }
+                                                }
+                                            } catch(e) { console.warn(`[排程圖片] ${grokModel} 失敗:`, e.message); }
+                                        }
                                     }
 
-                                    // 2️⃣ 嘗試 Gemini 2.0 Flash 圖像生成
+                                    // 2️⃣ Gemini 2.5 Flash-Image
                                     const gemKey = appState.keys.gemini;
                                     if (!imgDataUrl && gemKey) {
-                                        try {
-                                            const r = await Promise.race([
-                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${gemKey}`, {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                        contents: [{ role: 'user', parts: [{ text: query }] }],
-                                                        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-                                                    })
-                                                }),
-                                                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
-                                            ]);
-                                            if (r.ok) {
-                                                const d = await r.json();
-                                                const imgPart = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
-                                                if (imgPart?.inlineData?.data) imgDataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
-                                            }
-                                        } catch(e) { console.warn('[排程圖片] Gemini 失敗:', e.message); }
+                                        const gemModels = [
+                                            { name: 'gemini-2.5-flash-image',        ver: 'v1beta' },
+                                            { name: 'gemini-3.1-flash-image-preview', ver: 'v1alpha' },
+                                        ];
+                                        for (const { name: mName, ver } of gemModels) {
+                                            try {
+                                                const r = await Promise.race([
+                                                    fetch(`https://generativelanguage.googleapis.com/${ver}/models/${mName}:generateContent?key=${gemKey}`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            contents: [{ role: 'user', parts: [{ text: query }] }],
+                                                            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                                                        })
+                                                    }),
+                                                    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
+                                                ]);
+                                                if (r.ok) {
+                                                    const d = await r.json();
+                                                    const imgPart = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+                                                    if (imgPart?.inlineData?.data) {
+                                                        imgDataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+                                                        console.log(`[排程圖片] ${mName} 成功`); break;
+                                                    }
+                                                }
+                                            } catch(e) { console.warn(`[排程圖片] ${mName} 失敗:`, e.message); }
+                                        }
                                     }
 
                                     if (imgDataUrl) {
                                         addMessage(`🖼️ **排程圖片生成完成 [${query}]**\n\n![generated](${imgDataUrl})`, 'ai', 'gemini');
                                         if(appState.autoTTS) speakText(`排程圖片任務完成：${query}`);
                                     } else {
-                                        addMessage(`⚠️ 排程圖片任務 [${query}] 失敗：Grok 與 Gemini 圖像 API 均無法取得結果，請確認 API Key 設定。`, 'system');
+                                        addMessage(`⚠️ 排程圖片任務 [${query}] 失敗：所有圖像 API（Grok Image Pro / Grok Image / Gemini 2.5 Flash-Image / Gemini 3.1 Flash-Image）均無法回傳圖片，請確認 API Key 設定。`, 'system');
                                     }
 
                                 } else if (taskType === 'search') {
