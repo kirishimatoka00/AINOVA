@@ -6007,7 +6007,54 @@ try {
                 return null;
             }
         }
-async function checkScheduleIntent(text) {
+        // 排程任務類型選擇彈窗（回傳 'image' | 'search' | 'general' | null=取消）
+        function askScheduleTaskType(query) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-[350] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4';
+                overlay.innerHTML = `
+                    <div class="bg-slate-900 border border-blue-500/40 rounded-2xl p-6 w-full max-w-sm shadow-[0_0_40px_rgba(59,130,246,0.2)] flex flex-col gap-4">
+                        <div>
+                            <h3 class="font-bold text-white text-base mb-1">⏰ 排程任務類型</h3>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">「${escapeHtml(query.substring(0,60))}${query.length>60?'…':''}」</p>
+                            <p class="text-xs text-slate-400 mt-2">請選擇此排程任務執行時的工作模式：</p>
+                        </div>
+                        <div class="space-y-2">
+                            <button id="stt-image" class="w-full flex items-start gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-purple-500 transition-colors text-left active:scale-95">
+                                <span class="text-2xl mt-0.5 shrink-0">🎨</span>
+                                <div>
+                                    <p class="text-sm font-bold text-white">生成圖片</p>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">呼叫 Grok Image 或 Gemini 圖像生成 Model，依指令生成圖片</p>
+                                </div>
+                            </button>
+                            <button id="stt-search" class="w-full flex items-start gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-teal-500 transition-colors text-left active:scale-95">
+                                <span class="text-2xl mt-0.5 shrink-0">🌐</span>
+                                <div>
+                                    <p class="text-sm font-bold text-white">聯網查詢資料</p>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">啟用連網搜尋，取得最新即時資訊並整理報告</p>
+                                </div>
+                            </button>
+                            <button id="stt-general" class="w-full flex items-start gap-3 p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-blue-400 transition-colors text-left active:scale-95">
+                                <span class="text-2xl mt-0.5 shrink-0">🤖</span>
+                                <div>
+                                    <p class="text-sm font-bold text-white">一般任務</p>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">由文字 LLM 直接根據指令處理（摘要、翻譯、寫作等）</p>
+                                </div>
+                            </button>
+                        </div>
+                        <button id="stt-cancel" class="text-slate-500 hover:text-slate-300 text-sm text-center transition-colors">取消</button>
+                    </div>`;
+                document.body.appendChild(overlay);
+                const cleanup = (val) => { overlay.remove(); resolve(val); };
+                document.getElementById('stt-image').onclick   = () => cleanup('image');
+                document.getElementById('stt-search').onclick  = () => cleanup('search');
+                document.getElementById('stt-general').onclick = () => cleanup('general');
+                document.getElementById('stt-cancel').onclick  = () => cleanup(null);
+                overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(null); });
+            });
+        }
+
+        async function checkScheduleIntent(text) {
             const key = appState.keys.gemini;
             if(!key) return null;
             const schema = {
@@ -6438,7 +6485,11 @@ window.startMultiAgentResearch = async function() {
                         // 什麼都不做，讓程式繼續往下跑一般對話邏輯
                     } else {
                         addMessage(text, 'user'); // 確保使用者的原始指令顯示在對話框中
-                        
+
+                        // ── 🆕 先詢問任務類型 ──────────────────────────────────────────
+                        const taskTypeResult = await askScheduleTaskType(scheduleIntent.query);
+                        if (!taskTypeResult) return; // 使用者取消
+                        scheduleIntent._taskType = taskTypeResult; // 'image' | 'search' | 'general'
                         let targetAlertTime = Date.now() + scheduleIntent.intervalMs;
                         let displayTimeStr = `每 ${scheduleIntent.num} ${scheduleIntent.unit}執行`;
                         
@@ -6467,7 +6518,8 @@ window.startMultiAgentResearch = async function() {
                             alertTime: targetAlertTime, 
                             repeatInterval: scheduleIntent.isOneTimeTask ? 0 : scheduleIntent.intervalMs, 
                             alertEnabled: true, alerted: false,
-                            isAutoTask: true, taskQuery: scheduleIntent.query
+                            isAutoTask: true, taskQuery: scheduleIntent.query,
+                            taskType: scheduleIntent._taskType || 'general'  // 'image' | 'search' | 'general'
                         };
                         appState.todos.push(newSearchTask); saveToDB('todos', newSearchTask);
                         
@@ -6665,17 +6717,19 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                 let promptToSent = text;
                 let modelToUse = appState.currentModel;
                 
-                // 🌟 寫入 GPS 座標記憶 (PPT 製作時跳過，避免 AI 誤解為需要定位資訊)
+                // 🌟 PPT 意圖偵測（優先攔截，避免後面的 GPS / 地點邏輯干擾）
                 const _isPPTIntent = text.includes("簡報") || text.includes("PPT") || text.includes("ppt") || text.includes("Ppt");
+
+                // 🌟 寫入 GPS 座標記憶 (PPT 製作時跳過，避免 AI 誤解為需要定位資訊)
                 if (appState.lastLat && appState.lastLon && !_isPPTIntent) {
                     injectedContext += `\n【系統真實數據】使用者目前的 GPS 座標為：緯度 ${appState.lastLat}, 經度 ${appState.lastLon}。若使用者問及「我在哪」、「我的位置」或「座標」，請務必直接提供此精確數據給使用者。\n`;
                 }
 
                 // 🌟 擴充關鍵字：把「位置」、「座標」、「定位」加進去
-                let enableSearchTool = appState.isSearchEnabled || appState.deepDiveMode || /附近|最近|在哪|地點|地址|導航|怎麼走|距離|位置|座標|定位|查尋|尋找|離我|幫我找/.test(text);
+                let enableSearchTool = !_isPPTIntent && (appState.isSearchEnabled || appState.deepDiveMode || /附近|最近|在哪|地點|地址|導航|怎麼走|距離|位置|座標|定位|查尋|尋找|離我|幫我找/.test(text));
                 
-                // --- 2. 判斷是否為地點搜尋或導航意圖 ---
-                const isLocationIntent = /附近|最近|導航|帶我|怎麼走|路線|距離|位置|座標|定位|離我|查尋|尋找/.test(text) || /幫我找.{0,10}(?:店|餐廳|咖啡|超商|醫院|學校|公園|銀行|加油|藥局|便利)/.test(text);
+                // --- 2. 判斷是否為地點搜尋或導航意圖 (PPT 時強制跳過) ---
+                const isLocationIntent = !_isPPTIntent && (/附近|最近|導航|帶我|怎麼走|路線|距離|位置|座標|定位|離我|查尋|尋找/.test(text) || /幫我找.{0,10}(?:店|餐廳|咖啡|超商|醫院|學校|公園|銀行|加油|藥局|便利)/.test(text));
                 
                 // 🌟 攔截歷史紀錄中最後一筆（使用者剛輸入的訊息）
                 let originalUserMessage = "";
@@ -7807,25 +7861,86 @@ if (t.repeatInterval && t.repeatInterval > 0) { t.alertTime += t.repeatInterval;
                         // 判斷任務類型：自動化任務 vs 一般鬧鐘
                         if ((t.isAutoTask && t.taskQuery) || (t.isAutoSearch && t.searchQuery)) {
                             const query = t.taskQuery || t.searchQuery;
-                        addMessage(`🔄 [排程任務觸發] 正在為您執行：${query}...`, 'system');
-                        try {
-                            const _imgTestR = (s) => /(畫|生成|產生|製作|幫我畫|幫你畫|create|make|draw|generate).{0,200}(圖片|照片|圖像|picture|image|impage|photo)|(圖片|照片|圖像|picture|image|impage|photo).{0,50}(生成|產生|製作|畫出)/i.test(s);
-                            const isImageIntent = _imgTestR(query.trim());
-                            let prompt = query;
-                            
-                            // 針對舊版資料相容，或者純文字找資料意圖強化搜尋提示
-                            if (!isImageIntent && t.isAutoSearch) {
-                                prompt = `請連網搜尋最新資訊：「${query}」，並根據搜尋結果，為我整理一份簡潔的重點回報。`;
-                            }
-                            
-                            let res = await fetchAIResponse(prompt, appState.currentModel, { enableSearch: !isImageIntent });
-                                let finalOutputText = typeof res === 'string' ? res : (res.text || "(無文字)");
-                                
-                                if (finalOutputText && finalOutputText !== "(無文字)") {
-                                    addMessage(`📊 **排程任務結果 [${query}]**\n\n${finalOutputText}`, 'ai', appState.currentModel, res.sources || [], res.file || null);
-                                    if(appState.autoTTS) speakText(`排程任務執行完畢：${query}`);
+                            const taskType = t.taskType || 'general'; // 'image' | 'search' | 'general'
+                            addMessage(`🔄 [排程任務觸發] 正在為您執行：${query}…`, 'system');
+                            try {
+                                if (taskType === 'image') {
+                                    // ── 生成圖片：呼叫 Grok Image 或 Gemini 圖像 API ──────────
+                                    addMessage(`🎨 排程任務「${query}」：呼叫 AI 圖像生成…`, 'system');
+                                    let imgDataUrl = null;
+
+                                    // 1️⃣ 嘗試 Grok Image
+                                    const grokKey = appState.keys.grok || appState.keys.xai;
+                                    if (!imgDataUrl && grokKey) {
+                                        try {
+                                            const r = await Promise.race([
+                                                fetch('https://api.x.ai/v1/images/generations', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${grokKey}` },
+                                                    body: JSON.stringify({ model: 'grok-2-image', prompt: query, n: 1, response_format: 'b64_json' })
+                                                }),
+                                                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
+                                            ]);
+                                            if (r.ok) {
+                                                const d = await r.json();
+                                                const b64 = d.data?.[0]?.b64_json;
+                                                if (b64) imgDataUrl = `data:image/png;base64,${b64}`;
+                                            }
+                                        } catch(e) { console.warn('[排程圖片] Grok 失敗:', e.message); }
+                                    }
+
+                                    // 2️⃣ 嘗試 Gemini 2.0 Flash 圖像生成
+                                    const gemKey = appState.keys.gemini;
+                                    if (!imgDataUrl && gemKey) {
+                                        try {
+                                            const r = await Promise.race([
+                                                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${gemKey}`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        contents: [{ role: 'user', parts: [{ text: query }] }],
+                                                        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+                                                    })
+                                                }),
+                                                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
+                                            ]);
+                                            if (r.ok) {
+                                                const d = await r.json();
+                                                const imgPart = d.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+                                                if (imgPart?.inlineData?.data) imgDataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+                                            }
+                                        } catch(e) { console.warn('[排程圖片] Gemini 失敗:', e.message); }
+                                    }
+
+                                    if (imgDataUrl) {
+                                        addMessage(`🖼️ **排程圖片生成完成 [${query}]**\n\n![generated](${imgDataUrl})`, 'ai', 'gemini');
+                                        if(appState.autoTTS) speakText(`排程圖片任務完成：${query}`);
+                                    } else {
+                                        addMessage(`⚠️ 排程圖片任務 [${query}] 失敗：Grok 與 Gemini 圖像 API 均無法取得結果，請確認 API Key 設定。`, 'system');
+                                    }
+
+                                } else if (taskType === 'search') {
+                                    // ── 聯網查詢：強制啟用搜尋工具 ──────────────────────────
+                                    const searchPrompt = `請連網搜尋最新資訊：「${query}」，並根據搜尋結果，為我整理一份簡潔的重點回報。`;
+                                    let res = await fetchAIResponse(searchPrompt, appState.currentModel, { enableSearch: true });
+                                    let finalOutputText = typeof res === 'string' ? res : (res.text || '(無文字)');
+                                    if (finalOutputText && finalOutputText !== '(無文字)') {
+                                        addMessage(`📊 **排程聯網查詢結果 [${query}]**\n\n${finalOutputText}`, 'ai', appState.currentModel, res.sources || [], res.file || null);
+                                        if(appState.autoTTS) speakText(`排程聯網查詢完畢：${query}`);
+                                    } else {
+                                        addMessage(`⚠️ 排程聯網查詢 [${query}] 失敗：無法取得有效回覆。`, 'system');
+                                    }
+
                                 } else {
-                                    addMessage(`⚠️ 排程任務 [${query}] 失敗：無法取得有效回覆。`, 'system');
+                                    // ── 一般任務：直接由文字 LLM 處理 ───────────────────────
+                                    let res = await fetchAIResponse(query, appState.currentModel, { enableSearch: false });
+                                    let finalOutputText = typeof res === 'string' ? res : (res.text || '(無文字)');
+                                    if (finalOutputText && finalOutputText !== '(無文字)') {
+                                        addMessage(`📊 **排程任務結果 [${query}]**\n\n${finalOutputText}`, 'ai', appState.currentModel, res.sources || [], res.file || null);
+                                        if(appState.autoTTS) speakText(`排程任務執行完畢：${query}`);
+                                    } else {
+                                        addMessage(`⚠️ 排程任務 [${query}] 失敗：無法取得有效回覆。`, 'system');
+                                    }
                                 }
                             } catch (e) {
                                 addMessage(`⚠️ 排程任務異常：${e.message}`, 'system');
