@@ -420,12 +420,15 @@
                             <!-- 本地儲存位置 -->
                             <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700 space-y-3">
                                 <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="ph-fill ph-folder-open text-yellow-400"></i> 本地儲存位置</p>
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400 truncate" id="rec-dir-display">
+                            <div id="rec-dir-display" class="flex items-center gap-2">
+                                    <div class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400 truncate">
                                         <span id="rec-dir-name">{{ 尚未指定，將儲存至瀏覽器預設下載資料夾 }}</span>
                                     </div>
                                     <button onclick="pickRecordingDirectory()" class="shrink-0 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
                                         <i class="ph-bold ph-folder-open"></i> 選擇
+                                    </button>
+                                    <button id="rec-dir-reauth-btn" onclick="reAuthRecordingDirectory()" class="hidden shrink-0 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1" title="重新授權資料夾存取">
+                                        <i class="ph-bold ph-lock-key"></i> 重新授權
                                     </button>
                                     <button onclick="clearRecordingDirectory()" class="shrink-0 text-slate-500 hover:text-red-400 px-2 py-2 rounded-lg transition-colors" title="清除指定位置">
                                         <i class="ph-bold ph-x"></i>
@@ -1056,14 +1059,37 @@
                 </div>
             </div>
 
+            <!-- ================= 全螢幕筆記內容編輯器（手機鍵盤友好）================= -->
+            <div id="fullscreen-content-editor" class="hidden fixed inset-0 z-[200] bg-slate-950 flex flex-col" style="padding-top: env(safe-area-inset-top, 0px);">
+                <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-700 shrink-0">
+                    <span class="text-sm font-bold text-white truncate max-w-[60vw]" id="fse-title">✏️ 編輯內容</span>
+                    <div class="flex gap-2">
+                        <button onclick="saveFullscreenEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors active:scale-95"><i class="ph-bold ph-check"></i> 儲存</button>
+                        <button onclick="closeFullscreenEditor()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm px-3 py-2 rounded-lg transition-colors">取消</button>
+                    </div>
+                </div>
+                <div id="fse-content" contenteditable="true"
+                    class="flex-1 w-full bg-slate-950 text-slate-100 text-base leading-relaxed p-4 outline-none overflow-y-auto"
+                    style="min-height:0; -webkit-overflow-scrolling:touch; resize:none;"
+                    placeholder="在此輸入筆記內容…"></div>
+            </div>
+
             <!-- ================= 富文本筆記劇院級編輯器彈窗 (Note Edit/View Modal) ================= -->
-            <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-2 md:p-6">
-                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 md:p-6 w-[98vw] md:w-[85vw] max-w-7xl shadow-2xl flex flex-col h-[80vh] md:h-[75vh]">
+            <div id="note-edit-modal" class="hidden fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex items-start justify-center p-0 md:p-6 overflow-y-auto">
+                <div class="bg-slate-900 border-0 md:border border-slate-700 rounded-none md:rounded-2xl p-4 md:p-6 w-full md:w-[85vw] max-w-7xl shadow-2xl flex flex-col md:my-auto" style="min-height:100dvh; max-height:100dvh; md:min-height:unset; md:max-height:85dvh;">
                     <div class="flex justify-between items-center mb-4 shrink-0">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph-bold ph-corners-out text-emerald-400"></i> <span id="note-modal-title-text">檢視與編輯筆記</span></h3>
                         <button onclick="closeNoteEdit()" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
                     <input type="hidden" id="edit-note-id">
+                    <!-- 錄音筆記專用：播放器區（非錄音筆記時隱藏） -->
+                    <div id="edit-note-audio-area" class="hidden shrink-0 mb-2">
+                        <div class="bg-slate-800/60 border border-purple-700/40 rounded-xl p-3 flex flex-col gap-2">
+                            <p class="text-xs text-purple-300 font-bold flex items-center gap-1"><i class="ph-fill ph-microphone"></i> 語音錄音</p>
+                            <audio id="edit-note-audio-player" controls class="w-full h-10 rounded-lg bg-slate-900 shadow-inner"></audio>
+                            <div id="edit-note-audio-actions" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
                     <div class="space-y-4 overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700 flex flex-col min-h-0">
                         
                         <div class="flex flex-col md:flex-row gap-3 shrink-0">
@@ -1077,6 +1103,10 @@
                                 <label for="edit-note-img-upload" class="text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1 bg-emerald-900/30 px-2 py-1 rounded"><i class="ph-bold ph-image"></i> 插入圖片</label>
                                 <input type="file" id="edit-note-img-upload" accept="image/*" multiple class="hidden" onchange="handleNoteEditImage(event)">
                             </label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-xs text-slate-400 font-bold">筆記內容</label>
+                                <button onclick="openFullscreenEditor()" class="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600" title="全螢幕編輯（手機建議使用）"><i class="ph-bold ph-arrows-out-simple"></i> 全螢幕編輯</button>
+                            </div>
                             <div id="edit-note-content" contenteditable="true" placeholder="在這裡輸入文字，或直接 Ctrl+V 貼上網頁圖文、YouTube連結..." class="note-html-content flex-1 w-full bg-slate-950 border border-slate-700 rounded-lg p-4 text-base md:text-lg leading-relaxed text-slate-200 focus:border-emerald-500 outline-none overflow-y-auto"></div>
                             <div id="edit-note-img-preview-container" class="hidden mt-3 flex-wrap gap-2 shrink-0"></div>
                         </div>
@@ -1950,10 +1980,20 @@ return html;
             if (tabId === 'tab-rec') {
                 const splitEl = document.getElementById('rec-split-mins');
                 const chunkEl = document.getElementById('rec-chunk-mins');
-                const dirEl = document.getElementById('rec-dir-name');
+                const dirEl   = document.getElementById('rec-dir-name');
+                const reauthBtn = document.getElementById('rec-dir-reauth-btn');
                 if (splitEl) splitEl.value = appState.recSettings.autoSplitMins;
                 if (chunkEl) chunkEl.value = appState.recSettings.analysisChunkMins;
-                if (dirEl) dirEl.textContent = appState.recSettings.localSaveDirName || '尚未指定，將儲存至瀏覽器預設下載資料夾';
+                if (dirEl) {
+                    if (appState.recSettings.localDirHandle) {
+                        dirEl.innerHTML = `<span class="text-emerald-400 font-bold">📁 ${escapeHtml(appState.recSettings.localSaveDirName)}</span>`;
+                    } else if (appState.recSettings._pendingDirHandle) {
+                        dirEl.innerHTML = `<span class="text-slate-400 line-through">${escapeHtml(appState.recSettings.localSaveDirName)}</span><br><span class="text-yellow-400 text-[10px]">⚠️ 未授權 — 目前使用：瀏覽器預設下載資料夾</span>`;
+                    } else {
+                        dirEl.innerHTML = `<span class="text-slate-500">瀏覽器預設下載資料夾</span>`;
+                    }
+                }
+                if (reauthBtn) reauthBtn.classList.toggle('hidden', !appState.recSettings._pendingDirHandle);
             }
         };
 
@@ -2854,7 +2894,7 @@ handleSendMessage(); }
                 for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
                 const base64Data = btoa(binary);
 
-                const safeMime = mimeType.startsWith('audio/') ? mimeType : 'audio/webm';
+                const safeMime = mimeType.startsWith('audio/') || mimeType.startsWith('video/') ? mimeType : 'audio/webm';
                 const prompt = `你是一位專業的音訊分析師與逐字稿員。請針對以下音檔完成：
 1. 【完整逐字稿】：將所有說話內容完整轉錄（繁體中文），保留每一句話，不省略。
 2. 【重點摘要】：條列整理出最重要的主題、討論點與結論。
@@ -3183,8 +3223,65 @@ handleSendMessage(); }
             }
         };
 
+        // ── 全螢幕筆記內容編輯器 ────────────────────────────────────────
+        window.openFullscreenEditor = function() {
+            const noteContent = document.getElementById('edit-note-content');
+            const noteTitle   = document.getElementById('edit-note-title');
+            const fseEl       = document.getElementById('fullscreen-content-editor');
+            const fseContent  = document.getElementById('fse-content');
+            const fseTitle    = document.getElementById('fse-title');
+            if (!fseEl || !noteContent) return;
+            // 同步目前內容到全螢幕編輯器
+            fseContent.innerHTML = noteContent.innerHTML;
+            if (fseTitle) fseTitle.textContent = `✏️ ${noteTitle?.value || '筆記內容'}`;
+            fseEl.classList.remove('hidden');
+            // 手機：滾到最頂並聚焦
+            fseContent.focus();
+            setTimeout(() => {
+                fseContent.scrollTop = 0;
+                fseContent.focus();
+                // 移游標到末尾
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(fseContent);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }, 80);
+        };
+
+        window.saveFullscreenEditor = function() {
+            const fseContent  = document.getElementById('fse-content');
+            const noteContent = document.getElementById('edit-note-content');
+            if (fseContent && noteContent) {
+                noteContent.innerHTML = fseContent.innerHTML;
+            }
+            closeFullscreenEditor();
+            showToast('✅ 內容已更新，請記得按「儲存筆記」完成儲存。');
+        };
+
+        window.closeFullscreenEditor = function() {
+            const fseEl = document.getElementById('fullscreen-content-editor');
+            if (fseEl) fseEl.classList.add('hidden');
+        };
+
         window.openNoteEdit = function(id) {
             try {
+                // 手機鍵盤彈出時自動滾動 modal 到 focused 欄位
+                if (!window._noteModalVVListener) {
+                    window._noteModalVVListener = true;
+                    const vv = window.visualViewport;
+                    if (vv) {
+                        vv.addEventListener('resize', () => {
+                            const modal = document.getElementById('note-edit-modal');
+                            if (!modal || modal.classList.contains('hidden')) return;
+                            const focused = modal.querySelector(':focus');
+                            if (focused) {
+                                setTimeout(() => focused.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+                            }
+                        });
+                    }
+                }
                 const n = appState.notes.find(x => String(x.id) === String(id));
                 if(!n) return;
                 
@@ -3219,6 +3316,63 @@ handleSendMessage(); }
                 
                 const titleEl = document.getElementById('note-modal-title-text');
                 if (titleEl) titleEl.innerText = "檢視與編輯筆記";
+
+                // 錄音筆記：顯示播放器（含同群組所有分段）
+                const audioArea = document.getElementById('edit-note-audio-area');
+                const audioPlayer = document.getElementById('edit-note-audio-player');
+                const audioActions = document.getElementById('edit-note-audio-actions');
+                if (audioArea && audioPlayer && audioActions) {
+                    if (n.type === 'audio') {
+                        audioArea.classList.remove('hidden');
+
+                        // 找出同群組所有段，按時間排序
+                        const noteGid = n.groupId || n.id;
+                        const noteSegs = appState.notes
+                            .filter(x => (x.groupId || x.id) === noteGid && x.type === 'audio')
+                            .sort((a, b) => a.id - b.id);
+
+                        // 動態替換播放器區為多段列表
+                        const playersContainer = audioArea.querySelector('.modal-audio-players') || (() => {
+                            const div = document.createElement('div');
+                            div.className = 'modal-audio-players space-y-1 mb-2';
+                            audioPlayer.parentNode.insertBefore(div, audioPlayer);
+                            audioPlayer.style.display = 'none'; // 隱藏原本的單一播放器
+                            return div;
+                        })();
+
+                        // 清除舊播放器並建立新的
+                        playersContainer.innerHTML = noteSegs.map((seg, i) => `
+                            <div class="flex items-center gap-2">
+                                ${noteSegs.length > 1 ? `<span class="text-[10px] text-purple-300 shrink-0 w-10 font-bold">第${i+1}段</span>` : ''}
+                                <audio id="modal-audio-${seg.id}" controls class="flex-1 h-9 rounded-lg bg-slate-900 shadow-inner min-w-0"></audio>
+                                ${seg.duration ? `<span class="text-[10px] text-slate-600 shrink-0">${Math.floor(seg.duration/60)}m${seg.duration%60}s</span>` : ''}
+                            </div>`).join('');
+
+                        // 異步載入每段的 Blob URL
+                        noteSegs.forEach(async (seg) => {
+                            const el = document.getElementById(`modal-audio-${seg.id}`);
+                            if (!el) return;
+                            let blob = await loadAudioBlob(seg.id);
+                            if (!blob && seg.audioData) blob = base64ToBlob(seg.audioData);
+                            if (blob) el.src = URL.createObjectURL(blob);
+                        });
+
+                        // 操作按鈕
+                        const segIdsForModal = `[${noteSegs.map(s => `'${s.id}'`).join(',')}]`;
+                        const aiLabel = noteSegs.length > 1 ? `AI 分析 (全 ${noteSegs.length} 段)` : 'AI 分析';
+                        audioActions.innerHTML = `
+                            <button onclick="batchDownloadWeba(${segIdsForModal}, 'note')" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-download-simple"></i> weba${noteSegs.length>1?` (${noteSegs.length})`:''}</button>
+                            <button onclick="batchDownloadMp3(${segIdsForModal}, 'note')" class="flex items-center gap-1 text-xs bg-slate-700 hover:bg-slate-600 text-green-300 border border-green-700/50 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-file-audio"></i> MP3${noteSegs.length>1?` (${noteSegs.length})`:''}</button>
+                            <button onclick="closeNoteEdit(); summarizeVoiceNote('${n.id}');" class="flex items-center gap-1 text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-sparkle"></i> ${aiLabel}</button>`;
+                    } else {
+                        audioArea.classList.add('hidden');
+                        audioPlayer.style.display = '';
+                        audioPlayer.src = '';
+                        audioActions.innerHTML = '';
+                        const old = audioArea.querySelector('.modal-audio-players');
+                        if (old) old.innerHTML = '';
+                    }
+                }
                 
                 const modal = document.getElementById('note-edit-modal');
                 if (modal) {
@@ -3936,72 +4090,286 @@ const mimeStr = base64URI.slice(5, splitIndex).split(';')[0];
                 } catch(e) { alert("下載失敗：" + e.message); }
             };
 
+            // ── 共用：AudioBuffer → WebM Blob（透過 MediaRecorder 離線編碼，壓縮比接近原始 webm）──
+            async function audioBufferToWebmBlob(audioBuffer) {
+                const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+                    audioBuffer.numberOfChannels, audioBuffer.length, audioBuffer.sampleRate);
+                const src = offlineCtx.createBufferSource();
+                src.buffer = audioBuffer;
+                src.connect(offlineCtx.destination);
+                src.start(0);
+                await offlineCtx.startRendering();
+
+                // 建立即時 AudioContext + 媒體串流節點來錄製
+                const actx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: audioBuffer.sampleRate });
+                const dest = actx.createMediaStreamDestination();
+                const bufSrc = actx.createBufferSource();
+                bufSrc.buffer = audioBuffer;
+                bufSrc.connect(dest);
+
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                    ? 'audio/webm;codecs=opus'
+                    : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg;codecs=opus';
+                const chunks = [];
+                const mr = new MediaRecorder(dest.stream, { mimeType });
+                mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                const done = new Promise(res => { mr.onstop = res; });
+                mr.start();
+                bufSrc.start(0);
+                await new Promise(res => setTimeout(res, audioBuffer.duration * 1000 + 200));
+                mr.stop();
+                await done;
+                actx.close();
+                return new Blob(chunks, { type: mimeType });
+            }
+
+            // ── 批次下載（多段群組）weba ─────────────────────────────────
+            window.batchDownloadWeba = async function(groupIds, type) {
+                const ids = Array.isArray(groupIds) ? groupIds : [groupIds];
+                const totalSegs = ids.length;
+                for (let i = 0; i < ids.length; i++) {
+                    const id = ids[i];
+                    const record = type === 'record'
+                        ? appState.audioRecords.find(x => String(x.id) === String(id))
+                        : appState.notes.find(x => String(x.id) === String(id));
+                    if (!record) continue;
+                    let audioBlob = await loadAudioBlob(record.id);
+                    if (!audioBlob && record.audioData) audioBlob = base64ToBlob(record.audioData);
+                    if (!audioBlob) { showToast(`⚠️ 第 ${i+1} 段找不到音訊`); continue; }
+
+                    // 若為 WAV（merged），重新編碼為 webm 壓縮
+                    if (record.mimeType === 'audio/wav' || record.filename?.endsWith('.wav')) {
+                        showToast(`🗜️ 第 ${i+1}/${totalSegs} 段：WAV → WebM 壓縮中…`);
+                        try {
+                            const ab = await audioBlob.arrayBuffer();
+                            const actx = new (window.AudioContext || window.webkitAudioContext)();
+                            const audioBuf = await actx.decodeAudioData(ab);
+                            actx.close();
+                            audioBlob = await audioBufferToWebmBlob(audioBuf);
+                        } catch(e) { showToast(`⚠️ 壓縮失敗，以原格式下載`); }
+                    }
+
+                    showToast(`⬇️ 下載第 ${i+1}/${totalSegs} 段 weba…`);
+                    const ext = '.weba';
+                    // Bug2 fix: 加上段落編號
+                    const baseTitle = (record.title || `NOVA_Audio_${id}`).replace(/[\\/:*?"<>|]/g, '_');
+                    const segSuffix = totalSegs > 1 ? `_第${i+1}段` : '';
+                    const url = URL.createObjectURL(audioBlob);
+                    const a = document.createElement('a'); a.href = url; a.download = baseTitle + segSuffix + ext; a.style.display = 'none';
+                    document.body.appendChild(a); a.click();
+                    await new Promise(r => setTimeout(r, 700));
+                    document.body.removeChild(a); URL.revokeObjectURL(url);
+                }
+                showToast(`✅ 全部 ${totalSegs} 段 weba 下載完成！`);
+            };
+
+            // ── 批次下載（多段群組）MP3 ─────────────────────────────────
+            window.batchDownloadMp3 = async function(groupIds, type) {
+                const ids = Array.isArray(groupIds) ? groupIds : [groupIds];
+                const totalSegs = ids.length;
+                for (let i = 0; i < ids.length; i++) {
+                    const id = ids[i];
+                    const record = type === 'record'
+                        ? appState.audioRecords.find(x => String(x.id) === String(id))
+                        : appState.notes.find(x => String(x.id) === String(id));
+                    if (!record) continue;
+                    let audioBlob = await loadAudioBlob(record.id);
+                    if (!audioBlob && record.audioData) audioBlob = base64ToBlob(record.audioData);
+                    if (!audioBlob) { showToast(`⚠️ 第 ${i+1}/${totalSegs} 段找不到音訊`); continue; }
+                    const isWav = record.mimeType === 'audio/wav' || record.filename?.endsWith('.wav');
+                    showToast(`🎵 第 ${i+1}/${totalSegs} 段：${isWav ? 'WAV' : 'weba'} → MP3 轉換中…`);
+                    try {
+                        const arrayBuffer = await audioBlob.arrayBuffer();
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                        audioCtx.close();
+                        showToast(`🔄 第 ${i+1}/${totalSegs} 段：LameJS 編碼中（${Math.round(audioBuffer.duration)}秒）…`);
+                        const mp3Blob = await encodeMp3(audioBuffer);
+                        const baseTitle = (record.title || `NOVA_Audio_${id}`).replace(/[\\/:*?"<>|]/g, '_');
+                        // 統一所有段都加 _第N段 後綴（包含最後一段）
+                        const segSuffix = totalSegs > 1 ? `_第${i+1}段` : '';
+                        const blobUrl = URL.createObjectURL(mp3Blob);
+                        const a = document.createElement('a'); a.href = blobUrl; a.download = baseTitle + segSuffix + '.mp3'; a.style.display = 'none';
+                        document.body.appendChild(a); a.click();
+                        await new Promise(r => setTimeout(r, 700));
+                        document.body.removeChild(a); URL.revokeObjectURL(blobUrl);
+                        showToast(`✅ 第 ${i+1}/${totalSegs} 段 MP3 下載完成（${(mp3Blob.size/1024/1024).toFixed(1)} MB）`);
+                    } catch(e) {
+                        showToast(`❌ 第 ${i+1}/${totalSegs} 段 MP3 轉換失敗：${e.message}`);
+                    }
+                }
+                showToast(`✅ 全部 ${totalSegs} 段 MP3 下載完成！`);
+            };
+
+            // ── 合併所有分段並下載為單一 MP3 ─────────────────────────────
+            window.downloadMergedMp3 = async function(groupIds, baseTitle, type) {
+                const ids = Array.isArray(groupIds) ? groupIds : [groupIds];
+                const safeTitle = (baseTitle || 'NOVA_Merged').replace(/[\\/:*?"<>|]/g, '_');
+                showToast(`🔗 正在載入 ${ids.length} 個分段音訊…`);
+                try {
+                    const allBuffers = [];
+                    let commonSr = 44100, commonCh = 1;
+                    for (let i = 0; i < ids.length; i++) {
+                        const id = ids[i];
+                        const record = type === 'record'
+                            ? appState.audioRecords.find(x => String(x.id) === String(id))
+                            : appState.notes.find(x => String(x.id) === String(id));
+                        let blob = record ? await loadAudioBlob(record.id) : null;
+                        if (!blob && record?.audioData) blob = base64ToBlob(record.audioData);
+                        if (!blob) { showToast(`⚠️ 第 ${i+1} 段找不到音訊，跳過`); continue; }
+                        showToast(`🎵 解碼第 ${i+1}/${ids.length} 段…`);
+                        const ab = await blob.arrayBuffer();
+                        const actx = new (window.AudioContext || window.webkitAudioContext)();
+                        const buf = await actx.decodeAudioData(ab);
+                        actx.close();
+                        commonSr = buf.sampleRate;
+                        commonCh = Math.max(commonCh, buf.numberOfChannels);
+                        allBuffers.push(buf);
+                    }
+                    if (allBuffers.length === 0) { showToast('❌ 找不到任何可用音訊'); return; }
+
+                    // 接合 PCM
+                    showToast(`🔗 接合 ${allBuffers.length} 段 PCM（共 ${Math.round(allBuffers.reduce((s,b)=>s+b.duration,0)/60)} 分鐘）…`);
+                    const totalFrames = allBuffers.reduce((s, b) => s + b.length, 0);
+                    const mergedCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const mergedBuf = mergedCtx.createBuffer(commonCh, totalFrames, commonSr);
+                    let offset = 0;
+                    for (const buf of allBuffers) {
+                        for (let c = 0; c < commonCh; c++) {
+                            const src = c < buf.numberOfChannels ? buf.getChannelData(c) : new Float32Array(buf.length);
+                            mergedBuf.getChannelData(c).set(src, offset);
+                        }
+                        offset += buf.length;
+                    }
+                    mergedCtx.close();
+
+                    // 編碼為 MP3
+                    showToast(`🎵 編碼合併 MP3（${Math.round(totalFrames/commonSr/60)} 分鐘），請稍候…`);
+                    const mp3Blob = await encodeMp3(mergedBuf);
+                    const blobUrl = URL.createObjectURL(mp3Blob);
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = safeTitle + '_合併完整版.mp3';
+                    a.style.display = 'none';
+                    document.body.appendChild(a); a.click();
+                    await new Promise(r => setTimeout(r, 800));
+                    document.body.removeChild(a); URL.revokeObjectURL(blobUrl);
+                    const sizeMB = (mp3Blob.size / 1024 / 1024).toFixed(1);
+                    showToast(`✅ 合併 MP3 下載完成（${sizeMB} MB）！`);
+                } catch(e) {
+                    showToast(`❌ 合併 MP3 失敗：${e.message}`);
+                    console.error('downloadMergedMp3 error:', e);
+                }
+            };
+
+            // ── 批次上傳 Drive（多段群組）────────────────────────────────
+            window.batchUploadToDrive = async function(groupIds) {
+                if (!appState.driveUrl) { showToast('⚠️ 請先設定 Google Drive Apps Script URL'); return; }
+                const ids = Array.isArray(groupIds) ? groupIds : [groupIds];
+                let successCount = 0;
+                for (let i = 0; i < ids.length; i++) {
+                    const id = ids[i];
+                    const rec = appState.audioRecords.find(x => String(x.id) === String(id))
+                             || appState.notes.find(x => String(x.id) === String(id));
+                    if (!rec) continue;
+                    showToast(`☁️ 上傳第 ${i+1}/${ids.length} 段…`);
+                    // 複用 manualUploadToDrive 但不顯示 disable 按鈕邏輯
+                    try {
+                        let audioBlob = await loadAudioBlob(rec.id);
+                        if (!audioBlob && rec.audioData) audioBlob = base64ToBlob(rec.audioData);
+                        if (!audioBlob) { showToast(`⚠️ 第 ${i+1} 段找不到音訊`); continue; }
+                        const rawSizeMB = (audioBlob.size / 1024 / 1024).toFixed(1);
+                        const base64Data = await new Promise((resolve, reject) => {
+                            const fr = new FileReader(); fr.onloadend = () => resolve(fr.result.split(',')[1]); fr.onerror = reject; fr.readAsDataURL(audioBlob);
+                        });
+                        const uploadExt  = (rec.mimeType || 'audio/webm').includes('mp4') ? '.m4a' : '.weba';
+                        const uploadFilename = (rec.title || `NOVA_Audio_${id}`).replace(/[\\/:*?"<>|]/g, '_') + uploadExt;
+                        showToast(`☁️ 第 ${i+1}/${ids.length} 段（${rawSizeMB} MB）上傳中…`);
+                        const res = await fetch(appState.driveUrl, {
+                            method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({ filename: uploadFilename, mimeType: rec.mimeType || 'audio/webm', data: base64Data })
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const rawText = (await res.text()).trim();
+                        let finalUrl = '';
+                        try { const j = JSON.parse(rawText); finalUrl = (j.url || j.link || j.webViewLink || '').trim(); if (!finalUrl && j.id) finalUrl = `https://drive.google.com/file/d/${j.id}/view`; } catch { finalUrl = rawText; }
+                        if (!finalUrl.startsWith('http')) finalUrl = 'https://drive.google.com/drive/my-drive';
+                        rec.driveUrl = finalUrl; saveToDB(rec.type === 'audio' ? 'notes' : 'audioRecords', rec);
+                        successCount++;
+                        showToast(`✅ 第 ${i+1}/${ids.length} 段上傳完成`);
+                    } catch(e) {
+                        showToast(`❌ 第 ${i+1} 段上傳失敗：${e.message}`);
+                    }
+                    await new Promise(r => setTimeout(r, 300));
+                }
+                showToast(`✅ 上傳完成（${successCount}/${ids.length} 段成功）`);
+                renderAudioRecords(); renderNotes();
+            };
+
+            // 下載原始 weba 格式（單段）
             window.downloadLocalAudio = async function(id, type) {
-    let record = type === 'record' ? 
-        appState.audioRecords.find(x => String(x.id) === String(id)) : 
-        appState.notes.find(x => String(x.id) === String(id));
+                let record = type === 'record'
+                    ? appState.audioRecords.find(x => String(x.id) === String(id))
+                    : appState.notes.find(x => String(x.id) === String(id));
+                if (!record) { alert("找不到紀錄"); return; }
 
-    if (!record) { alert("找不到紀錄"); return; }
+                showToast("📥 載入音訊資料中…");
+                let audioBlob = await loadAudioBlob(record.id);
+                if (!audioBlob && record.audioData) audioBlob = base64ToBlob(record.audioData);
+                if (!audioBlob) { alert("找不到本地音檔資料。"); return; }
 
-    showToast("🎵 正在載入音訊資料，請稍候...");
+                const ext = (record.mimeType || 'audio/webm').includes('mp4') ? '.m4a' : '.weba';
+                const safeTitle = (record.title || `NOVA_Audio_${id}`).replace(/[\\/:*?"<>|]/g, '_');
+                const filename = safeTitle + ext;
 
-    // 優先從 IndexedDB audioBlobs store 讀取
-    let audioBlob = await loadAudioBlob(record.id);
+                const url = URL.createObjectURL(audioBlob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename; a.style.display = 'none';
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
+                showToast(`✅ 已下載：${filename}`);
+            };
 
-    // 降級：舊版資料可能仍以 base64 存在 record.audioData
-    if (!audioBlob && record.audioData) {
-        audioBlob = base64ToBlob(record.audioData);
-    }
+            // 下載 MP3（本地即時轉換）
+            window.downloadLocalAudioMp3 = async function(id, type) {
+                let record = type === 'record'
+                    ? appState.audioRecords.find(x => String(x.id) === String(id))
+                    : appState.notes.find(x => String(x.id) === String(id));
+                if (!record) { alert("找不到紀錄"); return; }
 
-    if (!audioBlob) {
-        alert("找不到本地音檔資料。\n若音檔已刪除或為雲端同步的中繼資料，請從 Google Drive 重新下載。");
-        return;
-    }
+                showToast("🔄 載入音訊並準備 MP3 轉換，請稍候…");
+                let audioBlob = await loadAudioBlob(record.id);
+                if (!audioBlob && record.audioData) audioBlob = base64ToBlob(record.audioData);
+                if (!audioBlob) { alert("找不到本地音檔資料。"); return; }
 
-    showToast("🎵 正在準備 MP3 轉換，請稍候...");
+                try {
+                    showToast("🎵 weba → MP3 轉換中（依檔案大小可能需時數秒）…");
+                    const arrayBuffer = await audioBlob.arrayBuffer();
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    const mp3Blob = await encodeMp3(audioBuffer);
+                    audioCtx.close();
 
-    try {
-        const arrayBuffer = await audioBlob.arrayBuffer();
+                    const safeTitle = (record.title || `NOVA_Audio_${id}`).replace(/[\\/:*?"<>|]/g, '_');
+                    const filename = safeTitle + '.mp3';
 
-        // 2. 使用 AudioContext 解碼成 PCM
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-        // 3. 呼叫 LameJS 進行編碼
-        const mp3Blob = await encodeMp3(audioBuffer);
-        const blobUrl = URL.createObjectURL(mp3Blob);
-
-        // 4. 產生檔名並觸發下載
-        const dateObj = new Date(Number(id));
-        const dateStr = `${dateObj.getFullYear()}${String(dateObj.getMonth() + 1).padStart(2, '0')}${String(dateObj.getDate()).padStart(2, '0')}`;
-        const finalFilename = `NOVA_${dateStr}_${id}.mp3`;
-
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = finalFilename;
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-            audioCtx.close();
-        }, 2000);
-
-        showToast(`✅ MP3 下載成功：${finalFilename}`);
-    } catch (e) {
-        console.error("MP3 Conversion Error:", e);
-        alert("轉換 MP3 失敗，改為原格式下載。錯誤：" + e.message);
-        // 降級方案：下載原始格式
-        const url = URL.createObjectURL(audioBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = record.filename || `NOVA_Audio_${id}.mp3`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }
-};
+                    const blobUrl = URL.createObjectURL(mp3Blob);
+                    const a = document.createElement('a');
+                    a.href = blobUrl; a.download = filename; a.style.display = 'none';
+                    document.body.appendChild(a); a.click();
+                    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 2000);
+                    showToast(`✅ MP3 下載成功：${filename}`);
+                } catch(e) {
+                    console.error("MP3 Conversion Error:", e);
+                    showToast(`❌ MP3 轉換失敗：${e.message}，將改以原格式下載`);
+                    // 降級：原格式下載
+                    const ext = (record.mimeType || 'audio/webm').includes('mp4') ? '.m4a' : '.weba';
+                    const url = URL.createObjectURL(audioBlob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = (record.title || `NOVA_Audio_${id}`).replace(/[\\/:*?"<>|]/g, '_') + ext;
+                    a.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+                }
+            };
 
         function renderAll() { renderMessages(); renderTodos(); renderFolderTabs(); renderNotes(); renderAudioRecords(); 
             renderWeather(); 
@@ -4322,6 +4690,20 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
             const keyword = searchInput ? searchInput.value.toLowerCase() : '';
 
             let filteredNotes = appState.notes;
+            // 多段錄音只顯示群組第一段（最早的），後續段隱藏（整合在同一張卡片）
+            const shownGroupIds = new Set();
+            filteredNotes = filteredNotes.filter(n => {
+                const gid = n.groupId || n.id;
+                if (n.type === 'audio' && n.groupId) {
+                    if (shownGroupIds.has(gid)) return false; // 已有同群組卡片
+                    // 只顯示最早那段（groupId 的創建者，即 groupId === n.id，或是群組中最小 id）
+                    const groupSegs = appState.notes.filter(x => (x.groupId || x.id) === gid && x.type === 'audio');
+                    const leaderId = groupSegs.reduce((min, x) => x.id < min ? x.id : min, groupSegs[0].id);
+                    if (String(n.id) !== String(leaderId)) return false;
+                    shownGroupIds.add(gid);
+                }
+                return true;
+            });
             if (appState.currentNoteFolder !== '全部') {
                 filteredNotes = filteredNotes.filter(n => (n.folder || '未分類') === appState.currentNoteFolder);
             }
@@ -4344,8 +4726,19 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
 
                 let extraAudioButtons = '';
                 if(isAudio) {
-                    extraAudioButtons += `<button onclick="downloadLocalAudio('${n.id}', 'note')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1"><i class="ph-bold ph-download-simple"></i> 下載 .MP3</button>`;
-                    extraAudioButtons += `<button onclick="summarizeVoiceNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
+                    const noteGid = n.groupId || n.id;
+                    const noteSegsAll = appState.notes.filter(x => (x.groupId || x.id) === noteGid && x.type === 'audio').sort((a,b) => a.id - b.id);
+                    const noteSegCount = noteSegsAll.length;
+                    const segIdsJs = `[${noteSegsAll.map(s => `'${s.id}'`).join(',')}]`;
+                    const noteGroupBadge = noteSegCount > 1
+                        ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-orange-900/40 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full"><i class="ph-fill ph-scissors"></i> 分段 ${noteSegCount} 段</span>`
+                        : '';
+                    if (noteGroupBadge) extraAudioButtons += `<div class="w-full mb-1">${noteGroupBadge}</div>`;
+                    extraAudioButtons += `<button onclick="batchDownloadWeba(${segIdsJs}, 'note')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 transition-colors border border-slate-700 flex items-center gap-1"><i class="ph-bold ph-download-simple"></i> weba${noteSegCount>1?` (${noteSegCount})`:''}</button>`;
+                    extraAudioButtons += `<button onclick="batchDownloadMp3(${segIdsJs}, 'note')" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1.5 rounded text-green-300 transition-colors border border-green-700/50 flex items-center gap-1"><i class="ph-bold ph-file-audio"></i> MP3${noteSegCount>1?` (${noteSegCount})`:''}</button>`;
+                    if (noteSegCount > 1) extraAudioButtons += `<button onclick="downloadMergedMp3(${segIdsJs}, '${n.title.replace(/'/g,"\\'")}', 'note')" class="text-xs bg-orange-700 hover:bg-orange-600 px-2 py-1.5 rounded text-white transition-colors flex items-center gap-1" title="接合所有分段為一個 MP3"><i class="ph-bold ph-music-notes-plus"></i> 合併 MP3</button>`;
+                    const aiLabel = noteSegCount > 1 ? `AI 分析 (全 ${noteSegCount} 段)` : 'AI 分析';
+                    extraAudioButtons += `<button onclick="summarizeVoiceNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> ${aiLabel}</button>`;
                 } else {
                     extraAudioButtons += `<button onclick="summarizeTextNote('${n.id}')" class="text-xs bg-purple-900/50 border border-purple-500/50 hover:bg-purple-800/50 px-2 py-1.5 rounded text-purple-200 transition-colors flex items-center gap-1"><i class="ph-bold ph-sparkle"></i> AI 分析</button>`;
                 }
@@ -4357,7 +4750,21 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
                     imgHtml = `<div class="mt-2 mb-2 flex flex-wrap gap-2">` + displayImages.map(img => `<img src="${img}" class="max-h-24 rounded border border-slate-700/50 object-cover">`).join('') + `</div>`;
                 }
 
-                let audioPlayerHtml = (n.type === 'audio') ? `<div class="mt-3 mb-2" data-audio-wrapper><audio controls class="w-full h-10 rounded-lg bg-slate-800 shadow-inner" data-audio-id="${n.id}"></audio></div>` : '';
+                // 錄音筆記：若是多段群組，顯示所有段的播放器
+                let audioPlayerHtml = '';
+                if (n.type === 'audio') {
+                    const noteGid = n.groupId || n.id;
+                    const noteSegs = appState.notes
+                        .filter(x => (x.groupId || x.id) === noteGid && x.type === 'audio')
+                        .sort((a, b) => a.id - b.id);
+                    if (noteSegs.length > 1) {
+                        audioPlayerHtml = `<div class="mt-3 mb-2 space-y-1">` +
+                            noteSegs.map((seg, i) => `<div class="flex items-center gap-2"><span class="text-[10px] text-slate-500 shrink-0 w-8">第${i+1}段</span><audio controls class="flex-1 h-9 rounded-lg bg-slate-800 shadow-inner min-w-0" data-audio-id="${seg.id}"></audio>${seg.duration ? `<span class="text-[10px] text-slate-600 shrink-0">${Math.floor(seg.duration/60)}m${seg.duration%60}s</span>` : ''}</div>`).join('') +
+                            `</div>`;
+                    } else {
+                        audioPlayerHtml = `<div class="mt-3 mb-2" data-audio-wrapper><audio controls class="w-full h-10 rounded-lg bg-slate-800 shadow-inner" data-audio-id="${n.id}"></audio></div>`;
+                    }
+                }
                 let linkHtml = (n.driveUrl && !n.driveUrl.startsWith('blob:')) ? `<div class="mt-2"><a href="${n.driveUrl}" target="_blank" class="text-xs text-blue-400 underline flex items-center gap-1"><i class="ph-bold ph-cloud"></i> 在雲端查看已備份筆記</a></div>` : '';
                 
                 let renderedContent = n.isHtml ? n.content : formatMessage(n.content);
@@ -4375,51 +4782,85 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
         // --- UI 渲染功能 (錄音紀錄) ---
         function renderAudioRecords() {
             const el = document.getElementById('audio-records-list'); if(!el) return;
-            // 建立 groupId → 段數的 map
-            const groupCounts = {};
-            appState.audioRecords.forEach(r => { const gid = r.groupId || r.id; groupCounts[gid] = (groupCounts[gid] || 0) + 1; });
 
-            el.innerHTML = appState.audioRecords.map(r => {
-                let audioPlayerHtml = `<div class="mb-3 w-full" data-audio-wrapper><audio controls class="w-full h-10 rounded-lg bg-slate-800 shadow-inner" data-audio-id="${r.id}"></audio></div>`;
-                const cloudBtn = appState.driveUrl
-                    ? (r.driveUrl && !r.driveUrl.startsWith('blob:')
-                        ? `<a href="${r.driveUrl}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-cloud-check"></i> 已備份雲端</a>`
-                        : `<button onclick="manualUploadToDrive('${r.id}')" class="flex items-center gap-1 text-sm bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow"><i class="ph-bold ph-cloud-arrow-up"></i> 上傳 Drive</button>`)
-                    : '';
-                const transcriptHtml = r.transcript
-                    ? `<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-2"><p class="text-xs text-slate-400 font-bold mb-1">逐字稿：</p><p class="text-sm text-slate-300 max-h-28 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.transcript)}</p></div>`
-                    : `<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-2"><p class="text-xs text-slate-600 italic">尚無逐字稿</p></div>`;
-                const summaryHtml = r.aiSummary
-                    ? `<div class="bg-purple-950/30 p-3 rounded-lg border border-purple-800/40 mb-2"><p class="text-xs text-purple-300 font-bold mb-1"><i class="ph-fill ph-sparkle"></i> AI 摘要：</p><p class="text-sm text-slate-300 max-h-28 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(r.aiSummary)}</p></div>`
-                    : '';
-
-                // 群組徽章
+            // 依 groupId 聚合所有分段（同 groupId 為一組，無 groupId 自成一組）
+            const groupMap = new Map();
+            appState.audioRecords.forEach(r => {
                 const gid = r.groupId || r.id;
-                const totalSegs = groupCounts[gid] || 1;
-                const groupBadge = totalSegs > 1
-                    ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-orange-900/40 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full ml-2"><i class="ph-fill ph-scissors"></i> 分段群組 ${totalSegs} 段</span>`
+                if (!groupMap.has(gid)) groupMap.set(gid, []);
+                groupMap.get(gid).push(r);
+            });
+            // 每組按時間排序，整體依第一段建立時間排序（新→舊）
+            const groups = [...groupMap.values()]
+                .map(segs => segs.sort((a,b) => a.id - b.id))
+                .sort((a,b) => b[0].id - a[0].id);
+
+            el.innerHTML = groups.map(segs => {
+                const primary = segs[0]; // 第一段（最舊）作為主卡片代表
+                const totalSegs = segs.length;
+                const gid = primary.groupId || primary.id;
+
+                // 逐字稿：合併所有段
+                const allTranscript = segs.map((r,i) => r.transcript ? `[第 ${i+1} 段]\n${r.transcript}` : '').filter(Boolean).join('\n\n');
+                const displayTranscript = allTranscript || primary.transcript || '';
+                // AI 摘要：取最後一段有摘要的
+                const latestSummary = [...segs].reverse().find(r => r.aiSummary)?.aiSummary || '';
+                // 總時長
+                const totalDuration = segs.reduce((s, r) => s + (r.duration || 0), 0);
+                // 已備份：只要任一段有 driveUrl 就顯示
+                const anyDriveUrl = segs.find(r => r.driveUrl && !r.driveUrl.startsWith('blob:'))?.driveUrl;
+
+                const cloudBtn = appState.driveUrl
+                    ? (anyDriveUrl
+                        ? `<a href="${anyDriveUrl}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-cloud-check"></i> 已備份雲端</a>`
+                        : `<button onclick="manualUploadToDrive('${primary.id}')" class="flex items-center gap-1 text-sm bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow"><i class="ph-bold ph-cloud-arrow-up"></i> 上傳 Drive</button>`)
                     : '';
 
-                return `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group" id="audio-card-${r.id}">
+                const transcriptHtml = displayTranscript
+                    ? `<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-2"><p class="text-xs text-slate-400 font-bold mb-1">逐字稿：</p><p class="text-sm text-slate-300 max-h-28 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(displayTranscript)}</p></div>`
+                    : `<div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 mb-2"><p class="text-xs text-slate-600 italic">尚無逐字稿</p></div>`;
+
+                const summaryHtml = latestSummary
+                    ? `<div class="bg-purple-950/30 p-3 rounded-lg border border-purple-800/40 mb-2"><p class="text-xs text-purple-300 font-bold mb-1"><i class="ph-fill ph-sparkle"></i> AI 摘要：</p><p class="text-sm text-slate-300 max-h-28 overflow-y-auto scrollbar-thin whitespace-pre-wrap">${escapeHtml(latestSummary)}</p></div>`
+                    : '';
+
+                const groupBadge = totalSegs > 1
+                    ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold bg-orange-900/40 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full"><i class="ph-fill ph-scissors"></i> ${totalSegs} 段錄音</span>`
+                    : '';
+
+                // 多段播放器（各段一個）
+                const playersHtml = segs.map((r, i) => `
+                    <div class="flex items-center gap-2 mb-1">
+                        ${totalSegs > 1 ? `<span class="text-[10px] text-slate-500 shrink-0 w-8">第${i+1}段</span>` : ''}
+                        <audio controls class="flex-1 h-9 rounded-lg bg-slate-800 shadow-inner min-w-0" data-audio-id="${r.id}"></audio>
+                        ${totalSegs > 1 ? `<span class="text-[10px] text-slate-600 shrink-0">${r.duration ? Math.floor(r.duration/60)+'m' : ''}</span>` : ''}
+                    </div>`).join('');
+
+                return `<div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative slide-in group" id="audio-card-${primary.id}">
                     <div class="flex justify-between items-start mb-3">
                         <div class="flex-1 min-w-0 mr-2">
                             <div class="flex items-center gap-2 group/title flex-wrap">
                                 <i class="ph-fill ph-file-audio text-red-400 shrink-0"></i>
-                                <h3 class="text-lg font-bold text-white truncate" id="audio-title-${r.id}" ondblclick="startEditAudioTitle('${r.id}')">${escapeHtml(r.title)}</h3>
-                                <button onclick="startEditAudioTitle('${r.id}')" class="opacity-0 group-hover/title:opacity-100 text-slate-500 hover:text-blue-400 transition-opacity shrink-0" title="編輯標題"><i class="ph-bold ph-pencil text-xs"></i></button>
+                                <h3 class="text-lg font-bold text-white truncate" id="audio-title-${primary.id}" ondblclick="startEditAudioTitle('${primary.id}')">${escapeHtml(primary.title)}</h3>
+                                <button onclick="startEditAudioTitle('${primary.id}')" class="opacity-0 group-hover/title:opacity-100 text-slate-500 hover:text-blue-400 transition-opacity shrink-0" title="編輯標題"><i class="ph-bold ph-pencil text-xs"></i></button>
                                 ${groupBadge}
                             </div>
-                            <p class="text-xs text-slate-500 mt-0.5">${r.date}${r.duration ? ` · ${Math.floor(r.duration/60)}分${r.duration%60}秒` : ''}</p>
+                            <p class="text-xs text-slate-500 mt-0.5">${primary.date}${totalDuration ? ` · 合計 ${Math.floor(totalDuration/60)}分${totalDuration%60}秒` : ''}</p>
                         </div>
-                        <button onclick="deleteAudioRecord('${r.id}')" class="text-slate-500 hover:text-red-400 p-2 shrink-0"><i class="ph-bold ph-trash"></i></button>
+                        <button onclick="deleteAudioRecord('${primary.id}')" class="text-slate-500 hover:text-red-400 p-2 shrink-0"><i class="ph-bold ph-trash"></i></button>
                     </div>
-                    ${audioPlayerHtml}
+                    <div class="mb-3 w-full">${playersHtml}</div>
                     ${transcriptHtml}
                     ${summaryHtml}
                     <div class="flex flex-wrap items-center gap-2 mt-3">
-                        ${cloudBtn}
-                        <button onclick="downloadLocalAudio('${r.id}', 'record')" class="flex items-center gap-1 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-download-simple"></i> 下載</button>
-                        <button onclick="summarizeAudioRecord('${r.id}')" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i>${totalSegs > 1 ? ' AI 分析 (全 '+totalSegs+' 段)' : ' AI 深度分析'}</button>
+                        ${appState.driveUrl ? (anyDriveUrl
+                            ? `<a href="${anyDriveUrl}" target="_blank" class="flex items-center gap-1 text-sm bg-blue-900/30 text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-800/50 transition-colors"><i class="ph-bold ph-cloud-check"></i> 已備份雲端</a>`
+                            : `<button onclick="batchUploadToDrive([${segs.map(s=>`'${s.id}'`).join(',')}])" class="flex items-center gap-1 text-sm bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow"><i class="ph-bold ph-cloud-arrow-up"></i> 上傳 Drive${totalSegs > 1 ? ` (${totalSegs}段)` : ''}</button>`)
+                            : ''}
+                        <button onclick="batchDownloadWeba([${segs.map(s=>`'${s.id}'`).join(',')}], 'record')" class="flex items-center gap-1 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-download-simple"></i> weba${totalSegs > 1 ? ` (${totalSegs}段)` : ''}</button>
+                        <button onclick="batchDownloadMp3([${segs.map(s=>`'${s.id}'`).join(',')}], 'record')" class="flex items-center gap-1 text-sm bg-slate-700 hover:bg-slate-600 text-green-300 border border-green-700/50 px-3 py-1.5 rounded-lg transition-colors"><i class="ph-bold ph-file-audio"></i> MP3${totalSegs > 1 ? ` (${totalSegs}段)` : ''}</button>
+                        ${totalSegs > 1 ? `<button onclick="downloadMergedMp3([${segs.map(s=>`'${s.id}'`).join(',')}], '${escapeHtml(primary.title).replace(/'/g,"\\'")}', 'record')" class="flex items-center gap-1 text-sm bg-orange-700 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg" title="將所有分段接合並下載為一個 MP3 檔案"><i class="ph-bold ph-music-notes-plus"></i> 合併下載 MP3</button>` : ''}
+                        <button onclick="summarizeAudioRecord('${primary.id}')" class="flex items-center gap-1 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg"><i class="ph-bold ph-sparkle"></i>${totalSegs > 1 ? ` AI 分析 (全 ${totalSegs} 段)` : ' AI 深度分析'}</button>
                     </div>
                 </div>`;
             }).join('') || '<div class="text-center text-slate-500 mt-10"><i class="ph-thin ph-microphone text-6xl mb-3"></i><p>尚無錄音紀錄</p></div>';
@@ -5101,11 +5542,33 @@ try {
 
         window.clearRecordingDirectory = function() {
             appState.recSettings.localDirHandle = null;
+            appState.recSettings._pendingDirHandle = null;
             appState.recSettings.localSaveDirName = '';
             localStorage.removeItem('nova_rec_dir_name');
             const el = document.getElementById('rec-dir-name');
             if (el) el.textContent = '尚未指定，將儲存至瀏覽器預設下載資料夾';
+            const btn = document.getElementById('rec-dir-reauth-btn');
+            if (btn) btn.classList.add('hidden');
             showToast('🗑️ 已清除本地儲存位置指定');
+        };
+
+        window.reAuthRecordingDirectory = async function() {
+            const handle = appState.recSettings._pendingDirHandle;
+            if (!handle) { showToast('⚠️ 沒有待授權的資料夾'); return; }
+            try {
+                const result = await handle.requestPermission({ mode: 'readwrite' });
+                if (result === 'granted') {
+                    appState.recSettings.localDirHandle = handle;
+                    appState.recSettings._pendingDirHandle = null;
+                    const btn = document.getElementById('rec-dir-reauth-btn');
+                    if (btn) btn.classList.add('hidden');
+                    showToast(`✅ 資料夾「${handle.name}」授權成功！錄音將自動存入此資料夾。`);
+                } else {
+                    showToast('⚠️ 使用者拒絕授權，錄音將存至預設下載位置。');
+                }
+            } catch(e) {
+                showToast(`❌ 授權失敗：${e.message}`);
+            }
         };
 
         async function saveDirHandleToDB(handle) {
@@ -5356,7 +5819,8 @@ try {
 
             cancelAutoSplit();         // 取消自動分切計時器
             appState.isAutoSplitting = false; // 確保不會自動重啟
-            appState.recGroupId = null;       // 結束群組
+            // ⚠️ 注意：不在這裡清除 recGroupId，讓最後一段也能取得正確 groupId
+            // recGroupId 會在 uploadAudioRecording 完成後於 appState.recGroupId = null 被清除
             // 清除會議串流快取（手動停止才清，自動分切不清）
             appState._meetingMicStream = null;
             appState._meetingSysStream = null;
@@ -5397,7 +5861,11 @@ try {
                 if (isMeetingSplit) {
                     startMeetingRecording(continuationCtx);
                 } else {
-                    startAudioRecordOnly();
+                    // 直接恢復原本的 context（'note' 或 'record'），不呼叫 startAudioRecordOnly()
+                    // 因為 startAudioRecordOnly() 會強制把 context 改成 'record'
+                    appState.recordingContext = continuationCtx;
+                    appState.currentAudioTranscript = "";
+                    startAudioRecording();
                 }
 
                 // 背景處理舊段（不阻塞新段錄音）
@@ -5435,7 +5903,9 @@ try {
             const day     = String(dateObj.getDate()).padStart(2, '0');
             const year    = dateObj.getFullYear();
             const timeStr = dateObj.toTimeString().split(' ')[0].replace(/:/g, '');
-            const filename    = `NOVA_Audio_${month}${day}${year}_${timeStr}.mp3`;
+            // 原生使用 weba/m4a 格式儲存，不自動轉 MP3
+            const fileExt  = actualMimeType.includes('mp4') ? '.m4a' : '.weba';
+            const filename    = `NOVA_Audio_${month}${day}${year}_${timeStr}${fileExt}`;
             const displayDate = dateObj.toLocaleString();
             const recordId    = Date.now();
 
@@ -5444,33 +5914,29 @@ try {
 
             await saveAudioBlob(recordId, audioBlob);
 
-            // 存入本地資料夾
+            // 存入本地資料夾（直接存 weba，不轉 MP3）
             if (appState.recSettings.localDirHandle) {
-                let mp3BlobToSave = audioBlob;
-                try {
-                    const arrayBuf = await audioBlob.arrayBuffer();
-                    const actx = new (window.AudioContext || window.webkitAudioContext)();
-                    const buf  = await actx.decodeAudioData(arrayBuf);
-                    mp3BlobToSave = await encodeMp3(buf);
-                    actx.close();
-                } catch(e) { /* 保持原格式 */ }
-                const saved = await saveAudioToLocalDir(filename, mp3BlobToSave);
+                const saved = await saveAudioToLocalDir(filename, audioBlob);
                 if (saved) addMessage(`📁 已存入本地資料夾「${appState.recSettings.localSaveDirName}」：${filename}`, 'system');
             }
 
             const capturedTranscript = appState.currentAudioTranscript ? appState.currentAudioTranscript.trim() : "";
 
             if (ctx === 'note') {
+                const noteGroupId = groupId;
+                const segIndex = appState.notes.filter(x => x.groupId === noteGroupId).length + 1;
+                const segLabel = isSegment ? ` (第 ${segIndex} 段)` : '';
                 const newNote = {
-                    id: recordId, title: `語音筆記 ${timeStr}`,
+                    id: recordId, title: `語音筆記 ${timeStr}${segLabel}`,
                     content: capturedTranscript ? `[即時辨識草稿]\n${capturedTranscript}` : '[無語音內容]',
                     date: displayDate, type: 'audio', driveUrl: "", transcript: capturedTranscript,
                     mimeType: actualMimeType, filename, images: [], image: null,
                     folder: appState.currentNoteFolder === '全部' ? '未分類' : appState.currentNoteFolder,
-                    duration: Math.round(recordDuration / 1000), groupId
+                    duration: Math.round(recordDuration / 1000), groupId: noteGroupId
                 };
                 appState.notes.unshift(newNote); saveToDB('notes', newNote);
-                addMessage(`📝 語音筆記已安全儲存至本地「筆記/文件」分頁。`, 'system'); renderNotes();
+                const segMsg = isSegment ? ` (自動分切第 ${segIndex} 段)` : '';
+                addMessage(`📝 語音筆記已安全儲存至「筆記/文件」分頁${segMsg}。`, 'system'); renderNotes();
             } else {
                 const segIndex = appState.audioRecords.filter(r => r.groupId === groupId).length + 1;
                 const segLabel = isSegment ? ` (第 ${segIndex} 段)` : '';
@@ -5489,27 +5955,60 @@ try {
 
         // ══════════════════════════════════════════════════════════════
         // 【核心輔助】將 AudioBuffer 的指定時間範圍切出並編碼成 MP3 base64
-        // startSec, endSec：秒數；回傳 "data:audio/mp3;base64,..." 字串
         // ══════════════════════════════════════════════════════════════
+        // sliceAudioToBase64 — 切割 AudioBuffer 並回傳 data URI
+        // 格式：WAV（Gemini 原生支援，無需任何外部 library）
+        // 比 MP3 轉換快 5-10 倍，且完全無損
+        // ══════════════════════════════════════════════════════════════
+        function audioBufferToWavBlob(audioBuffer) {
+            const numCh  = audioBuffer.numberOfChannels;
+            const sr     = audioBuffer.sampleRate;
+            const len    = audioBuffer.length;
+            // 交錯所有聲道的 PCM (16-bit)
+            const pcm16  = new Int16Array(len * numCh);
+            for (let c = 0; c < numCh; c++) {
+                const src = audioBuffer.getChannelData(c);
+                for (let i = 0; i < len; i++) {
+                    const v = Math.max(-1, Math.min(1, src[i]));
+                    pcm16[i * numCh + c] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+                }
+            }
+            const dataBytes = pcm16.byteLength;
+            const wav = new ArrayBuffer(44 + dataBytes);
+            const v   = new DataView(wav);
+            const set = (off, str) => { for (let i = 0; i < str.length; i++) v.setUint8(off + i, str.charCodeAt(i)); };
+            set(0,  'RIFF'); v.setUint32(4,  36 + dataBytes, true);
+            set(8,  'WAVE'); set(12, 'fmt '); v.setUint32(16, 16, true);
+            v.setUint16(20, 1, true);               // PCM
+            v.setUint16(22, numCh, true);
+            v.setUint32(24, sr, true);
+            v.setUint32(28, sr * numCh * 2, true);  // byte rate
+            v.setUint16(32, numCh * 2, true);       // block align
+            v.setUint16(34, 16, true);              // bits per sample
+            set(36, 'data'); v.setUint32(40, dataBytes, true);
+            new Int16Array(wav, 44).set(pcm16);
+            return new Blob([wav], { type: 'audio/wav' });
+        }
+
         async function sliceAudioToBase64(audioBuffer, startSec, endSec) {
-            const sr = audioBuffer.sampleRate;
-            const ch = audioBuffer.numberOfChannels;
+            const sr         = audioBuffer.sampleRate;
+            const numCh      = audioBuffer.numberOfChannels;
             const startFrame = Math.floor(startSec * sr);
-            const endFrame = Math.min(Math.ceil(endSec * sr), audioBuffer.length);
+            const endFrame   = Math.min(Math.ceil(endSec * sr), audioBuffer.length);
             const frameCount = endFrame - startFrame;
             if (frameCount <= 0) return null;
 
             // 建立只含這段的 AudioBuffer
-            const sliced = new AudioContext().createBuffer(ch, frameCount, sr);
-            for (let c = 0; c < ch; c++) {
+            const sliced = new (window.AudioContext || window.webkitAudioContext)().createBuffer(numCh, frameCount, sr);
+            for (let c = 0; c < numCh; c++) {
                 sliced.copyToChannel(audioBuffer.getChannelData(c).subarray(startFrame, endFrame), c);
             }
-            const mp3Blob = await encodeMp3(sliced);
+            const wavBlob = audioBufferToWavBlob(sliced);
             return await new Promise((res, rej) => {
                 const fr = new FileReader();
-                fr.onloadend = () => res(fr.result);
-                fr.onerror = rej;
-                fr.readAsDataURL(mp3Blob);
+                fr.onloadend = () => res(fr.result);  // data:audio/wav;base64,...
+                fr.onerror   = rej;
+                fr.readAsDataURL(wavBlob);
             });
         }
 
@@ -5575,7 +6074,7 @@ try {
                     const payload = {
                         contents: [{ role: 'user', parts: [
                             { text: chunkPrompt },
-                            { inlineData: { mimeType: 'audio/mp3', data: base64Chunk.split(',')[1] } }
+                            { inlineData: { mimeType: 'audio/wav', data: base64Chunk.split(',')[1] } }
                         ]}],
                         generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
                     };
@@ -5722,7 +6221,7 @@ try {
                                 body: JSON.stringify({
                                     contents: [{ role: 'user', parts: [
                                         { text: chunkPrompt },
-                                        { inlineData: { mimeType: 'audio/mp3', data: base64Chunk.split(',')[1] } }
+                                        { inlineData: { mimeType: 'audio/wav', data: base64Chunk.split(',')[1] } }
                                     ]}],
                                     generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
                                 })
@@ -5766,23 +6265,258 @@ try {
                     renderAudioRecords();
                     addMessage(`✅ 完整逐字稿與 AI 摘要已儲存至錄音紀錄「${rec.title}」。`, 'system');
                 }
+
+                // 6. 建立「AI 分析合併紀錄」——附上接合完整音訊 + 分析結果
+                addMessage(`🔗 正在接合所有分段音訊，建立完整合併紀錄…`, 'system');
+                try {
+                    // 逐段重新載入 blob，用 AudioContext 解碼後拼接 PCM，再輸出 WAV
+                    const allBuffers = [];
+                    let commonSr = 44100, commonCh = 1;
+                    for (const seg of groupRecords) {
+                        let blob = await loadAudioBlob(seg.id);
+                        if (!blob && seg.audioData) blob = base64ToBlob(seg.audioData);
+                        if (!blob) continue;
+                        const ab = await blob.arrayBuffer();
+                        const actx = new (window.AudioContext || window.webkitAudioContext)();
+                        const buf = await actx.decodeAudioData(ab);
+                        commonSr = buf.sampleRate;
+                        commonCh = Math.max(commonCh, buf.numberOfChannels);
+                        allBuffers.push(buf);
+                        actx.close();
+                    }
+                    if (allBuffers.length > 0) {
+                        // 合併所有 AudioBuffer（PCM 接合）
+                        const totalFrames = allBuffers.reduce((s, b) => s + b.length, 0);
+                        const mergedCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const mergedBuf = mergedCtx.createBuffer(commonCh, totalFrames, commonSr);
+                        let offset = 0;
+                        for (const buf of allBuffers) {
+                            for (let c = 0; c < commonCh; c++) {
+                                const src = c < buf.numberOfChannels ? buf.getChannelData(c) : new Float32Array(buf.length);
+                                mergedBuf.getChannelData(c).set(src, offset);
+                            }
+                            offset += buf.length;
+                        }
+                        mergedCtx.close();
+                        const mergedWavBlob = audioBufferToWavBlob(mergedBuf);
+
+                        // 儲存合併 blob 並建立新的錄音紀錄
+                        const mergedId = Date.now();
+                        await saveAudioBlob(mergedId, mergedWavBlob);
+                        const dateObj2 = new Date();
+                        const mergedRecord = {
+                            id: mergedId,
+                            title: `${rec.title} [AI 合併完整版]`,
+                            date: dateObj2.toLocaleString(),
+                            filename: `NOVA_Merged_${mergedId}.wav`,
+                            driveUrl: '', transcript: fullTranscript, aiSummary: summaryText,
+                            mimeType: 'audio/wav',
+                            duration: Math.round(allBuffers.reduce((s,b) => s + b.duration, 0)),
+                            groupId: null   // 獨立項目，不屬於分切群組
+                        };
+                        appState.audioRecords.unshift(mergedRecord);
+                        saveToDB('audioRecords', mergedRecord);
+                        renderAudioRecords();
+                        addMessage(`✅ 已建立「${mergedRecord.title}」：包含完整接合音訊（${Math.round(mergedRecord.duration/60)}分${mergedRecord.duration%60}秒）與 AI 分析結果。`, 'system');
+                    }
+                } catch(mergeErr) {
+                    addMessage(`⚠️ 音訊接合失敗（${mergeErr.message}），但逐字稿與摘要已正常儲存。`, 'system');
+                }
             })();
         }
 
         function summarizeVoiceNote(id) {
-            const n = appState.notes.find(x => String(x.id) === String(id)); if (!n) return;
+            const n = appState.notes.find(x => String(x.id) === String(id));
+            if (!n) return;
             if (appState.currentModel !== 'gemini') { alert("音檔轉錄與分析強烈建議使用 Gemini 模型，系統已自動為您切換。"); setModel('gemini'); }
-            if (!confirm(`即將對「${n.title}」進行深度分析。\n\n系統將把音檔自動分段（每段 5 分鐘），逐段轉錄後合成完整逐字稿，再產生摘要。`)) return;
 
-            loadAudioBlob(n.id).then(async (audioBlob) => {
-                if (!audioBlob && n.audioData) audioBlob = base64ToBlob(n.audioData);
-                if (audioBlob) {
-                    await runChunkedTranscription(audioBlob, n.mimeType || 'audio/webm', 'voiceNote', id, n.title);
-                } else {
-                    alert("找不到本地音訊資料，請手動選取音檔。");
-                    document.getElementById('audio-analyze-input').click();
+            const key = appState.keys.gemini;
+            if (!key) { addMessage('⚠️ 請先設定 Gemini API Key！', 'system'); return; }
+
+            // 找出同 groupId 的所有分段（按建立時間排序）
+            const groupId = n.groupId || n.id;
+            const groupNotes = appState.notes
+                .filter(x => (x.groupId || x.id) === groupId && x.type === 'audio')
+                .sort((a, b) => a.id - b.id);
+
+            const segCount = groupNotes.length;
+            const totalDuration = groupNotes.reduce((s, x) => s + (x.duration || 0), 0);
+            const totalMin = Math.floor(totalDuration / 60);
+            const chunkMins = appState.recSettings?.analysisChunkMins || 5;
+
+            const confirmMsg = segCount > 1
+                ? `即將對「${n.title}」（共 ${segCount} 個錄音分段，合計約 ${totalMin} 分鐘）進行深度分析。\n\n系統將依序處理每個分段（每 ${chunkMins} 分鐘切一次），最後合併所有逐字稿並產生摘要，結果存入「筆記/文件」頁面。`
+                : `即將對「${n.title}」進行深度分析（每 ${chunkMins} 分鐘切段），結果存回此筆記。`;
+
+            if (!confirm(confirmMsg)) return;
+
+            (async () => {
+                switchTab('dashboard');
+                addMessage(`🎙️ **語音筆記深度分析啟動**｜共 ${segCount} 個分段，開始逐段轉錄…`, 'system');
+
+                const allTranscriptParts = [];
+                const CHUNK_SECS = chunkMins * 60;
+
+                for (let si = 0; si < groupNotes.length; si++) {
+                    const seg = groupNotes[si];
+                    let audioBlob = await loadAudioBlob(seg.id);
+                    if (!audioBlob && seg.audioData) audioBlob = base64ToBlob(seg.audioData);
+                    if (!audioBlob) {
+                        addMessage(`⚠️ 第 ${si + 1} 段「${seg.title}」找不到音訊資料，跳過。`, 'system');
+                        continue;
+                    }
+
+                    let audioBuffer;
+                    try {
+                        const arrayBuf = await audioBlob.arrayBuffer();
+                        const actx = new (window.AudioContext || window.webkitAudioContext)();
+                        audioBuffer = await actx.decodeAudioData(arrayBuf);
+                        actx.close();
+                    } catch(e) {
+                        addMessage(`⚠️ 第 ${si + 1} 段解碼失敗（${e.message}），跳過。`, 'system');
+                        continue;
+                    }
+
+                    const segTotalSecs = audioBuffer.duration;
+                    const segChunks = Math.ceil(segTotalSecs / CHUNK_SECS);
+                    const segPrefix = segCount > 1 ? `[錄音第 ${si + 1} 段]` : '';
+                    addMessage(`📂 ${segPrefix} 總長 ${Math.round(segTotalSecs/60)}分${Math.round(segTotalSecs%60)}秒，分 ${segChunks} 小段轉錄…`, 'system');
+
+                    for (let i = 0; i < segChunks; i++) {
+                        const startSec  = i * CHUNK_SECS;
+                        const endSec    = Math.min(startSec + CHUNK_SECS, segTotalSecs);
+                        const startLabel = `${Math.floor(startSec/60)}:${String(Math.floor(startSec%60)).padStart(2,'0')}`;
+                        const endLabel   = `${Math.floor(endSec/60)}:${String(Math.floor(endSec%60)).padStart(2,'0')}`;
+
+                        const progressId = Date.now() + si * 1000 + i;
+                        appState.messages.push({ id: progressId, sessionId: appState.currentSessionId, text: `⏳ ${segPrefix}[${i+1}/${segChunks}] 轉錄 ${startLabel}–${endLabel}…`, sender: 'system', time: getTime(), sources: [], files: [] });
+                        renderMessages();
+                        const chatEl = document.getElementById('chat-container');
+                        if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+
+                        let base64Chunk;
+                        try {
+                            base64Chunk = await sliceAudioToBase64(audioBuffer, startSec, endSec);
+                        } catch(e) {
+                            const pm = appState.messages.find(x => x.id === progressId);
+                            if (pm) { pm.text = `⚠️ ${segPrefix}[${i+1}/${segChunks}] 切割失敗：${e.message}`; renderMessages(); }
+                            allTranscriptParts.push(`${segPrefix}【${startLabel}–${endLabel}】\n[切割失敗]`);
+                            continue;
+                        }
+
+                        const chunkPrompt = `你是專業逐字稿員。請將這段音訊內容完整逐字轉錄成繁體中文，保留所有說話者的每一句話，不要摘要、不要省略、不要添加任何評論，直接輸出逐字稿文字即可。若整段音訊為靜音或無法辨識，請回覆「[本段無語音]」。`;
+
+                        try {
+                            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+                            const res = await fetch(endpoint, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ role: 'user', parts: [
+                                        { text: chunkPrompt },
+                                        { inlineData: { mimeType: 'audio/wav', data: base64Chunk.split(',')[1] } }
+                                    ]}],
+                                    generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+                                })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error?.message || res.status);
+                            const partText = data.candidates?.[0]?.content?.parts?.filter(p => p.text).map(p => p.text).join('') || '';
+                            allTranscriptParts.push(`${segPrefix}【${startLabel}–${endLabel}】\n${partText}`);
+                            const pm = appState.messages.find(x => x.id === progressId);
+                            if (pm) { pm.text = `✅ ${segPrefix}[${i+1}/${segChunks}] ${startLabel}–${endLabel} 完成（${partText.length} 字）`; renderMessages(); }
+                        } catch(e) {
+                            const pm = appState.messages.find(x => x.id === progressId);
+                            if (pm) { pm.text = `⚠️ ${segPrefix}[${i+1}/${segChunks}] 失敗：${e.message}`; renderMessages(); }
+                            allTranscriptParts.push(`${segPrefix}【${startLabel}–${endLabel}】\n[API 錯誤: ${e.message}]`);
+                        }
+                    }
                 }
-            });
+
+                // 3. 顯示合併完整逐字稿
+                const fullTranscript = allTranscriptParts.join('\n\n');
+                addMessage(`📝 **完整逐字稿（${segCount > 1 ? segCount + ' 個分段合併，' : ''}共 ${allTranscriptParts.length} 小段，${fullTranscript.length} 字）**\n\n${fullTranscript}`, 'ai', 'gemini');
+
+                // 4. 產生摘要
+                addMessage(`🔍 逐字稿完成，正在根據全文產生摘要與重點整理…`, 'system');
+                const summaryPrompt = `以下是一段語音筆記的完整逐字稿，請整理出【重點摘要】與【關鍵主題】與【待辦事項】（如有）。\n\n【嚴格約束】：僅根據逐字稿內容摘要，不可補充任何外部資訊。\n\n完整逐字稿如下：\n\n${fullTranscript}`;
+                let summaryText = '';
+                try {
+                    const summaryRes = await fetchAIResponse(summaryPrompt, 'gemini', { isAnalysis: true });
+                    summaryText = typeof summaryRes === 'string' ? summaryRes : (summaryRes.text || '');
+                    addMessage(summaryText, 'ai', 'gemini');
+                } catch(e) {
+                    addMessage(`⚠️ 摘要產生失敗：${e.message}`, 'system');
+                }
+
+                // 5. 儲存整份分析結果回筆記（以被點擊的那筆為主筆記）
+                const targetNote = appState.notes.find(x => String(x.id) === String(id));
+                if (targetNote) {
+                    const analysisBlock = `\n\n${'='.repeat(30)}\n【AI 深度分析結果】${segCount > 1 ? `（合併 ${segCount} 個分段）` : ''}\n\n【完整逐字稿】\n${fullTranscript}${summaryText ? '\n\n【AI 摘要與重點整理】\n' + summaryText : ''}`;
+                    targetNote.content = (targetNote.content || '') + analysisBlock;
+                    targetNote.transcript = fullTranscript;
+                    targetNote.aiSummary  = summaryText;
+                    saveToDB('notes', targetNote);
+                    renderNotes();
+                    addMessage(`✅ 完整逐字稿與 AI 摘要已儲存至筆記「${targetNote.title}」（筆記/文件分頁）。`, 'system');
+                }
+
+                // 6. 建立「AI 分析合併筆記」——附上接合完整音訊 + 分析結果
+                if (segCount > 1) {
+                    addMessage(`🔗 正在接合所有分段音訊，建立完整合併筆記…`, 'system');
+                    try {
+                        const allBuffers = [];
+                        let commonSr = 44100, commonCh = 1;
+                        for (const seg of groupNotes) {
+                            let blob = await loadAudioBlob(seg.id);
+                            if (!blob && seg.audioData) blob = base64ToBlob(seg.audioData);
+                            if (!blob) continue;
+                            const ab = await blob.arrayBuffer();
+                            const actx = new (window.AudioContext || window.webkitAudioContext)();
+                            const buf = await actx.decodeAudioData(ab);
+                            commonSr = buf.sampleRate;
+                            commonCh = Math.max(commonCh, buf.numberOfChannels);
+                            allBuffers.push(buf);
+                            actx.close();
+                        }
+                        if (allBuffers.length > 1) {
+                            const totalFrames = allBuffers.reduce((s, b) => s + b.length, 0);
+                            const mergedCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            const mergedBuf = mergedCtx.createBuffer(commonCh, totalFrames, commonSr);
+                            let offset = 0;
+                            for (const buf of allBuffers) {
+                                for (let c = 0; c < commonCh; c++) {
+                                    const src = c < buf.numberOfChannels ? buf.getChannelData(c) : new Float32Array(buf.length);
+                                    mergedBuf.getChannelData(c).set(src, offset);
+                                }
+                                offset += buf.length;
+                            }
+                            mergedCtx.close();
+                            const mergedWavBlob = audioBufferToWavBlob(mergedBuf);
+                            const mergedId = Date.now();
+                            await saveAudioBlob(mergedId, mergedWavBlob);
+                            const mergedTitle = `${targetNote?.title || '語音筆記'} [AI 合併完整版]`;
+                            const mergedNote = {
+                                id: mergedId, title: mergedTitle,
+                                content: `【AI 合併完整版 — ${segCount} 段接合】\n\n【完整逐字稿】\n${fullTranscript}${summaryText ? '\n\n【AI 摘要】\n' + summaryText : ''}`,
+                                date: new Date().toLocaleString(), type: 'audio',
+                                driveUrl: '', transcript: fullTranscript, aiSummary: summaryText,
+                                mimeType: 'audio/wav', filename: `NOVA_Merged_${mergedId}.wav`,
+                                images: [], image: null,
+                                folder: targetNote?.folder || '未分類',
+                                duration: Math.round(allBuffers.reduce((s,b) => s + b.duration, 0)),
+                                groupId: null
+                            };
+                            appState.notes.unshift(mergedNote);
+                            saveToDB('notes', mergedNote);
+                            renderNotes();
+                            addMessage(`✅ 已建立筆記「${mergedTitle}」：包含完整接合音訊（${Math.round(mergedNote.duration/60)}分${mergedNote.duration%60}秒）與 AI 分析結果。`, 'system');
+                        }
+                    } catch(mergeErr) {
+                        addMessage(`⚠️ 音訊接合失敗（${mergeErr.message}），但逐字稿與摘要已正常儲存。`, 'system');
+                    }
+                }
+            })();
         }
 
         // ── 標題行內編輯 ──────────────────────────────────────────────────
@@ -5827,37 +6561,14 @@ try {
                 if (!audioBlob) { showToast('❌ 找不到音訊資料，請重新錄製'); cleanup(); return; }
 
                 const rawSizeMB = (audioBlob.size / 1024 / 1024).toFixed(1);
-                showToast(`☁️ 準備上傳（${rawSizeMB} MB），請稍候…`);
+                showToast(`☁️ 準備上傳（${rawSizeMB} MB weba 原始格式），請稍候…`);
 
-                // --- 決定上傳格式 ---
-                // Apps Script POST 上限約 10 MB（base64 比原始大 33%），超過 6 MB raw 時直接用原格式
-                const SIZE_LIMIT_FOR_MP3 = 6 * 1024 * 1024; // 6 MB raw
-                let uploadBlob = audioBlob;
-                let uploadMime = rec.mimeType || 'audio/webm';
-                let uploadExt  = uploadMime.includes('mp4') ? '.m4a' : '.webm';
-                let uploadFilename = rec.title.replace(/[\\/:*?"<>|]/g, '_');
-
-                if (audioBlob.size <= SIZE_LIMIT_FOR_MP3) {
-                    // 小檔：轉 MP3 再上傳
-                    try {
-                        showToast('🔄 正在轉換為 MP3…');
-                        const arrayBuf   = await audioBlob.arrayBuffer();
-                        const audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
-                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
-                        uploadBlob = await encodeMp3(audioBuffer);
-                        audioCtx.close();
-                        uploadMime = 'audio/mpeg';
-                        uploadExt  = '.mp3';
-                    } catch(convErr) {
-                        console.warn('MP3 轉換失敗，改用原格式:', convErr);
-                        uploadBlob = audioBlob;
-                    }
-                } else {
-                    showToast(`📦 檔案較大（${rawSizeMB} MB），以原始格式上傳…`);
-                }
-
-                uploadFilename += uploadExt;
-                const finalSizeMB = (uploadBlob.size / 1024 / 1024).toFixed(1);
+                // 直接使用原始 weba 格式上傳，不轉 MP3
+                const uploadBlob = audioBlob;
+                const uploadMime = rec.mimeType || 'audio/webm';
+                const uploadExt  = uploadMime.includes('mp4') ? '.m4a' : '.weba';
+                let uploadFilename = rec.title.replace(/[\\/:*?"<>|]/g, '_') + uploadExt;
+                const finalSizeMB = rawSizeMB;
 
                 // --- base64 編碼 ---
                 showToast(`🔄 編碼中（${finalSizeMB} MB），請耐心等候…`);
@@ -7654,6 +8365,30 @@ if (appState.pendingAnalyzeContextId) {
         window.onload = async () => {
             try {
                 await initDB();
+
+                // ── 持久化儲存授權（防止瀏覽器自動清除 IndexedDB）──
+                if (navigator.storage && navigator.storage.persist) {
+                    navigator.storage.persist().then(ok => console.log(ok ? '✅ 持久化儲存已啟用' : '⚠️ 持久化儲存未啟用'));
+                }
+
+                // ── 還原使用者指定的本地錄音存檔資料夾 ──────────────
+                const savedHandle = await loadDirHandleFromDB();
+                if (savedHandle && typeof savedHandle.queryPermission === 'function') {
+                    try {
+                        const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+                        if (perm === 'granted') {
+                            appState.recSettings.localDirHandle = savedHandle;
+                            appState.recSettings.localSaveDirName = savedHandle.name;
+                            localStorage.setItem('nova_rec_dir_name', savedHandle.name);
+                        } else {
+                            // 未授權 — 記住 handle 供設定頁手動重授權，但不顯示任何提示
+                            // 錄音將靜默使用預設下載位置
+                            appState.recSettings._pendingDirHandle = savedHandle;
+                            appState.recSettings.localSaveDirName = savedHandle.name;
+                        }
+                    } catch(e) { console.warn('還原資料夾 handle 失敗:', e); }
+                }
+
                 appState.messages = (await loadStoreFromDB('messages')).filter(m => !appState.deletedIds[String(m.id)]).sort((a,b)=>a.id-b.id);
                 appState.notes = (await loadStoreFromDB('notes')).sort((a,b)=>b.id-a.id);
                 appState.todos = (await loadStoreFromDB('todos')).sort((a,b)=>b.id-a.id);
