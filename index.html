@@ -282,7 +282,7 @@
                                         <p class="text-[10px] text-slate-500 mt-1">開啟後，同一對話下 AI 會記住所有前文與人設，不會互相干擾。</p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
-                                        <input type="checkbox" id="key-long-memory" class="sr-only peer">
+                                        <input type="checkbox" id="key-long-memory" class="sr-only peer" onchange="appState.enableLongMemory=this.checked; localStorage.setItem('nova_long_memory', this.checked); showToast(this.checked ? '🧠 長文記憶已開啟（已自動儲存）' : '🧠 長文記憶已關閉（已自動儲存）');">
                                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
                                     </label>
                                 </div>
@@ -308,8 +308,13 @@
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <label class="block text-xs text-cyan-400 font-bold flex items-center gap-1"><i class="ph-fill ph-cloud-arrow-up"></i> 啟用 Live Sync 同步</label>
+                                        <label class="block text-xs text-cyan-400 font-bold flex items-center gap-1"><i class="ph-fill ph-cloud-arrow-up"></i> 啟用 Live Sync 同步 <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-slate-500 inline-block ml-1" title="尚未同步"></span></label>
                                         <p class="text-[10px] text-slate-500 mt-1">關閉後，程式將停止自動讀取及上傳至 Google Drive（錄音上傳功能不受影響）。</p>
+                                        <div class="flex gap-2 mt-2">
+                                            <button onclick="forceLiveSync()" class="px-2 py-1 text-[10px] bg-cyan-700 hover:bg-cyan-600 text-white rounded-md">⬆️ 立即同步</button>
+                                            <button onclick="testSyncConnection()" class="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md">🔍 測試連線</button>
+                                            <button onclick="showGASTemplate()" class="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md">📋 Apps Script</button>
+                                        </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
                                         <input type="checkbox" id="key-live-sync-enabled" class="sr-only peer" checked>
@@ -435,6 +440,32 @@
                                     </button>
                                 </div>
                                 <p class="text-[10px] text-slate-500">⚠️ 需要使用支援 File System Access API 的瀏覽器（Chrome / Edge）。指定後，每次錄音完成會自動將 MP3 存至該資料夾。</p>
+                            </div>
+
+                            <!-- 自動上傳 Google Drive -->
+                            <div class="bg-slate-800/60 p-4 rounded-xl border border-cyan-700/40 space-y-3">
+                                <p class="text-xs font-bold text-cyan-300 flex items-center gap-2"><i class="ph-fill ph-cloud-arrow-up text-cyan-400"></i> 自動上傳 Google Drive</p>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs text-slate-300 font-bold">錄音紀錄完成後自動上傳</p>
+                                        <p class="text-[10px] text-slate-500 mt-1">錄音紀錄頁面的每段錄音儲存後，自動上傳至 Google Drive（需先設定 Drive URL）。</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
+                                        <input type="checkbox" id="rec-auto-upload-audio" class="sr-only peer" onchange="appState.recSettings.autoUploadAudio=this.checked; localStorage.setItem('nova_rec_auto_upload_audio', this.checked);">
+                                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs text-slate-300 font-bold">筆記/文件頁的分段及合併錄音自動上傳</p>
+                                        <p class="text-[10px] text-slate-500 mt-1">筆記/文件頁的語音分段錄音及合併後的完整錄音，儲存完成後自動上傳至 Google Drive。</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer ml-3 shrink-0">
+                                        <input type="checkbox" id="rec-auto-upload-notes" class="sr-only peer" onchange="appState.recSettings.autoUploadNotes=this.checked; localStorage.setItem('nova_rec_auto_upload_notes', this.checked);">
+                                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                                    </label>
+                                </div>
+                                <p class="text-[10px] text-amber-400/80">⚠️ 自動上傳需已設定 Google Drive Apps Script URL，且音檔 &lt; 10 MB。大檔案請手動上傳。</p>
                             </div>
 
                             <!-- 自動分切設定 -->
@@ -823,12 +854,12 @@
                         <div id="plus-menu" class="hidden absolute bottom-full left-0 mb-1 w-full bg-slate-900 border-t border-slate-800 p-4 grid grid-cols-5 gap-2 z-40 rounded-t-2xl shadow-[0_-10px_20px_rgba(0,0,0,0.5)] transition-all">
                             
                             <button onclick="openAgentModal()" class="flex flex-col items-center justify-center gap-2 p-2 rounded-xl bg-slate-800 border border-purple-500/50 hover:bg-slate-700 text-purple-400 transition-colors active:scale-95 shadow-lg shadow-purple-500/10">
-                                <i class="ph-bold ph-brain text-xl"></i><span class="text-[10px] font-bold">多AI研究</span>
+                                <i class="ph-bold ph-brain text-xl"></i><span class="text-[10px] font-bold">深度研究</span>
                             </button>
 
-                            <button onclick="openDualAIModal()" class="flex flex-col items-center justify-center gap-2 p-2 rounded-xl bg-slate-800 border border-emerald-500/50 hover:bg-slate-700 text-emerald-400 transition-colors active:scale-95 shadow-lg shadow-emerald-500/10">
-                                <i class="ph-bold ph-users-three text-xl"></i><span class="text-[10px] font-bold">雙AI對話</span>
-                            </button>
+                            <a href="./presentation_generator.html" class="flex flex-col items-center justify-center gap-2 p-2 rounded-xl bg-slate-800 border border-violet-500/50 hover:bg-slate-700 text-violet-400 transition-colors active:scale-95 shadow-lg shadow-violet-500/10">
+                                <i class="ph-bold ph-presentation-chart text-xl"></i><span class="text-[10px] font-bold">簡報生成</span>
+                            </a>
 
                             <label for="chat-file-input" class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 cursor-pointer text-slate-300 transition-colors active:scale-95">
                                 <i class="ph-bold ph-paperclip text-2xl text-blue-400"></i><span class="text-[10px] font-bold">多檔上傳</span>
@@ -1363,13 +1394,22 @@ async function encodeMp3(audioBuffer) {
         }
 
         // Blob URL 快取（id → ObjectURL），避免重複建立
+        // 【記憶體修復】限制快取大小，錄音很多時避免 Blob URL 無限累積佔用記憶體
         const _audioBlobUrlCache = {};
+        const _AUDIO_CACHE_MAX = 10; // 最多快取 10 個 Blob URL
 
         async function getAudioBlobUrl(id) {
             const cacheKey = String(id);
             if (_audioBlobUrlCache[cacheKey]) return _audioBlobUrlCache[cacheKey];
             const blob = await loadAudioBlob(id);
             if (!blob) return null;
+            // 【記憶體修復】若快取已滿，先釋放最舊的一個
+            const keys = Object.keys(_audioBlobUrlCache);
+            if (keys.length >= _AUDIO_CACHE_MAX) {
+                const oldestKey = keys[0];
+                URL.revokeObjectURL(_audioBlobUrlCache[oldestKey]);
+                delete _audioBlobUrlCache[oldestKey];
+            }
             const url = URL.createObjectURL(blob);
             _audioBlobUrlCache[cacheKey] = url;
             return url;
@@ -1401,6 +1441,87 @@ async function encodeMp3(audioBuffer) {
         }
         // ─────────────────────────────────────────────────────────────────────
 
+        // ══════════════════════════════════════════════════════════════════════
+        // ── 緊急本地備份（防止 IndexedDB 被手機瀏覽器自動清除）─────────────
+        // ══════════════════════════════════════════════════════════════════════
+        const _EM_BACKUP_KEY = 'nova_em_backup';
+        let _emBackupTimer = null;
+
+        function scheduleEmergencyBackup() {
+            if (_emBackupTimer) clearTimeout(_emBackupTimer);
+            _emBackupTimer = setTimeout(() => {
+                try {
+                    const stripBinary = m => {
+                        const { files, file, audioData, ...rest } = m;
+                        return rest;
+                    };
+                    let backup = {
+                        ts: Date.now(),
+                        messages: appState.messages.slice(-300).map(stripBinary),
+                        notes: appState.notes.slice(0, 150).map(stripBinary),
+                        todos: appState.todos.slice(0, 150),
+                        chatTitles: appState.chatTitles,
+                        pinnedSessions: appState.pinnedSessions,
+                        deletedIds: appState.deletedIds
+                    };
+                    let json = JSON.stringify(backup);
+                    if (json.length > 4 * 1024 * 1024) {
+                        backup.messages = appState.messages.slice(-100).map(stripBinary);
+                        backup.notes = appState.notes.slice(0, 50).map(stripBinary);
+                        json = JSON.stringify(backup);
+                    }
+                    if (json.length < 4.5 * 1024 * 1024) {
+                        localStorage.setItem(_EM_BACKUP_KEY, json);
+                    }
+                } catch(e) { console.warn('⚠️ 緊急備份寫入失敗:', e); }
+            }, 15000);
+        }
+
+        async function restoreFromEmergencyBackup() {
+            try {
+                const raw = localStorage.getItem(_EM_BACKUP_KEY);
+                if (!raw) return false;
+                const backup = JSON.parse(raw);
+                if (!backup || !Array.isArray(backup.messages)) return false;
+                console.log(`🔄 IndexedDB 全空，從緊急備份還原（時間：${new Date(backup.ts).toLocaleString()}）`);
+                const writeToStore = (storeName, items) => new Promise(resolve => {
+                    if (!db || !items.length) return resolve();
+                    try {
+                        const tx = db.transaction(storeName, 'readwrite');
+                        items.forEach(item => tx.objectStore(storeName).put(item));
+                        tx.oncomplete = resolve;
+                        tx.onerror = resolve;
+                    } catch(e) { resolve(); }
+                });
+                const del = backup.deletedIds || {};
+                const validMsgs = backup.messages.filter(m => !del[String(m.id)]);
+                const validNotes = (backup.notes || []).filter(n => !del[String(n.id)]);
+                const validTodos = (backup.todos || []).filter(t => !del[String(t.id)]);
+                await writeToStore('messages', validMsgs);
+                await writeToStore('notes', validNotes);
+                await writeToStore('todos', validTodos);
+                appState.messages = validMsgs.sort((a, b) => a.id - b.id);
+                appState.notes = validNotes.sort((a, b) => b.id - a.id);
+                appState.todos = validTodos.sort((a, b) => b.id - a.id);
+                if (backup.chatTitles) { appState.chatTitles = backup.chatTitles; localStorage.setItem('nova_chat_titles', JSON.stringify(backup.chatTitles)); }
+                if (backup.pinnedSessions) { appState.pinnedSessions = backup.pinnedSessions; localStorage.setItem('nova_pinned_sessions', JSON.stringify(backup.pinnedSessions)); }
+                if (backup.deletedIds) { appState.deletedIds = del; localStorage.setItem('nova_deleted_ids', JSON.stringify(del)); }
+                setTimeout(() => showToast(`✅ 已從緊急備份還原 ${validMsgs.length} 則訊息、${validNotes.length} 筆筆記`), 1000);
+                return true;
+            } catch(e) { console.error('❌ 緊急備份還原失敗:', e); return false; }
+        }
+
+        function pruneDeletedIds() {
+            const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            let pruned = 0;
+            Object.keys(appState.deletedIds).forEach(k => {
+                if (now - appState.deletedIds[k] > THIRTY_DAYS) { delete appState.deletedIds[k]; pruned++; }
+            });
+            if (pruned > 0) localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
+        }
+        // ══════════════════════════════════════════════════════════════════════
+
 // --- 新增：Google Drive 即時同步引擎 ---
         let liveSyncTimeout = null;
         let lastLiveSyncTime = 0;
@@ -1413,6 +1534,7 @@ async function encodeMp3(audioBuffer) {
             liveSyncTimeout = setTimeout(async () => {
                 if(isLiveSyncing) return;
                 isLiveSyncing = true;
+                _updateSyncStatus('syncing');
                 const fullBackupData = {
                     timestamp: Date.now(),
                     isMaster: appState.isMaster || false,
@@ -1422,30 +1544,197 @@ async function encodeMp3(audioBuffer) {
                     translateBTimeout: appState.translateBTimeout, vadMultiplier: appState.vadMultiplier, 
                     replyLength: appState.replyLength, ttsRate: appState.ttsRate, ttsVoice: appState.ttsVoice, 
                     hideLiveCapture: appState.hideLiveCapture, autoTTS: appState.autoTTS, noteFolders: appState.noteFolders,
-                    messages: appState.messages, 
+                    enableLongMemory: appState.enableLongMemory, deepDiveMode: appState.deepDiveMode,
+                    messages: appState.messages.map(m => { const {files, file, audioData, imageData, ...rest} = m; return rest; }), 
                     notes: appState.notes.map(n => { const {audioData, ...rest} = n; return rest; }), 
                     todos: appState.todos, 
                     audioRecords: appState.audioRecords.map(r => { const {audioData, ...rest} = r; return rest; }),
                     currentSessionId: appState.currentSessionId, chatTitles: appState.chatTitles, pinnedSessions: appState.pinnedSessions
                 };
                 try {
+                    // 直接 POST 純 JSON（Apps Script 以 e.postData.contents 讀取）
+                    const payload = JSON.stringify({
+                        action: "sync_up",
+                        filename: "NOVA120livebackup",
+                        data: fullBackupData
+                    });
                     const res = await fetch(appState.driveUrl, {
                         method: 'POST',
                         redirect: 'follow',
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8'
-                        },
-                        body: JSON.stringify({ action: "sync_up", filename: "NOVA120livebackup", data: fullBackupData })
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: payload
                     });
                     if(res.ok) {
-                        lastLiveSyncTime = fullBackupData.timestamp;
-                        // 上傳成功後，延長等待讓雲端寫入穩定，再拉取一次
-                        setTimeout(fetchSyncFromDrive, 2000);
+                        let resText = '';
+                        try { resText = await res.text(); } catch(_){}
+                        // 檢查 Apps Script 是否回傳錯誤訊息
+                        let resJson = null;
+                        try { resJson = JSON.parse(resText); } catch(_){}
+                        if (resJson && resJson.error) {
+                            if (resJson.error === 'payload_too_large') {
+                                const kb = Math.round(resJson.size / 1024);
+                                console.error(`[Sync Up] 超過大小上限 (${kb} KB)，同步失敗`);
+                                _updateSyncStatus('error', `資料太大 (${kb}KB > 5MB)`);
+                            } else {
+                                console.error('[Sync Up] Apps Script 回傳錯誤:', resJson.error);
+                                _updateSyncStatus('error', resJson.error);
+                            }
+                        } else {
+                            lastLiveSyncTime = fullBackupData.timestamp;
+                            _updateSyncStatus('ok', fullBackupData.timestamp);
+                            setTimeout(fetchSyncFromDrive, 2000);
+                        }
+                    } else {
+                        console.error('[Sync Up] HTTP 錯誤:', res.status, res.statusText);
+                        _updateSyncStatus('error', `HTTP ${res.status}`);
                     }
-                } catch(e) { console.error("Live Sync Up Error:", e); }
-                isLiveSyncing = false;
-            }, 500); // 防抖動 3 秒
+                } catch(e) {
+                    console.error('[Sync Up] 網路錯誤:', e.message);
+                    _updateSyncStatus('error', e.message);
+                } finally {
+                    isLiveSyncing = false;
+                }
+            }, 500);
         }
+
+        // ── 同步狀態指示器
+        function _updateSyncStatus(state, detail) {
+            const el = document.getElementById('sync-status-dot');
+            if (!el) return;
+            if (state === 'syncing') {
+                el.title = '同步中...';
+                el.className = 'w-2 h-2 rounded-full bg-yellow-400 animate-pulse';
+            } else if (state === 'ok') {
+                const t = detail ? new Date(detail).toLocaleTimeString() : '';
+                el.title = `上次成功同步：${t}`;
+                el.className = 'w-2 h-2 rounded-full bg-green-400';
+            } else {
+                el.title = `同步失敗：${detail || '未知錯誤'}`;
+                el.className = 'w-2 h-2 rounded-full bg-red-500';
+            }
+        }
+
+        // ── 手動強制立即同步
+        window.forceLiveSync = async function() {
+            if (!appState.driveUrl) { showToast('⚠️ 請先在設定中填入 Google Drive Apps Script URL'); return; }
+            showToast('🔄 正在強制同步至 Google Drive...');
+            isLiveSyncing = false; // 解除鎖定
+            if(liveSyncTimeout) clearTimeout(liveSyncTimeout);
+            await triggerLiveSync();
+        };
+
+        // ── 顯示正確的 Google Apps Script 模板
+        window.showGASTemplate = function() {
+            const gasCode = `// ════════════════════════════════════════════════
+// NOVA Live Sync - Google Apps Script
+// 使用方式：
+// 1. 前往 script.google.com 建立新專案
+// 2. 貼上此程式碼，儲存
+// 3. 部署 → 新增部署 → 網路應用程式
+//    執行身分：我
+//    存取權限：所有人
+// 4. 複製部署網址貼入 NOVA 設定
+// ════════════════════════════════════════════════
+
+const FOLDER_NAME = 'NOVA_Sync';  // Drive 資料夾名稱
+
+function getOrCreateFolder() {
+  const folders = DriveApp.getFoldersByName(FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(FOLDER_NAME);
+}
+
+function getOrCreateFile(folder, filename) {
+  const files = folder.getFilesByName(filename);
+  if (files.hasNext()) return files.next();
+  return folder.createFile(filename, '{}', MimeType.PLAIN_TEXT);
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const action = body.action || '';
+    const filename = (body.filename || 'NOVA120livebackup') + '.json';
+    
+    if (action === 'sync_up') {
+      const folder = getOrCreateFolder();
+      const file = getOrCreateFile(folder, filename);
+      // 直接存 body.data（fullBackupData 物件）的 JSON 字串
+      file.setContent(JSON.stringify(body.data));
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: true, ts: Date.now() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: 'unknown action: ' + action }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action || '';
+    const filename = (e.parameter.filename || 'NOVA120livebackup') + '.json';
+    
+    if (action === 'sync_down') {
+      const folder = getOrCreateFolder();
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) {
+        return ContentService.createTextOutput('{}').setMimeType(ContentService.MimeType.JSON);
+      }
+      const content = files.next().getBlob().getDataAsString();
+      return ContentService
+        .createTextOutput(content || '{}')
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput('{}').setMimeType(ContentService.MimeType.JSON);
+    
+  } catch(err) {
+    return ContentService.createTextOutput('{}').setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+            // 建立複製對話框
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:16px';
+            modal.innerHTML = `
+                <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <span style="color:#67e8f9;font-weight:bold;font-size:13px;">📋 Google Apps Script 正確程式碼</span>
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="color:#94a3b8;font-size:20px;background:none;border:none;cursor:pointer;">✕</button>
+                    </div>
+                    <p style="color:#94a3b8;font-size:11px;margin-bottom:10px;">複製以下程式碼 → 貼到 <a href='https://script.google.com' target='_blank' style='color:#38bdf8'>script.google.com</a> → 部署為網路應用程式</p>
+                    <textarea id="gas-code-area" readonly style="flex:1;min-height:300px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:12px;font-size:10px;font-family:monospace;resize:none;overflow-y:auto;">${gasCode.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button onclick="const el=document.getElementById('gas-code-area');el.select();navigator.clipboard.writeText(el.value).then(()=>{ this.textContent='✅ 已複製！';setTimeout(()=>this.textContent='📋 複製程式碼',2000); })" style="flex:1;padding:10px;background:#0e7490;color:white;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:bold;">📋 複製程式碼</button>
+                        <a href="https://script.google.com/home/start" target="_blank" style="flex:1;padding:10px;background:#334155;color:#94a3b8;border:none;border-radius:8px;font-size:12px;cursor:pointer;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;">🔗 開啟 Apps Script</a>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        };
+
+        // ── 測試 Apps Script 連線（顯示原始回應）
+        window.testSyncConnection = async function() {
+            if (!appState.driveUrl) { alert('請先填寫 Google Drive Apps Script URL'); return; }
+            showToast('🔍 測試 Apps Script 連線中...');
+            try {
+                const testPayload = JSON.stringify({ action: "sync_up", filename: "NOVA120livebackup_test", data: { test: true, ts: Date.now() } });
+                const res = await fetch(appState.driveUrl, {
+                    method: 'POST', redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: testPayload
+                });
+                const text = await res.text();
+                alert(`✅ Apps Script 回應 (HTTP ${res.status}):\n\n${text.slice(0, 500)}`);
+            } catch(e) {
+                alert(`❌ 連線失敗：\n${e.message}\n\n請確認：\n1. Apps Script 已部署為「網路應用程式」\n2. 執行身分為「我」\n3. 存取權限為「所有人」`);
+            }
+        };
 
         async function fetchSyncFromDrive() {
             if (!appState.liveSyncEnabled) return;
@@ -1608,6 +1897,8 @@ async function encodeMp3(audioBuffer) {
                 autoSplitMins: parseInt(localStorage.getItem('nova_rec_split_mins')) || 60,
                 localSaveDirName: localStorage.getItem('nova_rec_dir_name') || '',
                 localDirHandle: null,  // FileSystemDirectoryHandle（不能放 localStorage）
+                autoUploadAudio: localStorage.getItem('nova_rec_auto_upload_audio') === 'true',
+                autoUploadNotes: localStorage.getItem('nova_rec_auto_upload_notes') === 'true',
             },
             recGroupId: null,      // 目前錄音段落的 groupId（多段共用）
             isAutoSplitting: false, // 是否正在執行自動分切
@@ -1619,9 +1910,10 @@ async function encodeMp3(audioBuffer) {
             autoTTS: localStorage.getItem('nova_auto_tts') !== 'false',
             isTTSPlaying: false,
             enableLongMemory: localStorage.getItem('nova_long_memory') === 'true',
+            deepDiveMode: localStorage.getItem('nova_deep_dive') === 'true',
+            enableContext: localStorage.getItem('nova_deep_dive') === 'true', // 與 deepDiveMode 同步
             uiColor: localStorage.getItem('nova_ui_color') || 'blue',
             playingMsgId: null,
-            enableContext: false,
             replyLength: localStorage.getItem('nova_reply_length') || 'medium',
             ttsRate: localStorage.getItem('nova_tts_rate') || 1.0,
             ttsVoice: localStorage.getItem('nova_tts_voice') || '',
@@ -1816,8 +2108,14 @@ return html;
                 okText: '刪除對話',
                 onConfirm: function() {
                     const msgsToDelete = appState.messages.filter(m => String(m.sessionId) === String(sessionId) || (!m.sessionId && sessionId === 'legacy'));
-                    msgsToDelete.forEach(m => deleteFromDB('messages', m.id));
+                    msgsToDelete.forEach(m => {
+                        // 寫入 tombstone，防止雲端同步把已刪訊息推回來
+                        appState.deletedIds[String(m.id)] = Date.now();
+                        deleteFromDB('messages', m.id);
+                    });
+                    if (msgsToDelete.length > 0) localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
                     appState.messages = appState.messages.filter(m => String(m.sessionId) !== String(sessionId) && !(!m.sessionId && sessionId === 'legacy'));
+                    scheduleEmergencyBackup();
                     if (String(appState.currentSessionId) === String(sessionId) || (!appState.currentSessionId && sessionId === 'legacy')) {
                         appState.currentSessionId = Date.now().toString();
                         localStorage.setItem('nova_current_session', appState.currentSessionId);
@@ -1950,6 +2248,13 @@ return html;
             if (isMasterEl) isMasterEl.checked = appState.isMaster;
             const liveSyncEl = document.getElementById('key-live-sync-enabled');
             if (liveSyncEl) liveSyncEl.checked = appState.liveSyncEnabled;
+            // ── 每次開啟設定都從 appState 還原所有開關狀態（防止顯示與實際不符）
+            const longMemEl = document.getElementById('key-long-memory');
+            if (longMemEl) longMemEl.checked = appState.enableLongMemory;
+            const hideLiveCaptureEl = document.getElementById('key-hide-live-capture');
+            if (hideLiveCaptureEl) hideLiveCaptureEl.checked = appState.hideLiveCapture;
+            const autoTTSEl2 = document.getElementById('key-auto-tts');
+            if (autoTTSEl2) autoTTSEl2.checked = appState.autoTTS;
         };
         window.closeSettings = function() { document.getElementById('settings-modal').classList.add('hidden'); };
 
@@ -1994,6 +2299,10 @@ return html;
                     }
                 }
                 if (reauthBtn) reauthBtn.classList.toggle('hidden', !appState.recSettings._pendingDirHandle);
+                const autoUpAudio = document.getElementById('rec-auto-upload-audio');
+                if (autoUpAudio) autoUpAudio.checked = appState.recSettings.autoUploadAudio;
+                const autoUpNotes = document.getElementById('rec-auto-upload-notes');
+                if (autoUpNotes) autoUpNotes.checked = appState.recSettings.autoUploadNotes;
             }
         };
 
@@ -2358,16 +2667,25 @@ localStorage.setItem('nova_drive_url', data.drive); const el = document.getEleme
             } catch(e) { console.warn("Weather API error", e); }
         }
 
+        // 【資料保護修復】單調遞增 ID 計數器，避免短時間連續呼叫 addMessage 產生重複 id
+        // （Date.now() 在同一毫秒內多次呼叫會回傳相同值，導致 IndexedDB 的 put() 互相覆蓋）
+        let _msgIdCounter = Date.now();
+        function genMsgId() {
+            const now = Date.now();
+            _msgIdCounter = now > _msgIdCounter ? now : _msgIdCounter + 1;
+            return _msgIdCounter;
+        }
+
         window.addMessage = function(text, sender, model = null, sources = [], files = null, actionData = null) {
             if (!appState.currentSessionId) {
                 appState.currentSessionId = Date.now().toString();
 localStorage.setItem('nova_current_session', appState.currentSessionId);
             }
             const filesArr = Array.isArray(files) ? files : (files ? [files] : []);
-            const msg = { id: Date.now(), sessionId: appState.currentSessionId, text, sender, model: model ||
+            const msg = { id: genMsgId(), sessionId: appState.currentSessionId, text, sender, model: model ||
 appState.currentModel, time: getTime(), sources, files: filesArr, actionData };
             if(filesArr.length === 1 && !Array.isArray(files)) msg.file = files; // legacy support for DB
-            appState.messages.push(msg); saveToDB('messages', msg); 
+            appState.messages.push(msg); saveToDB('messages', msg); scheduleEmergencyBackup();
             renderMessages();
             if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
 
@@ -2404,8 +2722,13 @@ window.clearChatHistory = function() {
             if(confirm('確定要清空「當前」這筆對話紀錄嗎？(其他對話不會受影響)')) { 
                 const targetSid = String(appState.currentSessionId || 'legacy');
                 const msgsToDelete = appState.messages.filter(m => String(m.sessionId || 'legacy') === targetSid);
-                msgsToDelete.forEach(m => deleteFromDB('messages', m.id));
+                msgsToDelete.forEach(m => {
+                    appState.deletedIds[String(m.id)] = Date.now();
+                    deleteFromDB('messages', m.id);
+                });
+                if (msgsToDelete.length > 0) localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
                 appState.messages = appState.messages.filter(m => String(m.sessionId || 'legacy') !== targetSid);
+                scheduleEmergencyBackup();
                 renderMessages(); 
                 if (typeof renderChatHistoryList === 'function') renderChatHistoryList();
             }
@@ -2423,7 +2746,7 @@ window.clearChatHistory = function() {
 msg.files : (msg.file ? [msg.file] : []);
                 let imageFiles = msgFiles.filter(f => f.category === 'image');
                 if (imageFiles.length > 0) note.images = imageFiles.map(f => f.data);
-                appState.notes.unshift(note); saveToDB('notes', note); renderNotes(); showToast("⭐ 已加入筆記！(表格與格式已保留)");
+                    appState.notes.unshift(note); saveToDB('notes', note); scheduleEmergencyBackup(); renderNotes(); showToast("⭐ 已加入筆記！(表格與格式已保留)");
             } 
         };
         // ===== 通用確認對話框 =====
@@ -2619,7 +2942,7 @@ msg.files : (msg.file ? [msg.file] : []);
                 onConfirm: function() {
                     appState.deletedIds[String(id)] = Date.now(); localStorage.setItem('nova_deleted_ids', JSON.stringify(appState.deletedIds));
                     appState.messages = appState.messages.filter(m => String(m.id) !== String(id));
-                    deleteFromDB('messages', id); renderMessages();
+                    deleteFromDB('messages', id); scheduleEmergencyBackup(); renderMessages();
                 }
             });
         };
@@ -2928,6 +3251,7 @@ handleSendMessage(); }
         window.toggleDeepDive = function() { 
             appState.deepDiveMode = !appState.deepDiveMode; 
             appState.enableContext = appState.deepDiveMode; // 深度模式強制開啟上下文
+            localStorage.setItem('nova_deep_dive', appState.deepDiveMode); // 持久化
             updateModelUI(); 
             showToast(appState.deepDiveMode ? "🧠 已開啟【AI 深度探究模式】(自主提問與連網深挖)" : "🧠 已關閉深度探究模式 (恢復一問一答)"); 
         };
@@ -3066,7 +3390,7 @@ handleSendMessage(); }
             const text = prompt('請輸入待辦事項：');
             if(text && text.trim()) {
                 const newTodo = { id: Date.now(), text: text.trim(), done: false, time: '未設定提醒', alerted: false, alertEnabled: false };
-                appState.todos.unshift(newTodo); saveToDB('todos', newTodo); renderTodos(); showToast("✅ 已新增待辦事項");
+                appState.todos.unshift(newTodo); saveToDB('todos', newTodo); scheduleEmergencyBackup(); renderTodos(); showToast("✅ 已新增待辦事項");
             }
         };
 
@@ -4689,6 +5013,20 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
             const searchInput = document.getElementById('note-search-input');
             const keyword = searchInput ? searchInput.value.toLowerCase() : '';
 
+            // 【記憶體修復】重新渲染前，先釋放筆記列表中已掛載的 Blob URL
+            if (el) {
+                el.querySelectorAll('audio[data-audio-id]').forEach(audioEl => {
+                    if (audioEl.src && audioEl.src.startsWith('blob:')) {
+                        const cacheKey = String(audioEl.getAttribute('data-audio-id'));
+                        if (_audioBlobUrlCache[cacheKey] === audioEl.src) {
+                            URL.revokeObjectURL(audioEl.src);
+                            delete _audioBlobUrlCache[cacheKey];
+                        }
+                        audioEl.src = '';
+                    }
+                });
+            }
+
             let filteredNotes = appState.notes;
             // 多段錄音只顯示群組第一段（最早的），後續段隱藏（整合在同一張卡片）
             const shownGroupIds = new Set();
@@ -4782,6 +5120,20 @@ msg.text === "請詳細描述畫面中的內容。" || msg.text === `[夾帶檔�
         // --- UI 渲染功能 (錄音紀錄) ---
         function renderAudioRecords() {
             const el = document.getElementById('audio-records-list'); if(!el) return;
+
+            // 【記憶體修復】重新渲染前，先釋放所有已掛載的 Blob URL，避免記憶體累積
+            el.querySelectorAll('audio[data-audio-id]').forEach(audioEl => {
+                if (audioEl.src && audioEl.src.startsWith('blob:')) {
+                    const id = audioEl.getAttribute('data-audio-id');
+                    // 只從快取移除對應項，讓舊 blob URL 被釋放
+                    const cacheKey = String(id);
+                    if (_audioBlobUrlCache[cacheKey] === audioEl.src) {
+                        URL.revokeObjectURL(audioEl.src);
+                        delete _audioBlobUrlCache[cacheKey];
+                    }
+                    audioEl.src = ''; // 切斷引用
+                }
+            });
 
             // 依 groupId 聚合所有分段（同 groupId 為一組，無 groupId 自成一組）
             const groupMap = new Map();
@@ -5937,6 +6289,10 @@ try {
                 appState.notes.unshift(newNote); saveToDB('notes', newNote);
                 const segMsg = isSegment ? ` (自動分切第 ${segIndex} 段)` : '';
                 addMessage(`📝 語音筆記已安全儲存至「筆記/文件」分頁${segMsg}。`, 'system'); renderNotes();
+                // ── 自動上傳 Google Drive（筆記/文件頁分段錄音）
+                if (appState.recSettings.autoUploadNotes && appState.driveUrl) {
+                    setTimeout(() => uploadNoteAudioToDrive(newNote.id), 1500);
+                }
             } else {
                 const segIndex = appState.audioRecords.filter(r => r.groupId === groupId).length + 1;
                 const segLabel = isSegment ? ` (第 ${segIndex} 段)` : '';
@@ -5948,6 +6304,10 @@ try {
                 appState.audioRecords.unshift(newRecord); saveToDB('audioRecords', newRecord);
                 const segMsg = isSegment ? ` (自動分切第 ${segIndex} 段)` : '';
                 addMessage(`📼 錄音已安全儲存至本地「錄音紀錄」分頁${segMsg}。`, 'system'); renderAudioRecords();
+                // ── 自動上傳 Google Drive
+                if (appState.recSettings.autoUploadAudio && appState.driveUrl) {
+                    setTimeout(() => manualUploadToDrive(String(newRecord.id)), 1500);
+                }
             }
         }
 
@@ -5998,11 +6358,13 @@ try {
             const frameCount = endFrame - startFrame;
             if (frameCount <= 0) return null;
 
-            // 建立只含這段的 AudioBuffer
-            const sliced = new (window.AudioContext || window.webkitAudioContext)().createBuffer(numCh, frameCount, sr);
+            // 【記憶體修復】建立 AudioContext 後必須關閉，否則每次切段都會洩漏一個 AudioContext
+            const tmpCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const sliced = tmpCtx.createBuffer(numCh, frameCount, sr);
             for (let c = 0; c < numCh; c++) {
                 sliced.copyToChannel(audioBuffer.getChannelData(c).subarray(startFrame, endFrame), c);
             }
+            tmpCtx.close(); // ✅ 立即關閉，釋放記憶體
             const wavBlob = audioBufferToWavBlob(sliced);
             return await new Promise((res, rej) => {
                 const fr = new FileReader();
@@ -6318,6 +6680,10 @@ try {
                         saveToDB('audioRecords', mergedRecord);
                         renderAudioRecords();
                         addMessage(`✅ 已建立「${mergedRecord.title}」：包含完整接合音訊（${Math.round(mergedRecord.duration/60)}分${mergedRecord.duration%60}秒）與 AI 分析結果。`, 'system');
+                        // ── 自動上傳合併錄音至 Google Drive
+                        if (appState.recSettings.autoUploadNotes && appState.driveUrl) {
+                            setTimeout(() => manualUploadToDrive(String(mergedRecord.id)), 2000);
+                        }
                     }
                 } catch(mergeErr) {
                     addMessage(`⚠️ 音訊接合失敗（${mergeErr.message}），但逐字稿與摘要已正常儲存。`, 'system');
@@ -6538,6 +6904,34 @@ try {
             };
             input.addEventListener('blur', save);
             input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') { el.innerHTML = escapeHtml(prev); } });
+        };
+
+        // ── 自動上傳筆記/文件頁音訊至 Google Drive ─────────────────────────
+        window.uploadNoteAudioToDrive = async function(id) {
+            if (!appState.driveUrl) return;
+            const note = appState.notes.find(x => String(x.id) === String(id));
+            if (!note || note.driveUrl) return; // 已上傳則跳過
+            try {
+                let audioBlob = await loadAudioBlob(note.id);
+                if (!audioBlob && note.audioData) audioBlob = base64ToBlob(note.audioData);
+                if (!audioBlob) return;
+                const sizeMB = (audioBlob.size / 1024 / 1024).toFixed(1);
+                if (parseFloat(sizeMB) > 10) { showToast(`⚠️ 音訊 ${sizeMB}MB 超過 10MB 上限，跳過自動上傳`); return; }
+                showToast(`☁️ 自動上傳筆記音訊（${sizeMB} MB）…`);
+                const reader = new FileReader();
+                const base64 = await new Promise(res => { reader.onload = e => res(e.target.result); reader.readAsDataURL(audioBlob); });
+                const res = await fetch(appState.driveUrl, {
+                    method: 'POST', redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ filename: note.filename || `note_${note.id}.wav`, mimeType: audioBlob.type, data: base64 })
+                });
+                if (res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    const url = json.fileUrl || 'https://drive.google.com/';
+                    note.driveUrl = url; saveToDB('notes', note); renderNotes();
+                    showToast(`✅ 筆記音訊已自動上傳至 Google Drive`);
+                }
+            } catch(e) { console.warn('uploadNoteAudioToDrive error:', e); }
         };
 
         // ── 手動上傳 Google Drive ────────────────────────────────────────
@@ -8367,8 +8761,22 @@ if (appState.pendingAnalyzeContextId) {
                 await initDB();
 
                 // ── 持久化儲存授權（防止瀏覽器自動清除 IndexedDB）──
+                // 【資料保護修復】在手機上，若未取得持久化授權，瀏覽器可能在記憶體不足時清除 IndexedDB
                 if (navigator.storage && navigator.storage.persist) {
-                    navigator.storage.persist().then(ok => console.log(ok ? '✅ 持久化儲存已啟用' : '⚠️ 持久化儲存未啟用'));
+                    navigator.storage.persist().then(ok => {
+                        if (ok) {
+                            console.log('✅ 持久化儲存已啟用，資料不會被自動清除');
+                        } else {
+                            console.warn('⚠️ 持久化儲存未啟用，手機低記憶體時可能清除資料');
+                            // 顯示一次性提醒（只在首次安裝時）
+                            if (!localStorage.getItem('nova_persist_warned')) {
+                                localStorage.setItem('nova_persist_warned', '1');
+                                setTimeout(() => {
+                                    showToast('⚠️ 建議在瀏覽器設定中允許此網站「儲存資料」，以防資料被清除');
+                                }, 3000);
+                            }
+                        }
+                    });
                 }
 
                 // ── 還原使用者指定的本地錄音存檔資料夾 ──────────────
@@ -8389,10 +8797,17 @@ if (appState.pendingAnalyzeContextId) {
                     } catch(e) { console.warn('還原資料夾 handle 失敗:', e); }
                 }
 
-                appState.messages = (await loadStoreFromDB('messages')).filter(m => !appState.deletedIds[String(m.id)]).sort((a,b)=>a.id-b.id);
-                appState.notes = (await loadStoreFromDB('notes')).sort((a,b)=>b.id-a.id);
-                appState.todos = (await loadStoreFromDB('todos')).sort((a,b)=>b.id-a.id);
+                const _del = appState.deletedIds;
+                appState.messages = (await loadStoreFromDB('messages')).filter(m => !_del[String(m.id)]).sort((a,b)=>a.id-b.id);
+                appState.notes = (await loadStoreFromDB('notes')).filter(n => !_del[String(n.id)]).sort((a,b)=>b.id-a.id);
+                appState.todos = (await loadStoreFromDB('todos')).filter(t => !_del[String(t.id)]).sort((a,b)=>b.id-a.id);
                 appState.audioRecords = (await loadStoreFromDB('audioRecords')).sort((a,b)=>b.id-a.id);
+                // ── IndexedDB 全空 → 嘗試從緊急備份還原（手機低記憶體被清除的情況）
+                if (appState.messages.length === 0 && appState.notes.length === 0 && appState.todos.length === 0) {
+                    await restoreFromEmergencyBackup();
+                }
+                // ── 清理超過 30 天的 tombstone，防止 localStorage 爆滿
+                pruneDeletedIds();
 
                 const migrateLS = (lsKey, storeName, stateArray) => {
                     const oldData = localStorage.getItem(lsKey);
@@ -8407,9 +8822,15 @@ if (appState.pendingAnalyzeContextId) {
                 migrateLS('nova_notes', 'notes', appState.notes);
                 migrateLS('nova_todos', 'todos', appState.todos);
                 migrateLS('nova_audio_records', 'audioRecords', appState.audioRecords);
-            } catch (err) { console.error("IndexedDB 初始化失敗", err); }
+            } catch (err) { 
+                console.error("IndexedDB 初始化失敗", err);
+                // 【資料保護修復】DB 初始化失敗時，標記跳過歡迎訊息，避免空白狀態覆蓋真實資料
+                appState._dbInitFailed = true;
+            }
 
-            if(appState.messages.length === 0) {
+            // 【資料保護修復】只有在 DB 成功初始化且確實沒有任何訊息時，才顯示歡迎訊息
+            // 原本直接判斷 messages.length === 0 有風險：DB 失敗時也會是 0，導致歡迎訊息被寫入並覆蓋
+            if(appState.messages.length === 0 && !appState._dbInitFailed) {
                 const welcomeMsg = { 
                     id: Date.now(), 
                     text: 'NOVA 120 SSP 系統升級完畢！\n\n✅ **Multi AI協作**：導入Multi AI協作', 
@@ -8419,6 +8840,8 @@ if (appState.pendingAnalyzeContextId) {
             }
             
             renderAll();
+            // ── 啟動完成後執行初始緊急備份（確保有最新快照，以防手機下次清除 IndexedDB）
+            scheduleEmergencyBackup();
             
             const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
             safeSet('key-gemini', appState.keys.gemini); safeSet('key-groq', appState.keys.groq); safeSet('key-cohere', appState.keys.cohere); safeSet('key-openai', appState.keys.openai); safeSet('key-grok', appState.keys.grok); safeSet('key-serpapi', appState.keys.serpapi); safeSet('key-aws-ak', appState.keys.aws_ak); safeSet('key-aws-sk', appState.keys.aws_sk); safeSet('key-aws-region', appState.keys.aws_region); safeSet('key-doc-url', appState.docMonitorUrl); safeSet('key-drive-url', appState.driveUrl); safeSet('key-gmaps', appState.keys.gmaps);
