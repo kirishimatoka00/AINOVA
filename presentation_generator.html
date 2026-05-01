@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Nova 簡報生成器</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']}}}}</script>
+<style>
+:root{color-scheme:dark;--safe-bottom:env(safe-area-inset-bottom,0px)}
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+html,body{margin:0;padding:0;background:#020617;color:#f1f5f9;font-family:'Inter',sans-serif;height:100%;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#0f172a}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+.ns{-ms-overflow-style:none;scrollbar-width:none}
+.ns::-webkit-scrollbar{display:none}
+
+/* Loader dots */
+@keyframes dp{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
+.dp{display:inline-flex;gap:5px;align-items:center}
+.dp span{width:7px;height:7px;border-radius:50%;background:#818cf8;animation:dp 1.2s infinite}
+.dp span:nth-child(2){animation-delay:.2s}.dp span:nth-child(3){animation-delay:.4s}
+
+/* Progress bar */
+.prog-bar{height:4px;background:#1e293b;border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,#4f46e5,#7c3aed,#a855f7);transition:width .4s ease;border-radius:2px}
+
+/* Toast */
+#toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;color:#f1f5f9;padding:12px 20px;border-radius:12px;font-size:14px;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;max-width:92vw;text-align:center;line-height:1.4;white-space:pre-wrap}
+#toast.show{opacity:1}
+
+/* Section accordion */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 16px;background:none;border:none;color:#94a3b8;font-size:13px;font-weight:600;letter-spacing:.03em;cursor:pointer;transition:background .15s;text-align:left;border-bottom:1px solid #1e293b}
+.sec-hdr:active{background:#1e293b}
+.sec-hdr .caret{transition:transform .22s;flex-shrink:0;margin-left:8px}
+.sec-hdr.open .caret{transform:rotate(180deg)}
+.sec-body{padding:12px 16px;border-bottom:1px solid #0f172a}
+
+/* Drop zone */
+.dz{border:2px dashed #334155;border-radius:12px;transition:all .15s;cursor:pointer;text-align:center;padding:16px 12px}
+.dz:active,.dz.over{border-color:#6366f1;background:rgba(99,102,241,.06)}
+
+/* File item */
+.file-item{display:flex;align-items:center;gap:8px;background:#1e293b;border-radius:10px;padding:8px 10px}
+
+/* History card */
+.hc{border:1px solid #1e293b;border-radius:12px;padding:12px;cursor:pointer;transition:all .15s;margin-bottom:8px}
+.hc:active{background:#1e293b;border-color:#4338ca}
+
+/* Slide thumbnail */
+.th{border:2px solid #1e293b;border-radius:10px;overflow:hidden;cursor:pointer;position:relative;background:#f8fafc;flex-shrink:0;transition:border-color .15s}
+.th.active{border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,.25)}
+.th:active{border-color:#6366f1}
+.th-num{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.65);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;z-index:5}
+.th-frame{width:1280px;height:720px;border:none;pointer-events:none;display:block;transform-origin:top left}
+
+/* Preview */
+.preview-shell{width:100%;aspect-ratio:16/9;background:#1e293b;border-radius:10px;overflow:hidden;position:relative}
+.preview-frame{position:absolute;top:0;left:0;width:1280px;height:720px;border:none;transform-origin:top left}
+
+/* Mobile buttons - bigger touch targets */
+.btn-pri{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;padding:14px 20px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;transition:opacity .15s;-webkit-appearance:none}
+.btn-pri:active{opacity:.8}
+.btn-pri:disabled{opacity:.45;cursor:not-allowed}
+.btn-sec{background:#1e293b;color:#cbd5e1;border:1px solid #334155;padding:12px 16px;border-radius:12px;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;transition:opacity .15s;-webkit-appearance:none;font-weight:500}
+.btn-sec:active{opacity:.7}
+.btn-sm{background:#1e293b;color:#94a3b8;border:1px solid #1e293b;padding:10px 14px;border-radius:10px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:42px;min-width:42px;transition:all .15s;-webkit-appearance:none}
+.btn-sm:active{background:#334155;color:#e2e8f0}
+.btn-icon{background:#1e293b;color:#64748b;border:none;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;transition:all .15s;-webkit-appearance:none}
+.btn-icon:active{background:#334155;color:#e2e8f0}
+.btn-danger{background:transparent;color:#64748b;border:none;padding:8px;border-radius:8px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:36px;min-width:36px;transition:color .15s}
+.btn-danger:active{color:#f87171}
+
+/* Inputs */
+.inp{background:#0f172a;border:1.5px solid #334155;border-radius:12px;padding:12px 14px;font-size:14px;color:#f1f5f9;outline:none;width:100%;-webkit-appearance:none;transition:border-color .15s}
+.inp:focus{border-color:#6366f1}
+select.inp{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+
+/* Tab bar */
+.tab-bar{display:flex;background:#0f172a;border-top:1px solid #1e293b;flex-shrink:0}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px;color:#475569;font-size:10px;font-weight:600;cursor:pointer;border:none;background:none;min-height:56px;transition:color .15s;-webkit-tap-highlight-color:transparent}
+.tab-btn.active{color:#818cf8}
+.tab-btn i{font-size:22px}
+
+/* Panels */
+#panel-settings,#panel-preview,#panel-history{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+#panel-settings.show,#panel-preview.show,#panel-history.show{display:flex}
+
+/* Image search modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px;background:#0f172a;border-bottom:1px solid #1e293b;flex-shrink:0}
+
+/* Swipe hint */
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.pulse{animation:pulse 2s infinite}
+
+/* Key status dot */
+.kdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+
+/* Range input */
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:#1e293b;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#6366f1;cursor:pointer;border:2px solid #818cf8}
+
+/* Checkbox */
+input[type=checkbox]{width:18px;height:18px;accent-color:#6366f1;cursor:pointer;flex-shrink:0}
+
+/* Logo preview */
+#logo-box{width:64px;height:64px;border-radius:14px;background:#1e293b;border:1.5px solid #334155;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     TOP APP BAR
+══════════════════════════════════════ -->
+<div style="background:#0f172a;border-bottom:1px solid #1e293b;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+  <a href="./Nova_120_SSP_Claude_V7.html"
+     style="width:40px;height:40px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;text-decoration:none">
+    <i class="ph-bold ph-arrow-left" style="font-size:18px"></i>
+  </a>
+  <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#a855f7);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    <i class="ph-bold ph-presentation-chart" style="color:#fff;font-size:18px"></i>
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2">Nova 簡報生成器</div>
+    <div style="font-size:11px;color:#475569">AI Presentation Studio</div>
+  </div>
+  <!-- API dots -->
+  <div style="display:flex;gap:5px;align-items:center">
+    <span id="dot-gemini" class="kdot" style="background:#334155" title="Gemini"></span>
+    <span id="dot-grok"   class="kdot" style="background:#334155" title="Grok"></span>
+    <span id="dot-serpapi"class="kdot" style="background:#334155" title="SerpApi"></span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PANELS
+══════════════════════════════════════ -->
+
+<!-- ── SETTINGS PANEL ── -->
+<div id="panel-settings" class="show">
+  <div style="flex:1;overflow-y:auto" class="ns">
+
+    <!-- Topic Input (always visible) -->
+    <div style="padding:14px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <div style="font-size:11px;color:#64748b;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">簡報主題</div>
+      <textarea id="topic" rows="2" class="inp" placeholder="輸入簡報主題，例如：&#10;Q3 銷售策略、AI 技術趨勢分析" style="resize:none;line-height:1.5"></textarea>
+      <button onclick="generate()" id="gen-btn" class="btn-pri w-full mt-3" style="width:100%">
+        <i class="ph-bold ph-magic-wand"></i><span>AI 生成簡報</span>
+      </button>
+    </div>
+
+    <!-- Progress (hidden by default) -->
+    <div id="prog-wrap" class="hidden" style="padding:12px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div class="dp"><span></span><span></span><span></span></div>
+        <span id="prog-txt" style="font-size:12px;color:#94a3b8;flex:1">處理中…</span>
+        <span id="prog-pct" style="font-size:12px;color:#818cf8;font-weight:700">0%</span>
+      </div>
+      <div class="prog-bar"><div id="prog-fill" class="prog-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- API Status -->
+    <div>
+      <button class="sec-hdr open" onclick="toggleSec(this,'s-keys')">
+        <span>API 狀態 <span id="key-summary" style="font-size:11px;color:#475569;font-weight:400"></span></span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-keys" class="sec-body">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="dot2-gemini" class="kdot" style="background:#334155"></span>
+            <span style="font-size:13px;color:#94a3b8;flex:1">Gemini（文字生成）</span>
+            <span id="val-gemini" style="font-size:12px;color:#475569">未設定</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="dot2-grok" class="kdot" style="background:#334155"></span>
+            <span style="font-size:13px;color:#94a3b8;flex:1">Grok（生圖）</span>
+            <span id="val-grok" style="font-size:12px;color:#475569">未設定</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="dot2-serpapi" class="kdot" style="background:#334155"></span>
+            <span style="font-size:13px;color:#94a3b8;flex:1">SerpApi（圖片搜尋）</span>
+            <span id="val-serpapi" style="font-size:12px;color:#475569">未設定</span>
+          </div>
+        </div>
+        <button onclick="reloadKeys()" style="margin-top:12px;display:flex;align-items:center;gap:6px;color:#818cf8;font-size:13px;background:none;border:none;cursor:pointer;padding:0">
+          <i class="ph-bold ph-arrows-clockwise"></i> 重新讀取 NOVA 金鑰
+        </button>
+      </div>
+    </div>
+
+    <!-- Text Model -->
+    <div>
+      <button class="sec-hdr open" onclick="toggleSec(this,'s-textm')">
+        <span>文字生成模型</span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-textm" class="sec-body">
+        <select id="gemini-model" class="inp" onchange="saveCfg()">
+          <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview ⭐</option>
+          <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+          <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+          <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite（快）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Image Model -->
+    <div>
+      <button class="sec-hdr open" onclick="toggleSec(this,'s-imgm')">
+        <span>生圖模型</span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-imgm" class="sec-body" style="display:flex;flex-direction:column;gap:12px">
+        <select id="img-model" class="inp" onchange="saveCfg()">
+          <optgroup label="── 智慧循序 ──">
+            <option value="auto" selected>🤖 Auto（Grok → Gemini → Picsum）</option>
+          </optgroup>
+          <optgroup label="── Grok ──">
+            <option value="grok-imagine-image-pro">Grok Imagine Image Pro</option>
+            <option value="grok-imagine-image">Grok Imagine Image</option>
+          </optgroup>
+          <optgroup label="── Gemini ──">
+            <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image</option>
+            <option value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash-Image</option>
+          </optgroup>
+          <optgroup label="── Imagen ──">
+            <option value="imagen-4.0-ultra-generate-001">Imagen 4.0 Ultra</option>
+            <option value="imagen-4.0-generate-001">Imagen 4.0 Standard</option>
+            <option value="imagen-4.0-fast-generate-001">Imagen 4.0 Fast</option>
+          </optgroup>
+          <optgroup label="── 圖片搜尋 ──">
+            <option value="serpapi">SerpApi（Google 圖片）</option>
+            <option value="unsplash">Unsplash（免費圖庫）</option>
+          </optgroup>
+          <optgroup label="── 停用 ──">
+            <option value="none">❌ 不產生圖片</option>
+          </optgroup>
+        </select>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="ai-img" checked onchange="saveCfg()">
+          <span style="font-size:13px;color:#94a3b8">每張投影片自動生成配圖</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div>
+      <button class="sec-hdr open" onclick="toggleSec(this,'s-cfg')">
+        <span>生成設定</span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-cfg" class="sec-body" style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:13px;color:#94a3b8">投影片數量</span>
+            <span id="sc-val" style="font-size:14px;color:#818cf8;font-weight:700">8</span>
+          </div>
+          <input type="range" id="slide-count" min="3" max="20" value="8"
+                 oninput="document.getElementById('sc-val').textContent=this.value;saveCfg()">
+        </div>
+        <div>
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:8px">輸出語言</div>
+          <select id="lang" class="inp" onchange="saveCfg()">
+            <option value="zh-TW">繁體中文</option>
+            <option value="zh-CN">簡體中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files -->
+    <div>
+      <button class="sec-hdr" onclick="toggleSec(this,'s-files')">
+        <span>附加資料 <span id="file-badge" style="font-size:11px;color:#6366f1;font-weight:700"></span></span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-files" class="sec-body hidden" style="display:none;flex-direction:column;gap:10px">
+        <div class="dz" onclick="document.getElementById('file-in').click()"
+             ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <i class="ph-bold ph-upload-simple" style="font-size:28px;color:#475569;display:block;margin-bottom:6px"></i>
+          <div style="font-size:13px;color:#64748b">點擊上傳檔案</div>
+          <div style="font-size:11px;color:#334155;margin-top:4px">PDF · XLSX · CSV · TXT · 圖片</div>
+        </div>
+        <input type="file" id="file-in" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.png,.jpg,.jpeg,.gif,.webp" class="hidden" onchange="handleFiles(event)">
+        <div id="file-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div>
+      <button class="sec-hdr" onclick="toggleSec(this,'s-logo')">
+        <span>品牌 Logo</span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-logo" class="sec-body hidden" style="display:none;flex-direction:row;align-items:center;gap:14px">
+        <div id="logo-box" onclick="document.getElementById('logo-in').click()">
+          <i class="ph-bold ph-image-square" id="logo-ph" style="font-size:28px;color:#475569"></i>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:6px">PNG / SVG / JPG<br>建議使用透明背景</div>
+          <button onclick="clearLogo()" style="font-size:12px;color:#f87171;background:none;border:none;cursor:pointer;padding:0">移除 Logo</button>
+        </div>
+        <input type="file" id="logo-in" accept="image/*" class="hidden" onchange="handleLogo(event)">
+      </div>
+    </div>
+
+    <!-- PPTX Template -->
+    <div>
+      <button class="sec-hdr" onclick="toggleSec(this,'s-tpl')">
+        <span>PPTX 樣板 <span id="tpl-badge" style="font-size:11px;color:#4ade80;font-weight:700"></span></span>
+        <i class="ph-bold ph-caret-down caret"></i>
+      </button>
+      <div id="s-tpl" class="sec-body hidden" style="display:none;flex-direction:column;gap:10px">
+        <div style="font-size:13px;color:#64748b;line-height:1.6">上傳 .pptx 作為樣板，AI 生成時將套用其排版風格</div>
+        <div class="dz" id="pptx-dz" onclick="document.getElementById('pptx-in').click()"
+             ondrop="handlePptxDrop(event)"
+             ondragover="e=>{e.preventDefault();document.getElementById('pptx-dz').classList.add('over')}"
+             ondragleave="e=>document.getElementById('pptx-dz').classList.remove('over')">
+          <i class="ph-bold ph-file-ppt" style="font-size:28px;color:#475569;display:block;margin-bottom:6px"></i>
+          <div style="font-size:13px;color:#64748b">點擊上傳 .pptx 樣板</div>
+        </div>
+        <input type="file" id="pptx-in" accept=".pptx" class="hidden" onchange="handlePptxTpl(event)">
+        <div id="pptx-status" style="font-size:12px;color:#475569"></div>
+        <button onclick="clearPptxTpl()" id="pptx-clear" class="hidden" style="font-size:12px;color:#f87171;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px">
+          <i class="ph-bold ph-trash"></i> 移除樣板
+        </button>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px;border-top:1px solid #1e293b;margin-top:4px">
+      <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">匯出</div>
+      <button onclick="exportPPTX()" class="btn-pri" style="width:100%">
+        <i class="ph-bold ph-download-simple"></i> 匯出 PPTX
+      </button>
+      <div style="display:flex;gap:10px">
+        <button onclick="exportHTML()" class="btn-sec" style="flex:1">
+          <i class="ph-bold ph-code"></i> HTML
+        </button>
+        <button onclick="switchTab('preview');openFullscreen()" class="btn-sec" style="flex:1">
+          <i class="ph-bold ph-arrows-out"></i> 全螢幕
+        </button>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+  </div>
+</div>
+
+<!-- ── PREVIEW PANEL ── -->
+<div id="panel-preview">
+  <!-- Slide preview -->
+  <div style="padding:12px;background:#020617;flex-shrink:0">
+    <div class="preview-shell" id="preview-shell">
+      <div id="preview-ph" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1e293b">
+        <div style="text-align:center">
+          <i class="ph-bold ph-presentation-chart" style="font-size:48px;color:#334155;display:block;margin-bottom:10px"></i>
+          <div style="color:#475569;font-size:14px">生成後在此預覽</div>
+        </div>
+      </div>
+      <iframe id="preview-frame" class="preview-frame hidden"></iframe>
+    </div>
+  </div>
+
+  <!-- Nav bar -->
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#0f172a;border-top:1px solid #1e293b;flex-shrink:0">
+    <button onclick="prevSlide()" class="btn-sm"><i class="ph-bold ph-caret-left"></i></button>
+    <span id="slide-nav" style="flex:1;text-align:center;font-size:15px;font-weight:600;color:#e2e8f0">- / -</span>
+    <button onclick="nextSlide()" class="btn-sm"><i class="ph-bold ph-caret-right"></i></button>
+  </div>
+
+  <!-- Action row -->
+  <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#0f172a;border-top:1px solid #0f172a;flex-shrink:0">
+    <button onclick="editSlide()" class="btn-sm" style="flex:1">
+      <i class="ph-bold ph-pencil-simple"></i> 編輯
+    </button>
+    <button onclick="regenSlide()" class="btn-sm" style="flex:1">
+      <i class="ph-bold ph-arrows-clockwise"></i> 重生成
+    </button>
+    <button onclick="toggleImgModal()" class="btn-sm" style="flex:1">
+      <i class="ph-bold ph-image-square" style="color:#4ade80"></i> 圖片
+    </button>
+    <button onclick="addBlank()" class="btn-sm" style="flex:1">
+      <i class="ph-bold ph-plus"></i> 新增
+    </button>
+    <button onclick="delSlide()" class="btn-icon" style="background:#1e293b;color:#64748b;min-width:44px">
+      <i class="ph-bold ph-trash" style="font-size:16px"></i>
+    </button>
+  </div>
+
+  <!-- Horizontal thumbnail strip -->
+  <div style="background:#0f172a;border-top:1px solid #1e293b;padding:10px 12px;flex-shrink:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span id="th-count" style="font-size:11px;color:#475569;font-weight:600">0 張投影片</span>
+      <button onclick="openFullscreen()" class="btn-sm" style="min-height:32px;padding:6px 10px;font-size:12px">
+        <i class="ph-bold ph-arrows-out"></i> 全螢幕
+      </button>
+    </div>
+    <div id="thumbs" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px" class="ns">
+      <div style="display:flex;align-items:center;justify-content:center;min-width:120px;color:#334155;font-size:11px;text-align:center;padding:10px">
+        <div><i class="ph-bold ph-presentation-chart" style="font-size:24px;display:block;margin-bottom:4px"></i>生成後顯示</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY PANEL ── -->
+<div id="panel-history">
+  <div style="padding:14px 16px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#0f172a">
+    <span style="font-size:14px;font-weight:600;color:#e2e8f0">生成歷史</span>
+    <button onclick="clearAllHistory()" style="font-size:13px;color:#f87171;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px">
+      <i class="ph-bold ph-trash"></i> 全部清除
+    </button>
+  </div>
+  <div id="hist-list" style="flex:1;overflow-y:auto;padding:14px 16px" class="ns">
+    <div style="text-align:center;padding:40px 20px;color:#334155">
+      <i class="ph-bold ph-clock-counter-clockwise" style="font-size:40px;display:block;margin-bottom:10px"></i>
+      <div style="font-size:14px">生成後自動儲存</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB BAR
+══════════════════════════════════════ -->
+<div class="tab-bar" style="padding-bottom:var(--safe-bottom)">
+  <button class="tab-btn active" id="tab-settings" onclick="switchTab('settings')">
+    <i class="ph-bold ph-sliders"></i>
+    <span>設定</span>
+  </button>
+  <button class="tab-btn" id="tab-preview" onclick="switchTab('preview')">
+    <i class="ph-bold ph-monitor-play"></i>
+    <span>預覽</span>
+  </button>
+  <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
+    <i class="ph-bold ph-clock-counter-clockwise"></i>
+    <span>歷史</span>
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════
+     IMAGE SEARCH MODAL
+══════════════════════════════════════ -->
+<div id="img-modal" class="modal-bg hidden">
+  <div class="modal-header">
+    <span style="font-size:15px;font-weight:700;color:#fff">圖片搜尋</span>
+    <button onclick="toggleImgModal()" class="btn-icon" style="background:#1e293b"><i class="ph-bold ph-x"></i></button>
+  </div>
+  <div style="padding:12px 16px;background:#0f172a;flex-shrink:0">
+    <div style="display:flex;gap:10px">
+      <input type="text" id="img-q" class="inp" placeholder="關鍵字（英文搜尋效果佳）" style="flex:1"
+             onkeydown="if(event.key==='Enter')imgSearch()">
+      <button onclick="imgSearch()" style="background:#059669;color:#fff;border:none;border-radius:12px;padding:12px 16px;font-size:15px;cursor:pointer;min-height:48px;min-width:52px">
+        <i class="ph-bold ph-magnifying-glass"></i>
+      </button>
+    </div>
+    <div style="font-size:12px;color:#475569;margin-top:8px">點擊圖片可插入目前投影片</div>
+  </div>
+  <div id="img-results" style="flex:1;overflow-y:auto;padding:12px 16px" class="ns">
+    <div style="text-align:center;padding:40px 20px;color:#334155;font-size:13px">輸入關鍵字後搜尋</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     EDIT MODAL
+══════════════════════════════════════ -->
+<div id="edit-modal" class="modal-bg hidden">
+  <div class="modal-header">
+    <span style="font-size:15px;font-weight:700;color:#fff">✏️ 編輯投影片 HTML</span>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveEdit()" class="btn-pri" style="min-height:40px;padding:10px 16px;font-size:13px">
+        <i class="ph-bold ph-floppy-disk"></i> 儲存
+      </button>
+      <button onclick="closeModal('edit-modal')" class="btn-icon" style="background:#1e293b"><i class="ph-bold ph-x"></i></button>
+    </div>
+  </div>
+  <textarea id="edit-code" style="flex:1;background:#020617;color:#86efac;font-family:monospace;font-size:12px;padding:14px;outline:none;resize:none;border:none;line-height:1.6" spellcheck="false"></textarea>
+</div>
+
+<!-- ══════════════════════════════════════
+     FULLSCREEN MODAL
+══════════════════════════════════════ -->
+<div id="fs-modal" class="hidden" style="position:fixed;inset:0;background:#000;z-index:300;display:flex;flex-direction:column">
+  <div style="position:absolute;top:12px;right:12px;z-index:10;display:flex;gap:8px">
+    <button onclick="prevSlide(true)" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:18px;cursor:pointer;min-width:48px;min-height:48px">◀</button>
+    <span id="fs-nav" style="background:rgba(255,255,255,.15);color:#fff;border-radius:10px;padding:10px 16px;font-size:15px;display:flex;align-items:center">1/1</span>
+    <button onclick="nextSlide(true)" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:18px;cursor:pointer;min-width:48px;min-height:48px">▶</button>
+    <button onclick="closeModal('fs-modal')" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:15px;cursor:pointer;min-height:48px">✕</button>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center">
+    <iframe id="fs-frame" style="border:none;width:100vw;height:56.25vw;max-height:100vh;max-width:calc(100vh * 16/9)"></iframe>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+const G={
+  slides:[],cur:0,running:false,
+  keys:{gemini:'',grok:'',serpapi:''},
+  logo:null,logoMime:'image/png',
+  files:[],pptxTpl:null,
+  history:[],imgCache:{},editTimer:null,
+  curTab:'settings'
+};
+const GROK_PROXY='https://grokcaller.kirishimatoka00.workers.dev/';
+const GROK_IMG='https://api.x.ai/v1/images/generations';
+const LS_HIST='nsg2_hist',LS_LOGO='nsg2_logo',LS_TPL='nsg2_pptx_tpl',LS_CFG='nsg2_cfg';
+
+// ═══════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════
+window.addEventListener('load',()=>{
+  reloadKeys(); loadPersisted(); setupResize();
+  // Swipe to navigate slides
+  setupSwipe();
+});
+
+function reloadKeys(){
+  try{
+    G.keys.gemini =localStorage.getItem('nova_key_gemini') ||'';
+    G.keys.grok   =localStorage.getItem('nova_key_grok')   ||'';
+    G.keys.serpapi=localStorage.getItem('nova_key_serpapi')||'';
+    setDots();
+  }catch(e){toast('⚠️ 無法讀取 NOVA 金鑰');}
+}
+
+function setDots(){
+  const names=['gemini','grok','serpapi'];
+  let okCount=0;
+  names.forEach(n=>{
+    const ok=!!G.keys[n];
+    if(ok) okCount++;
+    ['dot-','dot2-'].forEach(pfx=>{
+      const el=document.getElementById(pfx+n);
+      if(el) el.style.background=ok?'#22c55e':'#334155';
+    });
+    const val=document.getElementById('val-'+n);
+    if(val){val.textContent=ok?'···'+G.keys[n].slice(-4):'未設定';val.style.color=ok?'#22c55e':'#475569';}
+  });
+  const s=document.getElementById('key-summary');
+  if(s) s.textContent=okCount?`(${okCount}/3 已設定)`:'';
+}
+
+function loadPersisted(){
+  try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');
+    if(c.gm) document.getElementById('gemini-model').value=c.gm;
+    if(c.im) document.getElementById('img-model').value=c.im;
+    if(c.sc){document.getElementById('slide-count').value=c.sc;document.getElementById('sc-val').textContent=c.sc;}
+    if(c.la) document.getElementById('lang').value=c.la;
+    if(c.ai!==undefined) document.getElementById('ai-img').checked=c.ai;
+  }catch(e){}
+  try{const raw=localStorage.getItem(LS_LOGO);
+    if(raw){const o=JSON.parse(raw);G.logo=o.d;G.logoMime=o.m||'image/png';renderLogoBox(G.logo);}
+  }catch(e){}
+  try{const raw=localStorage.getItem(LS_TPL);
+    if(raw){const o=JSON.parse(raw);G.pptxTpl=o;showTplStatus(o.name);}
+  }catch(e){}
+  try{const raw=localStorage.getItem(LS_HIST);if(raw) G.history=JSON.parse(raw);}catch(e){}
+  renderHist();
+}
+
+function saveCfg(){
+  try{localStorage.setItem(LS_CFG,JSON.stringify({
+    gm:document.getElementById('gemini-model').value,
+    im:document.getElementById('img-model').value,
+    sc:document.getElementById('slide-count').value,
+    la:document.getElementById('lang').value,
+    ai:document.getElementById('ai-img').checked
+  }));}catch(e){}
+}
+
+// ═══════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════
+function switchTab(tab){
+  G.curTab=tab;
+  ['settings','preview','history'].forEach(t=>{
+    document.getElementById('panel-'+t).classList.toggle('show',t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='preview') scaleFrame();
+}
+
+// ═══════════════════════════════════════
+// SECTION TOGGLE
+// ═══════════════════════════════════════
+function toggleSec(btn,bodyId){
+  const body=document.getElementById(bodyId);
+  const isHidden=body.classList.contains('hidden')||body.style.display==='none';
+  if(isHidden){
+    body.classList.remove('hidden');
+    body.style.display='flex';
+    btn.classList.add('open');
+  }else{
+    body.style.display='none';
+    btn.classList.remove('open');
+  }
+}
+
+// ═══════════════════════════════════════
+// FILES
+// ═══════════════════════════════════════
+function handleDragOver(e){e.preventDefault();document.getElementById('drop-zone')?.classList.add('over');}
+function handleDragLeave(){document.getElementById('drop-zone')?.classList.remove('over');}
+function handleDrop(e){e.preventDefault();document.getElementById('drop-zone')?.classList.remove('over');procFiles(e.dataTransfer.files);}
+function handleFiles(e){procFiles(e.target.files);e.target.value='';}
+
+function procFiles(list){
+  Array.from(list).forEach(f=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const idx=G.files.findIndex(x=>x.name===f.name);
+      const entry={name:f.name,type:f.type,data:ev.target.result,mime:f.type,size:f.size};
+      if(idx>=0) G.files[idx]=entry; else G.files.push(entry);
+      renderFileList();
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function renderFileList(){
+  const el=document.getElementById('file-list');
+  const badge=document.getElementById('file-badge');
+  if(badge) badge.textContent=G.files.length?`(${G.files.length})`:'';
+  if(!G.files.length){el.innerHTML='';return;}
+  el.innerHTML=G.files.map((f,i)=>{
+    const ic=f.type.startsWith('image/')?'ph-image':f.type.includes('pdf')?'ph-file-pdf':f.type.includes('sheet')||f.type.includes('csv')?'ph-file-xls':'ph-file-text';
+    const sz=f.size>1048576?`${(f.size/1048576).toFixed(1)}MB`:`${Math.round(f.size/1024)}KB`;
+    return `<div class="file-item">
+      <i class="ph-bold ${ic}" style="color:#818cf8;font-size:16px;flex-shrink:0"></i>
+      <span style="font-size:12px;color:#cbd5e1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <span style="font-size:11px;color:#475569;flex-shrink:0">${sz}</span>
+      <button onclick="G.files.splice(${i},1);renderFileList()" class="btn-danger" style="flex-shrink:0"><i class="ph-bold ph-x" style="font-size:14px"></i></button>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// LOGO
+// ═══════════════════════════════════════
+function handleLogo(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{G.logo=ev.target.result;G.logoMime=f.type;renderLogoBox(G.logo);
+    try{localStorage.setItem(LS_LOGO,JSON.stringify({d:G.logo,m:G.logoMime}));}catch(er){}
+    toast('✅ Logo 已儲存');};
+  r.readAsDataURL(f);e.target.value='';
+}
+function renderLogoBox(src){
+  const box=document.getElementById('logo-box');
+  document.getElementById('logo-ph').style.display='none';
+  let img=box.querySelector('img');if(img)img.remove();
+  img=document.createElement('img');img.src=src;img.style.cssText='width:100%;height:100%;object-fit:contain;padding:4px';
+  box.appendChild(img);
+}
+function clearLogo(){
+  G.logo=null;
+  const box=document.getElementById('logo-box');const img=box.querySelector('img');if(img)img.remove();
+  document.getElementById('logo-ph').style.display='';
+  try{localStorage.removeItem(LS_LOGO);}catch(e){}
+  toast('Logo 已移除');
+}
+
+// ═══════════════════════════════════════
+// PPTX TEMPLATE
+// ═══════════════════════════════════════
+function handlePptxDrop(e){
+  e.preventDefault();document.getElementById('pptx-dz').classList.remove('over');
+  const f=e.dataTransfer.files[0];if(f&&f.name.endsWith('.pptx'))loadPptxTpl(f);
+}
+function handlePptxTpl(e){const f=e.target.files[0];if(f)loadPptxTpl(f);e.target.value='';}
+function loadPptxTpl(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    const b64=ev.target.result.split(',')[1];
+    G.pptxTpl={name:file.name,data:b64,size:file.size};
+    showTplStatus(file.name);
+    if(file.size<4*1024*1024){try{localStorage.setItem(LS_TPL,JSON.stringify(G.pptxTpl));}catch(e){}}
+    toast(`✅ 樣板：${file.name}`);
+  };
+  r.readAsDataURL(file);
+}
+function showTplStatus(name){
+  const s=document.getElementById('pptx-status');
+  const badge=document.getElementById('tpl-badge');
+  if(s){s.textContent=`✅ ${name}`;s.style.color='#4ade80';}
+  if(badge) badge.textContent='✓';
+  const cl=document.getElementById('pptx-clear');
+  if(cl) cl.classList.remove('hidden');
+}
+function clearPptxTpl(){
+  G.pptxTpl=null;
+  const s=document.getElementById('pptx-status');if(s) s.textContent='';
+  const b=document.getElementById('tpl-badge');if(b) b.textContent='';
+  const cl=document.getElementById('pptx-clear');if(cl) cl.classList.add('hidden');
+  try{localStorage.removeItem(LS_TPL);}catch(e){}
+  toast('樣板已移除');
+}
+
+// ═══════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════
+async function generate(){
+  const topic=document.getElementById('topic').value.trim();
+  if(!topic){toast('請輸入簡報主題');return;}
+  if(!G.keys.gemini){toast('❌ 請先在 NOVA 主程式\n設定 Gemini API Key');return;}
+  if(G.running)return;
+  G.running=true;btnLoading(true);saveCfg();
+  setProg(5,'分析主題，生成大綱…');
+  // Switch to preview tab to show progress
+  switchTab('preview');
+
+  try{
+    const cnt=parseInt(document.getElementById('slide-count').value);
+    const lang=document.getElementById('lang').value;
+    const gm=document.getElementById('gemini-model').value;
+    const im=document.getElementById('img-model').value;
+    const aiImg=document.getElementById('ai-img').checked;
+
+    const outline=await genOutline(topic,cnt,lang,gm);
+    setProg(12,`大綱完成，${outline.slides.length} 張，生成中…`);
+
+    G.slides=[];
+    for(let i=0;i<outline.slides.length;i++){
+      const pct=12+Math.round((i/outline.slides.length)*78);
+      setProg(pct,`第 ${i+1}/${outline.slides.length} 張：${outline.slides[i].title}`);
+      let imgData=null;
+      if(aiImg&&im!=='none') imgData=await getImage(outline.slides[i],im,i,outline.slides.length);
+      const html=await genSlideHTML(outline.slides[i],i,outline.slides.length,G.logo,imgData,lang,topic,gm,G.pptxTpl);
+      G.slides.push({html,title:outline.slides[i].title});
+      renderThumbs();
+    }
+
+    setProg(96,'儲存歷史…');
+    saveHist(topic,G.slides);renderHist();
+    setProg(100,'完成！');
+    G.cur=0;renderThumbs();showSlide(0);
+    setTimeout(hideProg,1200);
+    toast(`✅ ${G.slides.length} 張投影片生成完畢`);
+  }catch(e){hideProg();toast('❌ 生成失敗：\n'+e.message);console.error(e);}
+  finally{G.running=false;btnLoading(false);}
+}
+
+// ─── OUTLINE ────────────────
+async function genOutline(topic,cnt,lang,model){
+  const lname={'zh-TW':'繁體中文','zh-CN':'簡體中文',en:'English',ja:'日本語'}[lang]||'繁體中文';
+  let fCtx='';
+  for(const f of G.files){
+    if(f.type.startsWith('text/')||f.type.includes('csv')||f.name.endsWith('.md')){
+      try{fCtx+=`\n\n📄【${f.name}】\n`+decodeURIComponent(escape(atob(f.data.split(',')[1]))).substring(0,2000);}catch(e){}
+    }
+  }
+  const tplNote=G.pptxTpl?`\n使用者上傳了 PPTX 樣板「${G.pptxTpl.name}」，請在 visualStyle 中指示模仿 PowerPoint 商務樣板風格。`:'';
+  const prompt=`你是頂尖簡報設計顧問。請為以下主題生成完整簡報大綱，只輸出純 JSON，不含任何說明。
+
+主題：${topic}
+語言：${lname}
+張數：${cnt}（第1張封面，最後1張結語）
+${fCtx?'參考資料：'+fCtx:''}${tplNote}
+
+JSON格式：
+{"title":"標題","subtitle":"副標題","slides":[{"title":"投影片標題","type":"title|content|data|image|timeline|comparison|twoCol|quote|conclusion","points":["重點1","重點2"],"imageQuery":"English keywords","hasChart":false,"chartType":"none","chartData":null,"visualStyle":"具體視覺設計描述"}]}
+
+每張 visualStyle 要具體多樣，製造豐富視覺變化。`;
+  const res=await callGemini(prompt,model,null);
+  const clean=res.replace(/```json|```/g,'').trim();
+  try{return JSON.parse(clean);}
+  catch(e){const m=clean.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('大綱解析失敗');}
+}
+
+// ─── SLIDE HTML ──────────────
+async function genSlideHTML(sd,idx,total,logo,imgData,lang,topic,model,pptxTpl){
+  const logoHTML=logo?`<div style="position:absolute;bottom:16px;right:20px;z-index:30;pointer-events:none;"><img src="${logo}" style="height:32px;max-width:110px;object-fit:contain;opacity:.85;" alt="logo"></div>`:'';
+  const imgSrc=imgData||'';
+  const tplNote=pptxTpl?`\n※ 模仿 PowerPoint 商務樣板「${pptxTpl.name}」：清晰標題欄、結構化區塊、乾淨配色。`:'';
+  const isTitle=sd.type==='title',isConclusion=sd.type==='conclusion';
+  const prompt=`你是世界頂尖 HTML/CSS 投影片設計師。生成精美 HTML 投影片（從 <html> 到 </html>）。
+
+【投影片】主題：${topic} ｜ ${idx+1}/${total} ｜ 類型：${sd.type}
+標題：${sd.title} ｜ 語言：${lang}
+重點：${JSON.stringify(sd.points||[])}
+圖表：${sd.hasChart?sd.chartType+' '+JSON.stringify(sd.chartData||{}):'無'}
+視覺：${sd.visualStyle||'專業商務風'}
+${tplNote}
+
+【圖片】${imgSrc?`可用，嵌入：<img src="${imgSrc.substring(0,60)}..." onerror="this.style.display='none'">`:'無，用CSS幾何裝飾'}
+${logoHTML?'【Logo置於</body>前】\n'+logoHTML:''}
+
+【規格】
+1. 容器：width:1280px;min-height:720px;position:relative;overflow:hidden
+2. CDN：Tailwind v2 (jsdelivr)、Google Fonts(Noto Sans TC)${sd.hasChart?'、Chart.js 3.9.1':''}
+3. 內容在720px高度內，不溢出
+4. script字串中</script>寫成<\/script>
+5. 只輸出完整HTML，無說明
+
+【品質】主標≥48px→副標≥24px→內文≥16px；幾何裝飾讓版面飽滿；
+${isTitle?'封面：震撼大標題、全版背景、副標題、日期':''}${isConclusion?'結語：有力CTA、行動號召':''}
+配色由AI根據主題「${topic}」自主設計；風格與前後張一致。`;
+
+  const imgFiles=G.files.filter(f=>f.type.startsWith('image/'));
+  const res=await callGemini(prompt,model,imgFiles[0]||null);
+  const m=res.match(/<html[\s\S]*?<\/html>/i);
+  return m?m[0]:res;
+}
+
+// ─── GEMINI API ──────────────
+async function callGemini(prompt,model,imgFile){
+  if(!G.keys.gemini)throw new Error('Gemini Key 未設定');
+  const ver=model.includes('preview')||model.startsWith('gemini-3')?'v1alpha':'v1beta';
+  const url=`https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${G.keys.gemini}`;
+  let fullPrompt=prompt;
+  for(const f of G.files){
+    if((f.type.startsWith('text/')||f.type.includes('csv')||f.name.endsWith('.md'))&&!fullPrompt.includes(f.name)){
+      try{fullPrompt+=`\n\n【${f.name}】\n`+decodeURIComponent(escape(atob(f.data.split(',')[1]))).substring(0,1500);}catch(e){}
+    }
+  }
+  const parts=[{text:fullPrompt}];
+  if(imgFile?.data) parts.push({inlineData:{mimeType:imgFile.mime||'image/jpeg',data:imgFile.data.split(',')[1]}});
+  const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:.85,maxOutputTokens:8192}})});
+  const data=await resp.json();
+  if(!resp.ok)throw new Error(data.error?.message||`Gemini API ${resp.status}`);
+  return data.candidates?.[0]?.content?.parts?.filter(p=>p.text).map(p=>p.text).join('')||'';
+}
+
+// ═══════════════════════════════════════
+// IMAGE GENERATION
+// ═══════════════════════════════════════
+async function getImage(sd,imModel,idx,total){
+  const query=sd.imageQuery||sd.title;
+  try{
+    if(imModel==='serpapi') return await imgSerpApi(query);
+    if(imModel==='unsplash') return await imgUnsplash(query);
+    const ep=await buildImgPrompt(query);
+    if(imModel==='auto'){
+      if(G.keys.grok){
+        const a=await imgGrok(ep,'grok-imagine-image-pro');if(a)return a;
+        const b=await imgGrok(ep,'grok-imagine-image');if(b)return b;
+      }
+      const c=await imgGemini(ep,'gemini-2.5-flash-image','v1beta');if(c)return c;
+      const d=await imgGemini(ep,'gemini-3.1-flash-image-preview','v1alpha');if(d)return d;
+      return await imgPicsum(query);
+    }
+    if(imModel.includes('grok')) return(await imgGrok(ep,imModel))||await imgPicsum(query);
+    if(imModel.includes('imagen')) return await imgImagen(ep,imModel);
+    if(imModel.includes('image')){const v=imModel.includes('preview')?'v1alpha':'v1beta';return(await imgGemini(ep,imModel,v))||await imgPicsum(query);}
+    return await imgPicsum(query);
+  }catch(e){console.warn('img:',e.message);return null;}
+}
+async function buildImgPrompt(q){
+  if(!G.keys.gemini)return`Professional business: ${q}`;
+  try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${G.keys.gemini}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:`Create a concise English image prompt (max 50 words) for a professional presentation slide about: "${q}". Clean, modern. Return only the prompt.`}]}],generationConfig:{maxOutputTokens:80,temperature:.5}})});
+    const d=await r.json();return d.candidates?.[0]?.content?.parts?.[0]?.text?.trim()||`Professional: ${q}`;}
+  catch{return`Professional illustration: ${q}`;}
+}
+async function imgGrok(prompt,model){
+  if(!G.keys.grok)return null;
+  try{const r=await Promise.race([fetch(`${GROK_PROXY}?url=${encodeURIComponent(GROK_IMG)}`,{method:'POST',headers:{'Authorization':`Bearer ${G.keys.grok}`,'Content-Type':'application/json'},body:JSON.stringify({model,prompt,response_format:'b64_json'})}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),28000))]);
+    if(!r.ok)return null;const d=await r.json();const item=d.data?.[0];if(!item)return null;
+    return item.b64_json?`data:image/png;base64,${item.b64_json}`:item.url||null;}catch{return null;}
+}
+async function imgGemini(prompt,model,ver){
+  if(!G.keys.gemini)return null;
+  try{const r=await Promise.race([fetch(`https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${G.keys.gemini}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseModalities:['TEXT','IMAGE']}})}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),28000))]);
+    if(!r.ok)return null;const d=await r.json();const p=d.candidates?.[0]?.content?.parts?.find(x=>x.inlineData?.mimeType?.startsWith('image/'));
+    return p?.inlineData?.data?`data:${p.inlineData.mimeType};base64,${p.inlineData.data}`:null;}catch{return null;}
+}
+async function imgImagen(prompt,model){
+  if(!G.keys.gemini)return null;
+  try{const ver=model.includes('4.0')?'v1alpha':'v1beta';const r=await fetch(`https://generativelanguage.googleapis.com/${ver}/models/${model}:predict?key=${G.keys.gemini}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instances:[{prompt}],parameters:{sampleCount:1}})});
+    if(!r.ok)return null;const d=await r.json();const b64=d.predictions?.[0]?.bytesBase64Encoded;return b64?`data:image/png;base64,${b64}`:null;}catch{return null;}
+}
+async function imgSerpApi(query){
+  if(!G.keys.serpapi)return await imgUnsplash(query);
+  if(G.imgCache[query])return G.imgCache[query];
+  const target=`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&tbm=isch&num=5&api_key=${G.keys.serpapi}`;
+  for(const proxy of[`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,`https://corsproxy.io/?${encodeURIComponent(target)}`]){
+    try{const r=await fetch(proxy,{signal:AbortSignal.timeout(10000)});if(!r.ok)continue;const d=await r.json();const url=d.images_results?.[0]?.original;if(url){G.imgCache[query]=url;return url;}}catch{}
+  }
+  return await imgUnsplash(query);
+}
+async function imgUnsplash(query){
+  try{const r=await fetch(`https://source.unsplash.com/1280x720/?${encodeURIComponent(query)}`,{signal:AbortSignal.timeout(8000)});return r.url;}catch{return null;}
+}
+async function imgPicsum(query){
+  try{const seed=encodeURIComponent(query.replace(/\s+/g,'-').substring(0,40));const r=await fetch(`https://picsum.photos/seed/${seed}/1280/720`);const blob=await r.blob();
+    return await new Promise(res=>{const fr=new FileReader();fr.onloadend=()=>res(fr.result);fr.readAsDataURL(blob);});}catch{return null;}
+}
+
+// ═══════════════════════════════════════
+// SLIDE RENDER & NAV
+// ═══════════════════════════════════════
+function renderThumbs(){
+  const el=document.getElementById('thumbs');
+  document.getElementById('th-count').textContent=G.slides.length+' 張投影片';
+  if(!G.slides.length){
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-width:120px;color:#334155;font-size:11px;text-align:center;padding:10px"><div><i class="ph-bold ph-presentation-chart" style="font-size:24px;display:block;margin-bottom:4px"></i>生成後顯示</div></div>';
+    return;
+  }
+  // Thumb height = 60px → width = 60 * 16/9 ≈ 107px
+  const thumbH=60,thumbW=Math.round(thumbH*16/9);
+  const scale=thumbH/720;
+  el.innerHTML=G.slides.map((s,i)=>`
+    <div class="th ${i===G.cur?'active':''}" id="th-${i}" onclick="showSlide(${i})"
+         style="width:${thumbW}px;height:${thumbH}px;flex-shrink:0">
+      <div class="th-num">${i+1}</div>
+      <iframe class="th-frame" style="transform:scale(${scale});width:1280px;height:720px" srcdoc="${esc(s.html)}" scrolling="no" loading="lazy"></iframe>
+    </div>`).join('');
+  // Scroll active into view
+  setTimeout(()=>{const th=document.getElementById('th-'+G.cur);if(th)th.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});},50);
+}
+
+function showSlide(idx){
+  if(idx<0||idx>=G.slides.length)return;
+  G.cur=idx;
+  document.querySelectorAll('.th').forEach((e,i)=>e.classList.toggle('active',i===idx));
+  const ph=document.getElementById('preview-ph');
+  const frame=document.getElementById('preview-frame');
+  if(ph)ph.style.display='none';
+  frame.classList.remove('hidden');
+  frame.srcdoc=G.slides[idx].html;
+  scaleFrame();
+  document.getElementById('slide-nav').textContent=`${idx+1} / ${G.slides.length}`;
+  const fs=document.getElementById('fs-modal');
+  if(!fs.classList.contains('hidden')){
+    document.getElementById('fs-frame').srcdoc=G.slides[idx].html;
+    document.getElementById('fs-nav').textContent=`${idx+1}/${G.slides.length}`;
+  }
+  const th=document.getElementById('th-'+idx);
+  if(th)th.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}
+
+function scaleFrame(){
+  const shell=document.getElementById('preview-shell');
+  const frame=document.getElementById('preview-frame');
+  if(!shell||frame.classList.contains('hidden'))return;
+  const sc=shell.offsetWidth/1280;
+  frame.style.transform=`scale(${sc})`;
+  shell.style.height=(720*sc)+'px';
+}
+
+function setupResize(){
+  const shell=document.getElementById('preview-shell');
+  if(shell) new ResizeObserver(scaleFrame).observe(shell);
+  window.addEventListener('resize',scaleFrame);
+}
+
+function prevSlide(){if(G.cur>0)showSlide(G.cur-1);}
+function nextSlide(){if(G.cur<G.slides.length-1)showSlide(G.cur+1);}
+
+function setupSwipe(){
+  let sx=0,sy=0;
+  const shell=document.getElementById('preview-shell');
+  if(!shell)return;
+  shell.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  shell.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>40){
+      if(dx<0)nextSlide();else prevSlide();
+    }
+  },{passive:true});
+}
+
+// ═══════════════════════════════════════
+// SLIDE MANAGEMENT
+// ═══════════════════════════════════════
+function addBlank(){
+  G.slides.splice(G.cur+1,0,{
+    html:`<html lang="zh-TW"><head><meta charset="UTF-8"><link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"></head><body><div style="width:1280px;min-height:720px;background:linear-gradient(135deg,#1e1b4b,#0f172a);display:flex;align-items:center;justify-content:center;"><h1 style="font-size:3.5rem;font-weight:700;color:#818cf8;font-family:Inter,sans-serif;">新投影片</h1></div></body></html>`,
+    title:'新投影片'
+  });
+  renderThumbs();showSlide(G.cur+1);
+}
+function delSlide(){
+  if(G.slides.length<=1){toast('至少保留一張');return;}
+  if(!confirm(`刪除第 ${G.cur+1} 張？`))return;
+  G.slides.splice(G.cur,1);
+  if(G.cur>=G.slides.length)G.cur=G.slides.length-1;
+  renderThumbs();showSlide(G.cur);
+}
+async function regenSlide(){
+  if(!G.slides.length||!G.keys.gemini){toast('請先生成簡報');return;}
+  const topic=document.getElementById('topic').value.trim()||G.slides[G.cur].title;
+  const gm=document.getElementById('gemini-model').value;
+  const im=document.getElementById('img-model').value;
+  const aiImg=document.getElementById('ai-img').checked;
+  const sd={title:G.slides[G.cur].title,type:'content',points:[],imageQuery:G.slides[G.cur].title,visualStyle:'保持與整套簡報一致的視覺語言',hasChart:false};
+  toast('重新生成中…');
+  try{
+    let imgData=null;
+    if(aiImg&&im!=='none') imgData=await getImage(sd,im,G.cur,G.slides.length);
+    const html=await genSlideHTML(sd,G.cur,G.slides.length,G.logo,imgData,document.getElementById('lang').value,topic,gm,G.pptxTpl);
+    G.slides[G.cur].html=html;renderThumbs();showSlide(G.cur);
+    toast('✅ 重生成完成');
+  }catch(e){toast('❌ '+e.message);}
+}
+
+// ═══════════════════════════════════════
+// EDIT
+// ═══════════════════════════════════════
+function editSlide(){
+  if(!G.slides.length)return;
+  document.getElementById('edit-code').value=G.slides[G.cur].html;
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+function saveEdit(){
+  G.slides[G.cur].html=document.getElementById('edit-code').value;
+  renderThumbs();showSlide(G.cur);
+  closeModal('edit-modal');toast('✅ 已儲存');
+}
+
+// ═══════════════════════════════════════
+// IMAGE SEARCH
+// ═══════════════════════════════════════
+function toggleImgModal(){document.getElementById('img-modal').classList.toggle('hidden');}
+async function imgSearch(){
+  const q=document.getElementById('img-q').value.trim();if(!q)return;
+  const el=document.getElementById('img-results');
+  el.innerHTML='<div style="display:flex;justify-content:center;padding:40px 0"><div class="dp"><span></span><span></span><span></span></div></div>';
+  try{
+    let imgs=[];
+    if(G.keys.serpapi){
+      const target=`https://serpapi.com/search.json?q=${encodeURIComponent(q)}&tbm=isch&num=12&api_key=${G.keys.serpapi}`;
+      for(const proxy of[`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,`https://corsproxy.io/?${encodeURIComponent(target)}`]){
+        try{const r=await fetch(proxy,{signal:AbortSignal.timeout(10000)});if(r.ok){const d=await r.json();imgs=(d.images_results||[]).map(i=>({url:i.original||i.thumbnail,thumb:i.thumbnail||i.original,title:i.title||q}));break;}}catch{}
+      }
+    }
+    if(!imgs.length){
+      imgs=[q,q+' background',q+' professional',q+' concept',q+' modern',q+' business'].map(kw=>({
+        url:`https://source.unsplash.com/800x600/?${encodeURIComponent(kw)}`,
+        thumb:`https://source.unsplash.com/400x300/?${encodeURIComponent(kw)}`,title:kw
+      }));
+    }
+    el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${imgs.map(img=>`
+      <div onclick="insertImg('${escAttr(img.url)}')" style="aspect-ratio:4/3;border-radius:10px;overflow:hidden;cursor:pointer;background:#1e293b;border:2px solid #1e293b;transition:border-color .15s"
+           ontouchstart="this.style.borderColor='#6366f1'" ontouchend="this.style.borderColor='#1e293b'">
+        <img src="${img.thumb||img.url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.style.display='none'">
+      </div>`).join('')}</div>`;
+  }catch(e){el.innerHTML=`<p style="color:#f87171;text-align:center;padding:20px;font-size:13px">搜尋失敗：${e.message}</p>`;}
+}
+function insertImg(url){
+  if(!G.slides.length){toast('請先生成簡報');return;}
+  G.slides[G.cur].html=G.slides[G.cur].html.replace('</body>',`<div style="position:absolute;bottom:20px;left:20px;z-index:15;max-width:280px;border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4)"><img src="${url}" style="width:100%;display:block;" onerror="this.parentElement.remove()"></div></body>`);
+  showSlide(G.cur);renderThumbs();toast('圖片已插入');toggleImgModal();
+}
+
+// ═══════════════════════════════════════
+// FULLSCREEN
+// ═══════════════════════════════════════
+function openFullscreen(){
+  if(!G.slides.length){toast('請先生成簡報');return;}
+  document.getElementById('fs-frame').srcdoc=G.slides[G.cur].html;
+  document.getElementById('fs-nav').textContent=`${G.cur+1}/${G.slides.length}`;
+  document.getElementById('fs-modal').classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════
+async function exportHTML(){
+  if(!G.slides.length){toast('請先生成簡報');return;}
+  const topic=document.getElementById('topic').value.trim()||'Presentation';
+  const body=G.slides.map((s,i)=>`<div class="sw" id="s${i+1}"><iframe srcdoc="${esc(s.html)}" scrolling="no"></iframe></div>`).join('\n');
+  const html=`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>${topic}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px}.sw{width:min(1280px,100vw);aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.6)}.sw iframe{width:1280px;height:720px;border:none;transform-origin:top left}</style></head><body>${body}<script>document.querySelectorAll('.sw').forEach(w=>{const sc=w.offsetWidth/1280;const f=w.querySelector('iframe');f.style.transform='scale('+sc+')';w.style.height=(720*sc)+'px'});<\/script></body></html>`;
+  dlFile(html,'text/html',`${topic.replace(/\s+/g,'_')}.html`);
+  toast('HTML 下載中…');
+}
+async function exportPPTX(){
+  if(!G.slides.length){toast('請先生成簡報');return;}
+  const topic=document.getElementById('topic').value.trim()||'Nova_Presentation';
+  setProg(0,'準備匯出 PPTX…');
+  try{
+    const pptx=new PptxGenJS();
+    pptx.layout='LAYOUT_16x9';pptx.author='Nova 簡報生成器';pptx.subject=topic;pptx.company='Nova AI Studio';
+    for(let i=0;i<G.slides.length;i++){
+      setProg(Math.round((i/G.slides.length)*90),`匯出第 ${i+1}/${G.slides.length} 張…`);
+      const ps=pptx.addSlide();const{title,html}=G.slides[i];
+      const imgM=html.match(/src="(data:image\/[^"]{50,}?)"/);const imgD=imgM?.[1];
+      if(imgD){try{ps.addImage({data:imgD,x:0,y:0,w:10,h:5.625});}catch(e){}
+        ps.addShape(pptx.ShapeType.rect,{x:0,y:0,w:10,h:5.625,fill:{color:'000000',transparency:42}});}
+      else{ps.background={color:'0F172A'};}
+      ps.addShape(pptx.ShapeType.rect,{x:0,y:0,w:10,h:.07,fill:{color:'6366F1'}});
+      if(title){const fs=title.length>30?22:title.length>20?26:30;ps.addText(title,{x:.4,y:.2,w:9.2,h:1,fontSize:fs,bold:true,color:imgD?'FFFFFF':'E2E8F0',shadow:{type:'outer',color:'000000',blur:8,offset:2,angle:270,opacity:.7}});}
+      const dom=new DOMParser().parseFromString(html,'text/html');
+      const nodes=Array.from(dom.querySelectorAll('li,p,.point,.content-item')).filter(n=>n.textContent.trim().length>3&&n.textContent.trim().length<200).slice(0,8);
+      if(nodes.length){const bdata=nodes.map((n,j)=>({text:(n.tagName==='LI'?'▸ ':'')+n.textContent.trim().substring(0,120),options:{fontSize:nodes.length>5?13:15,color:imgD?'E2E8F0':'94A3B8',breakLine:j<nodes.length-1,paraSpaceBefore:5}}));
+        ps.addText(bdata,{x:.4,y:1.35,w:9.2,h:4,align:'left',valign:'top',lineSpacing:22,wrap:true});}
+      ps.addShape(pptx.ShapeType.rect,{x:0,y:5.5,w:10,h:.04,fill:{color:'6366F1',transparency:70}});
+      ps.addText(`${i+1} / ${G.slides.length}`,{x:8.2,y:5.55,w:1.8,h:.25,fontSize:9,color:'475569',align:'right'});
+      ps.addText(topic.substring(0,45),{x:.4,y:5.55,w:6,h:.25,fontSize:9,color:'475569'});
+      if(G.logo){try{ps.addImage({data:G.logo,x:.3,y:5.15,w:1.5,h:.38,sizing:{type:'contain',w:1.5,h:.38}});}catch(e){}}
+    }
+    setProg(98,'封裝…');
+    await pptx.writeFile({fileName:`${topic.replace(/[\\/:"*?<>|]/g,'_')}_${Date.now()}.pptx`});
+    hideProg();toast('✅ PPTX 下載成功！');
+  }catch(e){hideProg();toast('❌ PPTX 失敗：\n'+e.message);console.error(e);}
+}
+function dlFile(content,type,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+// ═══════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════
+function saveHist(topic,slides){
+  const entry={id:Date.now().toString(),topic,slideCount:slides.length,slides:slides.map(s=>({html:s.html,title:s.title})),ts:Date.now()};
+  G.history.unshift(entry);if(G.history.length>20)G.history.pop();
+  try{localStorage.setItem(LS_HIST,JSON.stringify(G.history));}
+  catch(e){const lite=G.history.map(h=>({...h,slides:undefined}));try{localStorage.setItem(LS_HIST,JSON.stringify(lite));}catch(e2){}}
+}
+function renderHist(){
+  const el=document.getElementById('hist-list');
+  if(!G.history.length){
+    el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#334155"><i class="ph-bold ph-clock-counter-clockwise" style="font-size:40px;display:block;margin-bottom:10px"></i><div style="font-size:14px">生成後自動儲存</div></div>';return;
+  }
+  el.innerHTML=G.history.map(h=>`
+    <div class="hc" onclick="loadHist('${h.id}')">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:14px;color:#e2e8f0;font-weight:600;line-height:1.4;margin-bottom:6px">${h.topic}</div>
+          <div style="display:flex;gap:12px">
+            <span style="font-size:12px;color:#475569;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-presentation-chart"></i>${h.slideCount||'?'} 張</span>
+            <span style="font-size:12px;color:#475569">${fmtTs(h.ts)}</span>
+          </div>
+        </div>
+        <button onclick="event.stopPropagation();delHist('${h.id}')" style="background:none;border:none;cursor:pointer;color:#475569;padding:4px;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0" ontouchstart="this.style.color='#f87171'" ontouchend="this.style.color='#475569'">
+          <i class="ph-bold ph-x" style="font-size:16px"></i>
+        </button>
+      </div>
+      ${h.slides?'':'<div style="font-size:11px;color:#334155;margin-top:4px">（HTML 未儲存，無法載入）</div>'}
+    </div>`).join('');
+}
+function loadHist(id){
+  const e=G.history.find(h=>h.id===id);
+  if(!e?.slides?.length){toast('此紀錄無法載入\n（HTML 未儲存）');return;}
+  G.slides=e.slides.map(s=>({...s}));
+  document.getElementById('topic').value=e.topic;
+  G.cur=0;renderThumbs();showSlide(0);
+  switchTab('preview');
+  toast(`✅ 已載入「${e.topic}」`);
+}
+function delHist(id){
+  G.history=G.history.filter(h=>h.id!==id);
+  try{localStorage.setItem(LS_HIST,JSON.stringify(G.history));}catch(e){}
+  renderHist();
+}
+function clearAllHistory(){
+  if(!confirm('清除所有歷史紀錄？'))return;
+  G.history=[];
+  try{localStorage.removeItem(LS_HIST);}catch(e){}
+  renderHist();toast('已清除');
+}
+function fmtTs(ts){const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;}
+
+// ═══════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+function setProg(pct,msg){
+  document.getElementById('prog-wrap').classList.remove('hidden');
+  document.getElementById('prog-txt').textContent=msg;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+function hideProg(){document.getElementById('prog-wrap').classList.add('hidden');}
+function btnLoading(on){
+  const b=document.getElementById('gen-btn');b.disabled=on;
+  b.innerHTML=on?'<div class="dp"><span></span><span></span><span></span></div><span style="margin-left:8px">生成中…</span>':'<i class="ph-bold ph-magic-wand"></i><span>AI 生成簡報</span>';
+  b.style.opacity=on?.6:1;
+}
+let _tt;
+function toast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),3500);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escAttr(s){return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+</script>
+</body>
+</html>
