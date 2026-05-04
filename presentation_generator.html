@@ -3259,7 +3259,7 @@ async function captureSlideScreenshot(html) {
 
             // 5. Draw onto offscreen canvas at half resolution (960×540) for speed
             const W = 960, H = 540;
-            const canvas  = new OffscreenCanvas ? new OffscreenCanvas(W, H) : document.createElement('canvas');
+            const canvas  = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : document.createElement('canvas');
             canvas.width  = W; canvas.height = H;
             const ctx     = canvas.getContext('2d');
 
