@@ -364,6 +364,20 @@
             <textarea id="inp-topic" rows="4"
                 placeholder="例如：請幫我生成一份深入探討「2025 AI 發展趨勢」的專業報告，需包含大量數據、具體案例與未來預測...&#10;&#10;也可附加左側資料來源，AI 會先摘要分析後製作簡報。"
                 class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 text-sm text-slate-200 focus:border-violet-500 outline-none transition-colors resize-none"></textarea>
+            <!-- Web Search Grounding toggle -->
+            <div class="mt-3 flex items-center gap-2.5 bg-slate-800/60 border border-slate-700 rounded-xl px-3.5 py-2.5">
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="chk-web-search" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                </label>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-fill ph-globe text-sky-400 text-sm"></i>
+                        <span class="text-[11px] text-slate-200 font-semibold">Google 聯網搜尋（Grounding）</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-0.5">啟用後 AI 將先搜尋最新資料再生成簡報，確保內容不依賴舊訓練資料庫</p>
+                </div>
+            </div>
         </div>
 
         <!-- Progress -->
@@ -979,6 +993,53 @@ function stopGeneration() {
 // ═══════════════════════════════════════════════════════════════════
 // LLM: OUTLINE GENERATION  ── supports Gemini + Grok ──
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// Web Grounding: use Gemini Google Search to gather latest info on topic
+// Returns a string of researched context, or '' if disabled/failed.
+// ═══════════════════════════════════════════════════════════════════
+async function researchTopicWithGrounding(topic, signal) {
+    if (!document.getElementById('chk-web-search')?.checked) return '';
+    const apiKey = AppState.googleApiKey;
+    if (!apiKey) { addLog('⚠ 聯網搜尋需要 Gemini API Key，略過', 'warning'); return ''; }
+
+    addLog('🌐 Google 聯網搜尋中，抓取最新資料...', 'ai');
+
+    // Use gemini-2.5-flash for grounding (fast + supports google_search tool)
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const body = {
+        contents: [{
+            role: 'user',
+            parts: [{ text: `請用繁體中文針對以下主題進行深度研究，整理最新數據、趨勢、案例、統計資料、重要觀點。內容要具體、有數字支撐、有來源說明，供後續製作專業簡報使用。\n\n主題：${topic}` }]
+        }],
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
+    };
+
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+        const queries = data.candidates?.[0]?.groundingMetadata?.webSearchQueries || [];
+        if (text) {
+            addLog(`✓ 聯網研究完成（搜尋了 ${queries.length} 個查詢），整合至大綱生成`, 'success');
+            return `\n\n【Google 聯網搜尋最新資料 — ${new Date().toLocaleDateString('zh-TW')}】\n${text}`;
+        }
+    } catch(e) {
+        if (e.name === 'AbortError') throw e;
+        addLog(`⚠ 聯網搜尋失敗（${e.message}），改用模型自身知識`, 'warning');
+    }
+    return '';
+}
+
 async function callGeminiForOutline(topic, context) {
     if (AppState.cancelRequested) throw new Error('CanceledByUser');
 
@@ -3221,23 +3282,57 @@ function closeEditModal() {
 // Strategy: parse the slide's SVG from the HTML string, serialize it to a
 // Blob URL, draw onto an offscreen canvas, export JPEG. No iframe needed.
 async function captureSlideScreenshot(html) {
-    return new Promise((resolve) => {
+    // ── Primary method: render in hidden iframe → html2canvas ──────────
+    const iframeCapture = () => new Promise((resolve) => {
         try {
-            // 1. Parse HTML string into a document
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1920px;height:1080px;border:none;visibility:hidden;';
+            iframe.sandbox = 'allow-scripts allow-same-origin';
+            document.body.appendChild(iframe);
+
+            const cleanup = () => { try { iframe.remove(); } catch(_){} };
+            const timeout = setTimeout(() => { cleanup(); resolve(null); }, 12000);
+
+            iframe.onload = async () => {
+                try {
+                    const idoc = iframe.contentDocument || iframe.contentWindow?.document;
+                    if (!idoc || !idoc.body) { clearTimeout(timeout); cleanup(); resolve(null); return; }
+
+                    if (typeof html2canvas !== 'undefined') {
+                        const canvas = await html2canvas(idoc.documentElement, {
+                            width: 1920, height: 1080, scale: 0.5,
+                            useCORS: true, allowTaint: true,
+                            backgroundColor: '#0f172a',
+                            logging: false,
+                            windowWidth: 1920, windowHeight: 1080
+                        });
+                        clearTimeout(timeout);
+                        cleanup();
+                        resolve(canvas.toDataURL('image/jpeg', 0.82));
+                        return;
+                    }
+                    // html2canvas not available — fall through to SVG method
+                    clearTimeout(timeout);
+                    cleanup();
+                    resolve(null);
+                } catch(e) {
+                    clearTimeout(timeout);
+                    cleanup();
+                    resolve(null);
+                }
+            };
+            iframe.srcdoc = html;
+        } catch(e) { resolve(null); }
+    });
+
+    // ── Fallback method: SVG serialization → canvas ────────────────────
+    const svgCapture = () => new Promise((resolve) => {
+        try {
             const parser = new DOMParser();
             const doc    = parser.parseFromString(html, 'text/html');
-            const svgEl  = doc.getElementById('slide-svg');
+            const svg    = doc.getElementById('slide-svg') || doc.querySelector('svg');
+            if (!svg) { resolve(null); return; }
 
-            if (!svgEl) {
-                // Fallback: try to find any SVG
-                const anySvg = doc.querySelector('svg');
-                if (!anySvg) { resolve(null); return; }
-            }
-
-            const svg = svgEl || doc.querySelector('svg');
-
-            // 2. Inline all style sheets from the parsed doc into the SVG
-            //    so the serialized SVG is self-contained
             let inlineCSS = '';
             doc.querySelectorAll('style').forEach(s => { inlineCSS += s.textContent + '\n'; });
             if (inlineCSS) {
@@ -3245,55 +3340,41 @@ async function captureSlideScreenshot(html) {
                 styleEl.textContent = inlineCSS;
                 svg.insertBefore(styleEl, svg.firstChild);
             }
-
-            // 3. Ensure viewBox is set
             if (!svg.getAttribute('viewBox')) svg.setAttribute('viewBox', '0 0 1920 1080');
-            svg.setAttribute('width',  '1920');
+            svg.setAttribute('width', '1920');
             svg.setAttribute('height', '1080');
 
-            // 4. Serialize SVG → Blob URL
-            const serializer = new XMLSerializer();
-            const svgStr     = serializer.serializeToString(svg);
-            const svgBlob    = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-            const svgUrl     = URL.createObjectURL(svgBlob);
+            const svgStr = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl  = URL.createObjectURL(svgBlob);
 
-            // 5. Draw onto offscreen canvas at half resolution (960×540) for speed
             const W = 960, H = 540;
-            const canvas  = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : document.createElement('canvas');
-            canvas.width  = W; canvas.height = H;
-            const ctx     = canvas.getContext('2d');
+            const canvas = document.createElement('canvas');
+            canvas.width = W; canvas.height = H;
+            const ctx = canvas.getContext('2d');
 
             const img = new Image();
             img.onload = () => {
                 URL.revokeObjectURL(svgUrl);
-                // Fill background from body/html bg color
                 const bodyBg = doc.body?.style?.background || doc.body?.style?.backgroundColor || '#0f172a';
                 ctx.fillStyle = bodyBg || '#0f172a';
                 ctx.fillRect(0, 0, W, H);
                 ctx.drawImage(img, 0, 0, W, H);
-                // Export as JPEG data URL
-                if (canvas.convertToBlob) {
-                    // OffscreenCanvas
-                    canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 }).then(blob => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve(e.target.result);
-                        reader.readAsDataURL(blob);
-                    }).catch(() => resolve(null));
-                } else {
-                    resolve(canvas.toDataURL('image/jpeg', 0.82));
-                }
+                resolve(canvas.toDataURL('image/jpeg', 0.82));
             };
             img.onerror = () => { URL.revokeObjectURL(svgUrl); resolve(null); };
             img.src = svgUrl;
-
-            // Safety timeout
-            setTimeout(() => { URL.revokeObjectURL(svgUrl); resolve(null); }, 12000);
-
+            setTimeout(() => { URL.revokeObjectURL(svgUrl); resolve(null); }, 10000);
         } catch(e) {
             addLog(`⚠ 截圖解析失敗: ${e.message}`, 'warning');
             resolve(null);
         }
     });
+
+    // Try primary first, then fallback
+    const result = await iframeCapture();
+    if (result) return result;
+    return await svgCapture();
 }
 
 // Call Grok 4.1 (or selected reviewer) to visually review a slide screenshot
@@ -3534,8 +3615,17 @@ async function startGeneration() {
         if (srcCount > 0) addLog(`✓ 已整合 ${srcCount} 個資料來源（${context.length.toLocaleString()} 字元）`, 'success');
         setProgress(8);
 
+        // ── Google Grounding research (if enabled) ────────────────────
+        let groundingContext = '';
+        try {
+            groundingContext = await researchTopicWithGrounding(topic, AppState.abortController.signal);
+        } catch(e) {
+            if (e.name === 'AbortError' || e.message === 'CanceledByUser') throw new Error('CanceledByUser');
+        }
+        setProgress(13);
+
         addLog('🧠 正在生成簡報大綱...', 'ai');
-        const outlineData = await callGeminiForOutline(topic, context);
+        const outlineData = await callGeminiForOutline(topic, context + groundingContext);
         if (AppState.cancelRequested) throw new Error('CanceledByUser');
         AppState.presentationData = outlineData;
         addLog(`✓ 大綱生成完成：「${outlineData.presentation_title}」共 ${outlineData.slides?.length || 0} 張`, 'success');
