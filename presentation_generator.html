@@ -1213,8 +1213,8 @@ const SLIDE_INTERACTION_SCRIPT = `
 
   /* ── Floating mini-toolbar: appears above any text selection in .rb ── */
   (function(){
-    var toolbar=null, savedRange=null;
-    function removeMini(){if(toolbar){toolbar.remove();toolbar=null;} savedRange=null;}
+    var toolbar=null, savedRange=null, pickerOpen=false;
+    function removeMini(){if(toolbar){toolbar.remove();toolbar=null;} savedRange=null; pickerOpen=false;}
 
     function mkLabel(txt){
       var s=document.createElement('span');
@@ -1260,9 +1260,16 @@ const SLIDE_INTERACTION_SCRIPT = `
           var s=window.getSelection();
           if(s&&s.rangeCount&&!s.isCollapsed) savedRange=s.getRangeAt(0).cloneRange();
         }catch(e){}
+        /* Signal that a picker is about to open — block mouseup from closing toolbar */
+        pickerOpen=true;
         /* Open picker on next tick (outside the mousedown handler) */
         setTimeout(function(){ hidden.click(); }, 0);
       });
+
+      /* When picker closes (change fires after user picks or cancels) */
+      hidden.addEventListener('change', function(){ pickerOpen=false; });
+      /* Also clear on blur in case user hits Escape */
+      hidden.addEventListener('blur',   function(){ setTimeout(function(){ pickerOpen=false; }, 200); });
 
       /* Wrap both in a tiny container */
       var wrap=document.createElement('span');
@@ -1279,7 +1286,10 @@ const SLIDE_INTERACTION_SCRIPT = `
       return b;
     }
 
-    document.addEventListener('mouseup',function(){
+    document.addEventListener('mouseup',function(e){
+      /* If the click was on the toolbar itself, or picker is open → don't touch anything */
+      if(pickerOpen) return;
+      if(toolbar && e.target && toolbar.contains(e.target)) return;
       setTimeout(function(){
         var sel=window.getSelection();
         if(!sel||sel.isCollapsed||!sel.rangeCount){ removeMini(); return; }
