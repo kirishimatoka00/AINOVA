@@ -1228,12 +1228,48 @@ const SLIDE_INTERACTION_SCRIPT = `
       return s;
     }
     function mkColorPicker(title,initColor,onPick){
-      var cp=document.createElement('input'); cp.type='color'; cp.value=initColor; cp.title=title;
-      cp.style.cssText='width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;';
-      /* Prevent click on color input from collapsing the selection */
-      cp.addEventListener('mousedown',function(ev){ ev.preventDefault(); });
-      cp.addEventListener('input',function(){ if(savedRange) onPick(cp.value,savedRange); });
-      return cp;
+      /* ── Two-element pattern ──────────────────────────────────────────
+         Hidden <input type="color"> is what the browser opens for picking.
+         Visible <button> (colour swatch) handles mousedown:
+           1. preventDefault() → keeps contenteditable focused / selection alive
+           2. saves range snapshot
+           3. setTimeout → programmatically fires .click() on the hidden input
+               (triggered outside a mousedown, so browser opens the picker)
+         ─────────────────────────────────────────────────────────────── */
+      var hidden=document.createElement('input');
+      hidden.type='color'; hidden.value=initColor;
+      hidden.style.cssText='position:absolute;width:0;height:0;opacity:0;pointer-events:none;';
+      hidden.addEventListener('input',function(){
+        /* Restore selection, then apply colour */
+        if(savedRange){
+          try{ var s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); }catch(e){}
+        }
+        onPick(hidden.value, savedRange);
+        /* Keep swatch colour in sync */
+        swatch.style.background=hidden.value;
+      });
+
+      var swatch=document.createElement('button');
+      swatch.title=title;
+      swatch.style.cssText='width:22px;height:22px;border:2px solid rgba(255,255,255,.35);'+
+        'border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;background:'+initColor+';';
+      swatch.addEventListener('mousedown',function(ev){
+        ev.preventDefault();        /* ← keeps selection alive */
+        /* Re-snapshot range right now (user may have adjusted selection) */
+        try{
+          var s=window.getSelection();
+          if(s&&s.rangeCount&&!s.isCollapsed) savedRange=s.getRangeAt(0).cloneRange();
+        }catch(e){}
+        /* Open picker on next tick (outside the mousedown handler) */
+        setTimeout(function(){ hidden.click(); }, 0);
+      });
+
+      /* Wrap both in a tiny container */
+      var wrap=document.createElement('span');
+      wrap.style.cssText='position:relative;display:inline-flex;flex-shrink:0;';
+      wrap.appendChild(hidden);
+      wrap.appendChild(swatch);
+      return wrap;
     }
     function mkBtn(label,action){
       var b=document.createElement('button'); b.textContent=label;
@@ -1308,7 +1344,13 @@ const SLIDE_INTERACTION_SCRIPT = `
         document.body.appendChild(t);
       }, 80);
     });
-    document.addEventListener('mousedown',function(e){ if(toolbar&&!toolbar.contains(e.target)) removeMini(); });
+    document.addEventListener('mousedown',function(e){
+      if(!toolbar) return;
+      /* e.target can be null when clicking inside a native color-picker dialog */
+      if(!e.target) return;
+      if(toolbar.contains(e.target)) return;
+      removeMini();
+    });
   })();
 
   window.changeBgColor=function(inp){var box=inp.closest('.rb');if(!box)return;var bg=inp.value;box.style.background=bg;box.style.backgroundColor=bg;var safe=contrastColor(bg);box.querySelectorAll('[contenteditable]').forEach(function(el){if(!el.dataset.colorLocked)el.style.color=safe;});};
