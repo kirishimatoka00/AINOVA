@@ -364,6 +364,20 @@
             <textarea id="inp-topic" rows="4"
                 placeholder="例如：請幫我生成一份深入探討「2025 AI 發展趨勢」的專業報告，需包含大量數據、具體案例與未來預測...&#10;&#10;也可附加左側資料來源，AI 會先摘要分析後製作簡報。"
                 class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 text-sm text-slate-200 focus:border-violet-500 outline-none transition-colors resize-none"></textarea>
+            <!-- Web Search Grounding toggle -->
+            <div class="mt-3 flex items-center gap-2.5 bg-slate-800/60 border border-slate-700 rounded-xl px-3.5 py-2.5">
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="chk-web-search" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                </label>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-fill ph-globe text-sky-400 text-sm"></i>
+                        <span class="text-[11px] text-slate-200 font-semibold">Google 聯網搜尋（Grounding）</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-0.5">啟用後 AI 將先搜尋最新資料再生成簡報，確保內容不依賴舊訓練資料庫</p>
+                </div>
+            </div>
         </div>
 
         <!-- Progress -->
@@ -979,6 +993,52 @@ function stopGeneration() {
 // ═══════════════════════════════════════════════════════════════════
 // LLM: OUTLINE GENERATION  ── supports Gemini + Grok ──
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// Web Grounding: use Gemini Google Search to gather latest info on topic
+// Returns a string of researched context, or '' if disabled/failed.
+// ═══════════════════════════════════════════════════════════════════
+async function researchTopicWithGrounding(topic, signal) {
+    if (!document.getElementById('chk-web-search')?.checked) return '';
+    const apiKey = AppState.googleApiKey;
+    if (!apiKey) { addLog('⚠ 聯網搜尋需要 Gemini API Key，略過', 'warning'); return ''; }
+
+    addLog('🌐 Google 聯網搜尋中，抓取最新資料...', 'ai');
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const body = {
+        contents: [{
+            role: 'user',
+            parts: [{ text: `請用繁體中文針對以下主題進行深度研究，整理最新數據、趨勢、案例、統計資料、重要觀點。內容要具體、有數字支撐、有來源說明，供後續製作專業簡報使用。\n\n主題：${topic}` }]
+        }],
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
+    };
+
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+        const queries = data.candidates?.[0]?.groundingMetadata?.webSearchQueries || [];
+        if (text) {
+            addLog(`✓ 聯網研究完成（搜尋了 ${queries.length} 個查詢），整合至大綱生成`, 'success');
+            return `\n\n【Google 聯網搜尋最新資料 — ${new Date().toLocaleDateString('zh-TW')}】\n${text}`;
+        }
+    } catch(e) {
+        if (e.name === 'AbortError') throw e;
+        addLog(`⚠ 聯網搜尋失敗（${e.message}），改用模型自身知識`, 'warning');
+    }
+    return '';
+}
+
 async function callGeminiForOutline(topic, context) {
     if (AppState.cancelRequested) throw new Error('CanceledByUser');
 
@@ -3556,8 +3616,17 @@ async function startGeneration() {
         if (srcCount > 0) addLog(`✓ 已整合 ${srcCount} 個資料來源（${context.length.toLocaleString()} 字元）`, 'success');
         setProgress(8);
 
+        // ── Google Grounding research (if enabled) ────────────────────
+        let groundingContext = '';
+        try {
+            groundingContext = await researchTopicWithGrounding(topic, AppState.abortController.signal);
+        } catch(e) {
+            if (e.name === 'AbortError' || e.message === 'CanceledByUser') throw new Error('CanceledByUser');
+        }
+        setProgress(13);
+
         addLog('🧠 正在生成簡報大綱...', 'ai');
-        const outlineData = await callGeminiForOutline(topic, context);
+        const outlineData = await callGeminiForOutline(topic, context + groundingContext);
         if (AppState.cancelRequested) throw new Error('CanceledByUser');
         AppState.presentationData = outlineData;
         addLog(`✓ 大綱生成完成：「${outlineData.presentation_title}」共 ${outlineData.slides?.length || 0} 張`, 'success');
