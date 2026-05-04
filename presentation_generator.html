@@ -139,8 +139,8 @@
             </div>
             <div class="flex items-center gap-2 pt-2 border-t border-slate-800">
                 <i class="ph-fill ph-cloud-arrow-up text-indigo-400 shrink-0 text-base"></i>
-                <span class="text-[11px] text-slate-400 flex-1 truncate max-w-[180px]">GAS API: <span id="api-gas-status" class="font-semibold">...</span></span>
-                <button onclick="promptApiKey('gas')" class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors shrink-0">設定</button>
+                <span class="text-[11px] text-slate-400 flex-1">GAS API: <span id="api-gas-status" class="font-semibold">...</span></span>
+                <button onclick="promptApiKey('gas')" class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors">設定</button>
             </div>
         </div>
 
@@ -229,6 +229,7 @@
                             <option value="corporate">商務專業 (Corporate Blue)</option>
                             <option value="creative">活潑創意 (Creative Vivid)</option>
                             <option value="elegant">高雅精緻 (Elegant Light)</option>
+                            <option value="white">純白底 (Pure White) ☁</option>
                         </select>
                     </div>
 
@@ -267,9 +268,59 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-slate-400 mb-1.5 font-semibold flex justify-between">
-                            <span>投影片張數</span>
+                    <!-- PPT Background Template -->
+                    <div class="border-t border-slate-800 pt-3">
+                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-image-square text-rose-400"></i>
+                            PPT 底稿背景
+                            <span class="text-slate-600 font-normal">（16:9 圖片）</span>
+                        </label>
+                        <p class="text-slate-600 mb-2 leading-relaxed">上傳後將覆蓋視覺風格設定，同步套用於 HTML 及 PPTX</p>
+                        <div class="flex items-center gap-2">
+                            <button onclick="document.getElementById('bg-template-upload').click()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-3 py-2 text-slate-300 transition-colors text-center">
+                                <i class="ph-bold ph-upload-simple mr-1"></i>上傳底稿
+                            </button>
+                            <input type="file" id="bg-template-upload" accept="image/*" class="hidden" onchange="handleBgTemplateUpload(event)">
+                        </div>
+                        <div id="bg-template-preview-wrapper" class="hidden mt-2 relative">
+                            <img id="bg-template-preview" class="w-full rounded-lg object-cover" style="aspect-ratio:16/9;">
+                            <button onclick="removeBgTemplate()" class="absolute top-1 right-1 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">×</button>
+                            <div class="absolute bottom-1 left-1 text-[9px] bg-black/60 text-white px-1.5 py-0.5 rounded">底稿已設定 ✓</div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-800 pt-3">
+                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-magnifying-glass-plus text-violet-400"></i>
+                            第五階段：視覺品質審查
+                        </label>
+                        <div class="flex items-center gap-2.5 mb-2">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="chk-review-enabled" class="sr-only peer" onchange="updateReviewHint()">
+                                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                            </label>
+                            <span class="text-[11px] text-slate-300 font-medium">啟用 Grok 4.1 視覺審查 + Gemini 自動修正</span>
+                        </div>
+                        <div id="review-config" class="hidden space-y-2">
+                            <div>
+                                <label class="block text-slate-500 mb-1 text-[11px]">審查模型（Reviewer）</label>
+                                <select id="sel-review-model" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-[11px] focus:border-violet-500 outline-none">
+                                    <option value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning（推薦）</option>
+                                    <option value="grok-4-1-fast-non-reasoning">Grok 4.1 Fast Non-Reasoning</option>
+                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-500 mb-1 text-[11px]">最大修正迭代次數</label>
+                                <select id="sel-review-iterations" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-[11px] focus:border-violet-500 outline-none">
+                                    <option value="1">1 次（快速）</option>
+                                    <option value="2" selected>2 次（推薦）</option>
+                                    <option value="3">3 次（高品質）</option>
+                                </select>
+                            </div>
+                            <p class="text-slate-600 text-[10px] leading-relaxed">審查後若發現重疊、對比不足等問題，Gemini 2.5 Pro 將自動修正並重新渲染</p>
+                        </div>
+                    </div>
                             <span id="slide-count-val" class="text-amber-400 font-bold">10 張</span>
                         </label>
                         <input type="range" id="range-slide-count" min="2" max="50" value="10"
@@ -365,6 +416,34 @@
     </div>
 </main>
 
+<!-- ── SLIDE EDIT MODAL ───────────────────────────────────────────── -->
+<div id="slide-edit-modal" class="hidden fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm flex flex-col">
+    <div class="flex items-center justify-between px-5 py-3 bg-slate-900 border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <i class="ph-fill ph-pencil-simple-line text-amber-400 shrink-0"></i>
+            <span class="text-sm font-bold text-white truncate" id="edit-modal-title">編輯投影片</span>
+            <span class="hidden sm:block text-[10px] text-slate-500 bg-slate-800 px-2 py-0.5 rounded shrink-0">選取文字改色 · 雙擊SVG文字編輯 · 拖曳移動 · 右下縮放</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 ml-3">
+            <button onclick="saveSlideEdits()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors">
+                <i class="ph-bold ph-floppy-disk"></i>儲存變更
+            </button>
+            <button onclick="closeEditModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                <i class="ph-bold ph-x text-base"></i>
+            </button>
+        </div>
+    </div>
+    <!-- iframe-based viewport: fully isolated, no layout pollution -->
+    <div id="edit-slide-viewport" class="flex-1 flex items-center justify-center bg-slate-950 overflow-hidden p-4">
+        <div id="edit-slide-scaler" style="position:relative;overflow:hidden;flex-shrink:0;">
+            <iframe id="edit-slide-iframe"
+                style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;"
+                sandbox="allow-scripts allow-same-origin">
+            </iframe>
+        </div>
+    </div>
+</div>
+
 <!-- ── IMAGE PICKER MODAL ────────────────────────────────────────── -->
 <div id="img-picker-modal" class="fixed inset-0 z-[110] items-center justify-center bg-black/80 backdrop-blur-sm p-4" onclick="if(event.target===this)imgPickerCancel()">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
@@ -437,6 +516,7 @@ const AppState = {
     googleApiKey: '', xaiApiKey: '', serpApiKey: '', gasUrl: '',
     attachedSources: [],      
     logoBase64: null,
+    bgTemplateBase64: null,   // uploaded 16:9 slide background image
     generatedSlides: [],      
     presentationData: null,
     isGenerating: false,
@@ -475,6 +555,12 @@ const HTML_THEMES = {
         bg: 'linear-gradient(160deg, #f8fafc 0%, #e2e8f0 100%)',
         titleColor: '#0f172a', accent: '#3b82f6', text: '#374151',
         muted: '#6b7280', card: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.2)'
+    },
+    white: {
+        label: '純白底 (Pure White)',
+        bg: '#ffffff',
+        titleColor: '#111827', accent: '#2563eb', text: '#1f2937',
+        muted: '#6b7280', card: 'rgba(37,99,235,0.05)', border: 'rgba(37,99,235,0.18)'
     }
 };
 
@@ -589,6 +675,12 @@ function updateImageModeHint() {
     if (el) el.textContent = hints[mode] || '';
 }
 
+function updateReviewHint() {
+    const enabled = document.getElementById('chk-review-enabled')?.checked;
+    const cfg = document.getElementById('review-config');
+    if (cfg) cfg.classList.toggle('hidden', !enabled);
+}
+
 // ─── Logo ─────────────────────────────────────────────────────────
 function handleLogoUpload(e) {
     const file = e.target.files[0];
@@ -606,6 +698,27 @@ function removeLogo() {
     AppState.logoBase64 = null;
     document.getElementById('logo-upload').value = '';
     document.getElementById('logo-preview-wrapper').classList.add('hidden');
+}
+
+function handleBgTemplateUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        AppState.bgTemplateBase64 = ev.target.result;
+        document.getElementById('bg-template-preview').src = AppState.bgTemplateBase64;
+        document.getElementById('bg-template-preview-wrapper').classList.remove('hidden');
+        showToast('✅ PPT 底稿上傳成功，將覆蓋視覺風格');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+}
+
+function removeBgTemplate() {
+    AppState.bgTemplateBase64 = null;
+    document.getElementById('bg-template-upload').value = '';
+    document.getElementById('bg-template-preview-wrapper').classList.add('hidden');
+    showToast('🗑 PPT 底稿已移除');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -968,83 +1081,315 @@ JSON Schema:
 // SHARED INTERACTION SCRIPT 
 // ═══════════════════════════════════════════════════════════════════
 const SLIDE_INTERACTION_SCRIPT = `
+<style>
+.dg{cursor:grab;}.dg:active{cursor:grabbing;}
+.rb{resize:both;overflow:hidden;min-width:180px;min-height:60px;position:relative;cursor:default;
+  word-wrap:break-word;overflow-wrap:break-word;white-space:normal;box-sizing:border-box;}
+.rb *{word-wrap:break-word;overflow-wrap:break-word;white-space:normal;max-width:100%;}
+.rb .dh{cursor:grab;text-align:center;color:rgba(255,255,255,.22);font-size:10px;
+  letter-spacing:4px;padding:3px 0 8px;user-select:none;}
+.ctrl{opacity:0;transition:opacity .18s;pointer-events:none;position:absolute;top:7px;right:7px;
+  display:flex;align-items:center;gap:4px;background:rgba(10,18,36,.95);
+  border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:5px 7px;z-index:60;}
+.dg:hover .ctrl,.rb:focus-within .ctrl,.dg:focus-within .ctrl{opacity:1;pointer-events:auto;}
+.ctrl input[type=color]{width:19px;height:19px;border:none;border-radius:3px;cursor:pointer;padding:0;background:transparent;}
+.ctrl input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
+.ctrl input[type=color]::-webkit-color-swatch{border:1px solid rgba(255,255,255,.18);border-radius:3px;}
+.ctrl button{font-size:10px;font-weight:700;padding:2px 5px;border:none;
+  background:rgba(255,255,255,.10);border-radius:3px;cursor:pointer;color:#e2e8f0;}
+.ctrl button:hover{background:rgba(255,255,255,.22);}
+.ctrl .sep{width:1px;height:14px;background:rgba(255,255,255,.15);margin:0 2px;}
+[contenteditable]{border-radius:3px;outline:none;}
+[contenteditable]:hover{background:rgba(255,255,255,.07);}
+[contenteditable]:focus{background:rgba(255,255,255,.09);outline:2px solid rgba(99,102,241,.55);}
+.rb::after{content:"";position:absolute;right:0;bottom:0;width:16px;height:16px;
+  cursor:se-resize;background:linear-gradient(135deg,transparent 50%,rgba(255,255,255,.25) 50%);pointer-events:none;}
+.img-dg:hover .img-border{opacity:1;}
+</style>
 <script>
 (function(){
-  var svg = document.getElementById('slide-svg');
-  if (!svg) return;
-  var sel = null, offset = {x:0,y:0}, xf = null;
+  var svg=document.getElementById('slide-svg'); if(!svg) return;
+  var sel=null,offset={x:0,y:0},xf=null;
 
-  function hexToRgb(h){
-    var r=/^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(h);
-    return r?{r:parseInt(r[1],16),g:parseInt(r[2],16),b:parseInt(r[3],16)}:null;
+  /* helpers */
+  function hexToRgb(h){var r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);return r?{r:parseInt(r[1],16),g:parseInt(r[2],16),b:parseInt(r[3],16)}:null;}
+  function lum(r,g,b){function l(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}return .2126*l(r)+.7152*l(g)+.0722*l(b);}
+  function contrastColor(bgHex){var rgb=hexToRgb(bgHex||'#0f172a');if(!rgb)return '#f8fafc';return lum(rgb.r,rgb.g,rgb.b)>0.18?'#111827':'#f8fafc';}
+  function contrastRatio(h1,h2){var a=hexToRgb(h1)||{r:15,g:23,b:42},b=hexToRgb(h2)||{r:248,g:250,b:252};var L1=lum(a.r,a.g,a.b),L2=lum(b.r,b.g,b.b);return (Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);}
+
+  /* control functions */
+  window.updateThemeColor=function(id,hex){document.documentElement.style.setProperty('--c'+id,hex);var rgb=hexToRgb(hex);if(rgb)document.documentElement.style.setProperty('--c'+id+'-rgb',rgb.r+','+rgb.g+','+rgb.b);};
+  window.adjustFontSize=function(btn,delta){var box=btn.closest('.rb');if(!box)return;var cur=parseFloat(box.style.fontSize)||16;cur=Math.max(8,Math.min(96,cur+delta*2));box.style.fontSize=cur+'px';};
+  /* ── Wrap selected text in <span style="color:C"> using Range API ── */
+  function applyColorToRange(color, savedRange){
+    var sel=window.getSelection(); if(!sel) return;
+    try{ sel.removeAllRanges(); sel.addRange(savedRange); }catch(e){ return; }
+    if(sel.isCollapsed) return;
+    var range=sel.getRangeAt(0);
+    var frag=range.extractContents();
+    var span=document.createElement('span');
+    span.style.color=color;
+    span.appendChild(frag);
+    range.insertNode(span);
+    /* Move cursor after span */
+    var r2=document.createRange(); r2.setStartAfter(span); r2.collapse(true);
+    sel.removeAllRanges(); sel.addRange(r2);
   }
-  window.updateThemeColor = function(id, hex){
-    document.documentElement.style.setProperty('--c'+id, hex);
-    var rgb = hexToRgb(hex);
-    if(rgb) document.documentElement.style.setProperty('--c'+id+'-rgb', rgb.r+','+rgb.g+','+rgb.b);
+
+  /* ── changeTextColor: selection-aware via Range API ── */
+  window.changeTextColor=function(inp){
+    var color=inp.value;
+    var box=inp.closest('.rb'); if(!box) return;
+    var sel=window.getSelection();
+    if(sel&&!sel.isCollapsed&&sel.rangeCount>0){
+      var range=sel.getRangeAt(0).cloneRange();
+      var anc=range.commonAncestorContainer;
+      var node=anc.nodeType===3?anc.parentNode:anc;
+      if(box.contains(node)){ applyColorToRange(color,range); inp.dataset.colorLocked='1'; return; }
+    }
+    inp.dataset.colorLocked='1';
+    box.querySelectorAll('[contenteditable]').forEach(function(el){el.style.color=color;});
   };
-  window.adjustFontSize = function(btn, delta){
-    var box = btn.closest('.rb');
-    var cur = parseFloat(box.style.fontSize)||16;
-    cur = Math.max(10, Math.min(32, cur + delta*2));
-    box.style.fontSize = cur+'px';
-  };
 
-  new ResizeObserver(function(entries){
-    entries.forEach(function(e){
-      var fo = e.target.closest('foreignObject');
-      if(fo){ fo.setAttribute('width',e.target.offsetWidth); fo.setAttribute('height',e.target.offsetHeight); }
+  /* ── Floating mini-toolbar: appears above any text selection in .rb ── */
+  (function(){
+    var toolbar=null, savedRange=null;
+    function removeMini(){if(toolbar){toolbar.remove();toolbar=null;} savedRange=null;}
+
+    function mkLabel(txt){
+      var s=document.createElement('span');
+      s.textContent=txt;
+      s.style.cssText='color:#94a3b8;font-size:10px;font-weight:600;white-space:nowrap;margin:0 2px;';
+      return s;
+    }
+    function mkSep(){
+      var s=document.createElement('div');
+      s.style.cssText='width:1px;height:14px;background:rgba(255,255,255,.2);margin:0 3px;';
+      return s;
+    }
+    function mkColorPicker(title,initColor,onPick){
+      var cp=document.createElement('input'); cp.type='color'; cp.value=initColor; cp.title=title;
+      cp.style.cssText='width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;';
+      cp.addEventListener('input',function(){ if(savedRange) onPick(cp.value,savedRange); });
+      return cp;
+    }
+    function mkBtn(label,action){
+      var b=document.createElement('button'); b.textContent=label;
+      b.style.cssText='font-size:11px;font-weight:700;padding:2px 6px;border:none;min-width:26px;'+
+        'background:rgba(255,255,255,.12);border-radius:4px;cursor:pointer;color:#e2e8f0;flex-shrink:0;';
+      b.addEventListener('mousedown',function(ev){ ev.preventDefault(); action(); });
+      return b;
+    }
+
+    document.addEventListener('mouseup',function(){
+      setTimeout(function(){
+        var sel=window.getSelection();
+        if(!sel||sel.isCollapsed||!sel.rangeCount){ removeMini(); return; }
+        var range=sel.getRangeAt(0);
+        var anc=range.commonAncestorContainer;
+        var node=anc.nodeType===3?anc.parentNode:anc;
+        var rb=node.closest('.rb'); if(!rb){ removeMini(); return; }
+        savedRange=range.cloneRange();
+
+        removeMini();
+        var t=document.createElement('div'); toolbar=t;
+        t.style.cssText='position:fixed;z-index:99999;display:flex;align-items:center;flex-wrap:wrap;gap:4px;'+
+          'background:rgba(8,14,30,.97);border:1.5px solid rgba(99,102,241,.7);'+
+          'border-radius:10px;padding:6px 10px;box-shadow:0 6px 24px rgba(0,0,0,.7);pointer-events:auto;max-width:340px;';
+
+        var rect=range.getBoundingClientRect();
+        var tx=Math.max(4,Math.min(window.innerWidth-340,rect.left+rect.width/2-140));
+        var ty=Math.max(4,rect.top-52);
+        t.style.left=tx+'px'; t.style.top=ty+'px';
+
+        /* Text color */
+        t.appendChild(mkLabel('文字色'));
+        t.appendChild(mkColorPicker('文字顏色','#ffffff',function(c,r){ applyColorToRange(c,r); }));
+        t.appendChild(mkSep());
+        /* Font size */
+        t.appendChild(mkLabel('大小'));
+        t.appendChild(mkBtn('A−',function(){
+          if(!savedRange) return;
+          var anc2=savedRange.commonAncestorContainer;
+          var n2=anc2.nodeType===3?anc2.parentNode:anc2;
+          var rb2=n2.closest('.rb'); if(!rb2) return;
+          var cur=parseFloat(rb2.style.fontSize)||16;
+          rb2.style.fontSize=Math.max(8,cur-2)+'px';
+        }));
+        t.appendChild(mkBtn('A+',function(){
+          if(!savedRange) return;
+          var anc2=savedRange.commonAncestorContainer;
+          var n2=anc2.nodeType===3?anc2.parentNode:anc2;
+          var rb2=n2.closest('.rb'); if(!rb2) return;
+          var cur=parseFloat(rb2.style.fontSize)||16;
+          rb2.style.fontSize=Math.min(96,cur+2)+'px';
+        }));
+        t.appendChild(mkSep());
+        /* Format */
+        t.appendChild(mkBtn('B',function(){document.execCommand('bold');}));
+        t.appendChild(mkBtn('I',function(){document.execCommand('italic');}));
+        t.appendChild(mkBtn('U',function(){document.execCommand('underline');}));
+        /* Close */
+        var x=mkBtn('×',removeMini);
+        x.style.background='transparent'; x.style.color='#64748b';
+        t.appendChild(x);
+
+        document.body.appendChild(t);
+      }, 80);
     });
-  }).observe.call(new ResizeObserver(function(entries){
-    entries.forEach(function(e){
-      var fo = e.target.closest('foreignObject');
-      if(fo){ fo.setAttribute('width',e.target.offsetWidth); fo.setAttribute('height',e.target.offsetHeight); }
+    document.addEventListener('mousedown',function(e){ if(toolbar&&!toolbar.contains(e.target)) removeMini(); });
+  })();
+
+  window.changeBgColor=function(inp){var box=inp.closest('.rb');if(!box)return;var bg=inp.value;box.style.background=bg;box.style.backgroundColor=bg;var safe=contrastColor(bg);box.querySelectorAll('[contenteditable]').forEach(function(el){if(!el.dataset.colorLocked)el.style.color=safe;});};
+
+  /* get approximate bg color from slide */
+  function getSlideBg(){var rects=svg.querySelectorAll('rect');for(var i=0;i<rects.length;i++){var f=rects[i].getAttribute('fill')||'';var m=f.match(/#[0-9a-fA-F]{6}/);if(m)return m[0];}return '#0f172a';}
+
+  /* fix contrast of all SVG text elements vs slide bg (Feature 1) */
+  function fixSvgTextContrast(){
+    var bg=getSlideBg();
+    svg.querySelectorAll('text').forEach(function(t){
+      if(t.closest('foreignObject'))return;
+      var fill=(t.getAttribute('fill')||t.style.fill||'').trim();
+      var m=fill.match(/#[0-9a-fA-F]{6}/);
+      if(!m)return;
+      var ratio=contrastRatio(m[0],bg);
+      if(ratio<3.0){var safe=contrastColor(bg);t.setAttribute('fill',safe);t.style.fill=safe;}
     });
-  }), document.createTextNode(''));
-
-  document.querySelectorAll('.rb').forEach(function(b){
-    (new ResizeObserver(function(entries){
-      entries.forEach(function(e){
-        var fo = e.target.closest('foreignObject');
-        if(fo){ fo.setAttribute('width',e.target.offsetWidth); fo.setAttribute('height',e.target.offsetHeight); }
-      });
-    })).observe(b);
-  });
-
-  function mpt(evt){
-    var ctm = svg.getScreenCTM();
-    var src = evt.touches?evt.touches[0]:evt;
-    return {x:(src.clientX-ctm.e)/ctm.a, y:(src.clientY-ctm.f)/ctm.d};
   }
+
+  /* ── SVG inline text editor (Feature 2): dblclick to edit ── */
+  var activeTA=null;
+  function openSvgTextEditor(textEl){
+    if(activeTA){activeTA.blur();}
+    var bbox=textEl.getBoundingClientRect();
+    var svgRect=svg.getBoundingClientRect();
+    var scaleX=svgRect.width/1920;
+    var fill=textEl.getAttribute('fill')||textEl.style.fill||'#f8fafc';
+    var fs=parseFloat(textEl.getAttribute('font-size')||textEl.style.fontSize||16)*scaleX;
+    var layer=document.getElementById('_svgedit');
+    if(!layer){layer=document.createElement('div');layer.id='_svgedit';layer.style.cssText='position:absolute;inset:0;z-index:100;pointer-events:none;';svg.parentNode.style.position='relative';svg.parentNode.appendChild(layer);}
+    layer.style.pointerEvents='auto';
+    var ta=document.createElement('textarea');
+    ta.value=textEl.textContent;
+    ta.style.cssText='position:absolute;pointer-events:auto;resize:both;min-width:100px;'+
+      'left:'+(bbox.left-svgRect.left)+'px;top:'+(bbox.top-svgRect.top-4)+'px;'+
+      'width:'+(Math.max(bbox.width,120)+60)+'px;min-height:'+(fs*1.8)+'px;'+
+      'font-size:'+fs+'px;color:'+fill+';background:rgba(10,18,36,.9);'+
+      'border:2px solid rgba(99,102,241,.7);border-radius:4px;padding:2px 6px;'+
+      'font-weight:'+(textEl.getAttribute('font-weight')||'normal')+';'+
+      'font-family:'+(textEl.getAttribute('font-family')||'inherit')+';'+
+      'outline:none;word-wrap:break-word;white-space:pre-wrap;overflow:hidden;';
+    layer.appendChild(ta); ta.focus(); ta.select(); activeTA=ta;
+    ta.addEventListener('input',function(){textEl.textContent=ta.value;});
+    function commit(){textEl.textContent=ta.value;ta.remove();if(!layer.children.length)layer.style.pointerEvents='none';activeTA=null;}
+    ta.addEventListener('blur',commit);
+    ta.addEventListener('keydown',function(e){if(e.key==='Escape'){ta.value=textEl.textContent;commit();}if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();commit();}});
+  }
+  svg.addEventListener('dblclick',function(e){var t=e.target.closest('text');if(t&&!t.closest('foreignObject'))openSvgTextEditor(t);});
+
+  /* ── wrap orphan foreignObjects in .dg (Feature: all text boxes draggable) ── */
+  function wrapOrphans(){
+    svg.querySelectorAll('foreignObject').forEach(function(fo){
+      var p=fo.parentNode;
+      if(p&&!p.classList.contains('dg')){
+        var g=document.createElementNS('http://www.w3.org/2000/svg','g');
+        g.setAttribute('class','dg');
+        var tx=parseFloat(fo.getAttribute('x')||0),ty=parseFloat(fo.getAttribute('y')||0);
+        g.setAttribute('transform','translate('+tx+','+ty+')');
+        fo.setAttribute('x','0');fo.setAttribute('y','0');
+        p.insertBefore(g,fo);g.appendChild(fo);
+      }
+      var inner=fo.querySelector('div');
+      if(inner){
+        inner.classList.add('rb');
+        /* Feature 7: text reflow */
+        inner.style.overflowX='hidden';inner.style.wordWrap='break-word';inner.style.whiteSpace='normal';
+        if(!inner.style.resize)inner.style.resize='both';
+        inner.style.overflow='auto'; /* auto allows resize handle to work and content to scroll */
+        inner.style.cursor='default';
+        if(!inner.style.minWidth)inner.style.minWidth='180px';
+        if(!inner.style.minHeight)inner.style.minHeight='60px';
+        /* Feature 3: auto-contrast text vs card bg */
+        var cardBg=(inner.style.backgroundColor||inner.style.background||'').trim();
+        var bgHex=(cardBg.match(/#[0-9a-fA-F]{6}/)||[])[0]||getSlideBg();
+        var safe=contrastColor(bgHex);
+        inner.querySelectorAll('[contenteditable]').forEach(function(el){
+          var cc=(el.style.color||'').trim();
+          if(!cc||cc==='inherit'){el.style.color=safe;return;}
+          var m=cc.match(/#[0-9a-fA-F]{6}/);
+          if(m&&contrastRatio(m[0],bgHex)<3.0)el.style.color=safe;
+        });
+      }
+      /* inject ctrl bar */
+      if(inner&&!inner.querySelector('.ctrl')){
+        var safe2=contrastColor(getSlideBg());
+        inner.insertAdjacentHTML('afterbegin','<div class="dh">· · ·</div>'+
+          '<div class="ctrl">'+
+          '<input type="color" value="#818cf8" oninput="updateThemeColor(1,this.value)" title="主題色">'+
+          '<input type="color" value="'+safe2+'" oninput="changeTextColor(this)" title="文字色">'+
+          '<input type="color" value="#0a0a1a" oninput="changeBgColor(this)" title="卡片底色">'+
+          '<span class="sep"></span>'+
+          '<button onclick="adjustFontSize(this,-1)">A−</button>'+
+          '<button onclick="adjustFontSize(this,+1)">A+</button>'+
+          '</div>');
+      }
+    });
+
+    /* Feature 4: wrap SVG <image> in .dg for dragging */
+    svg.querySelectorAll('image').forEach(function(img){
+      var p=img.parentNode;
+      if(p&&!p.classList.contains('dg')&&!p.classList.contains('img-dg')){
+        var iw=parseFloat(img.getAttribute('width')||200);
+        var tx=parseFloat(img.getAttribute('x')||0),ty=parseFloat(img.getAttribute('y')||0);
+        if(iw>=1800&&tx<=0)return; /* skip fullbleed bg */
+        var ih=parseFloat(img.getAttribute('height')||150);
+        var g=document.createElementNS('http://www.w3.org/2000/svg','g');
+        g.setAttribute('class','dg img-dg');
+        g.setAttribute('transform','translate('+tx+','+ty+')');
+        img.setAttribute('x','0');img.setAttribute('y','0');
+        var border=document.createElementNS('http://www.w3.org/2000/svg','rect');
+        border.setAttribute('class','img-border');
+        border.setAttribute('x','0');border.setAttribute('y','0');
+        border.setAttribute('width',iw);border.setAttribute('height',ih);
+        border.setAttribute('fill','none');border.setAttribute('stroke','rgba(99,102,241,.7)');
+        border.setAttribute('stroke-width','3');border.setAttribute('rx','6');
+        border.setAttribute('opacity','0');border.style.transition='opacity .2s';
+        p.insertBefore(g,img);g.appendChild(img);g.appendChild(border);
+      }
+    });
+  }
+
+  /* ResizeObserver */
+  var ro=new ResizeObserver(function(entries){entries.forEach(function(e){var fo=e.target.closest('foreignObject');if(fo){fo.setAttribute('width',e.target.offsetWidth);fo.setAttribute('height',e.target.offsetHeight);}});});
+  function observeAll(){svg.querySelectorAll('.rb').forEach(function(b){ro.observe(b);});}
+
+  /* drag */
+  function mpt(evt){var ctm=svg.getScreenCTM();var src=evt.touches?evt.touches[0]:evt;return {x:(src.clientX-ctm.e)/ctm.a,y:(src.clientY-ctm.f)/ctm.d};}
   function startDrag(evt){
-    if(evt.target.closest('.ctrl') || evt.target.tagName.toLowerCase()==='input' || evt.target.isContentEditable) return;
-    var dg = evt.target.closest('.dg');
-    if(!dg) return;
-    var box = evt.target.closest('.rb');
-    if(box){
-      var rc=box.getBoundingClientRect();
-      if(evt.clientX>rc.right-25&&evt.clientY>rc.bottom-25) return;
-    }
-    sel = dg; sel.parentNode.appendChild(sel);
-    var tl = sel.transform.baseVal;
-    if(tl.length===0||tl.getItem(0).type!==SVGTransform.SVG_TRANSFORM_TRANSLATE){
-      var t=svg.createSVGTransform(); t.setTranslate(0,0); sel.transform.baseVal.insertItemBefore(t,0);
-    }
-    xf = tl.getItem(0);
-    var mp=mpt(evt); offset.x=mp.x-xf.matrix.e; offset.y=mp.y-xf.matrix.f;
+    if(evt.target.closest('.ctrl')||evt.target.tagName.toLowerCase()==='input'||evt.target.isContentEditable)return;
+    if(evt.target.tagName.toLowerCase()==='text')return;
+    var dg=evt.target.closest('.dg');if(!dg)return;
+    var box=evt.target.closest('.rb');
+    if(box){var rc=box.getBoundingClientRect();if(evt.clientX>rc.right-22&&evt.clientY>rc.bottom-22)return;}
+    evt.preventDefault();
+    sel=dg;sel.parentNode.appendChild(sel);
+    var tl=sel.transform.baseVal;
+    if(tl.length===0||tl.getItem(0).type!==SVGTransform.SVG_TRANSFORM_TRANSLATE){var t=svg.createSVGTransform();t.setTranslate(0,0);sel.transform.baseVal.insertItemBefore(t,0);}
+    xf=tl.getItem(0);
+    var mp=mpt(evt);offset.x=mp.x-xf.matrix.e;offset.y=mp.y-xf.matrix.f;
   }
-  function onDrag(evt){
-    if(!sel) return; evt.preventDefault();
-    var mp=mpt(evt);
-    xf.setMatrix(xf.matrix.translate(mp.x-offset.x-xf.matrix.e, mp.y-offset.y-xf.matrix.f));
-  }
-  function endDrag(){ sel=null; }
-  svg.addEventListener('mousedown',startDrag);
-  svg.addEventListener('mousemove',onDrag);
-  window.addEventListener('mouseup',endDrag);
-  svg.addEventListener('touchstart',startDrag,{passive:false});
-  svg.addEventListener('touchmove',onDrag,{passive:false});
-  window.addEventListener('touchend',endDrag);
+  function onDrag(evt){if(!sel)return;evt.preventDefault();var mp=mpt(evt);xf.setMatrix(xf.matrix.translate(mp.x-offset.x-xf.matrix.e,mp.y-offset.y-xf.matrix.f));}
+  function endDrag(){sel=null;}
+  svg.addEventListener('mousedown',startDrag);svg.addEventListener('mousemove',onDrag);window.addEventListener('mouseup',endDrag);
+  svg.addEventListener('touchstart',startDrag,{passive:false});svg.addEventListener('touchmove',onDrag,{passive:false});window.addEventListener('touchend',endDrag);
+  document.addEventListener('keydown',function(e){if(!sel||(document.activeElement&&document.activeElement.isContentEditable))return;var step=e.shiftKey?20:5,dx=0,dy=0;if(e.key==='ArrowLeft')dx=-step;if(e.key==='ArrowRight')dx=step;if(e.key==='ArrowUp')dy=-step;if(e.key==='ArrowDown')dy=step;if(dx||dy){e.preventDefault();xf.setMatrix(xf.matrix.translate(dx,dy));}});
+
+  /* cursor hint on SVG text */
+  function hintSvgText(){svg.querySelectorAll('text').forEach(function(t){if(!t.closest('foreignObject')){t.style.cursor='text';t.setAttribute('title','雙擊編輯');}});}
+
+  function init(){wrapOrphans();observeAll();fixSvgTextContrast();hintSvgText();}
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();
 <\/script>`;
 
@@ -1061,10 +1406,8 @@ async function generateSlideHTML(slideData, theme, imageB64) {
     const uniqueModels = [...new Set(FALLBACK_MODELS)];
 
     const hasImage = !!imageB64;
-    
-    // 【修改點】：統一把圖片來源使用 REPLACE_IMAGE_SRC，避免 LLM 在處理 URL 時出錯。
     const imgInstruction = hasImage
-        ? `本投影片有一張圖片可使用。請務必在 foreignObject 的 <img> 標籤中使用 src="REPLACE_IMAGE_SRC"，或在 SVG 內使用 <image href="REPLACE_IMAGE_SRC"/> 來放置。`
+        ? `本投影片有一張圖片可使用。請務必在 foreignObject 的 <img> 標籤中使用 src="REPLACE_IMAGE_SRC"，或在 SVG 內使用 <image href="REPLACE_IMAGE_SRC"/> 來放置。圖片元素必須被 <g class="dg" transform="translate(x,y)"> 包裹，讓使用者可以拖曳移動圖片位置。`
         : `本投影片無圖片，請以純 SVG 圖形、漸層、幾何裝飾填補視覺。`;
 
     const logoPos = document.getElementById('sel-logo-pos')?.value || 'TR';
@@ -1078,104 +1421,131 @@ async function generateSlideHTML(slideData, theme, imageB64) {
         ? `本投影片需在角落加入 Logo（位置：${logoPos}）。請在 SVG 外層（body 內）用 <img id="slide-logo" src="REPLACE_LOGO_SRC" style="position:fixed;${logoPosMap[logoPos]}height:60px;max-width:200px;object-fit:contain;z-index:999;opacity:0.9;"> 放置 Logo。`
         : '';
 
-    const prompt = `你是世界最頂級的 HTML/SVG 互動式投影片設計師，專精 SVG+foreignObject 架構。
-請為以下投影片資料生成一份完整的、視覺上令人驚豔的 HTML 單頁投影片。
+    // Background: use uploaded template or theme
+    const bgInstruction = AppState.bgTemplateBase64
+        ? `【特別重要】本簡報使用自定義底稿背景圖片。背景層必須是 <image href="REPLACE_BG_SRC" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice"/>，放在所有其他元素之前。禁止使用漸層或純色作為背景，必須使用此底稿圖片。文字和卡片配色需配合底稿，若底稿較亮則用深色文字，若底稿較暗則用淺色文字。`
+        : `背景基調: ${theme.bg}（使用此漸層或顏色作為全背景）`;
+
+    const prompt = `你是世界最頂級的 HTML/SVG 互動式投影片設計師。你的投影片必須完全符合以下架構規範。
 
 【投影片資料】
 ${JSON.stringify(slideData, null, 2)}
 
 【圖片】${imgInstruction}
+【Logo】${logoInstruction || '無 Logo。'}
+【背景】${bgInstruction}
 
-【Logo】${logoInstruction || '本投影片無 Logo。'}
+══════════════════════════════════════════════════════
+★★★ 核心強制規範（違反任何一條都是錯誤輸出）★★★
+══════════════════════════════════════════════════════
 
-【核心架構規範 — 必須嚴格遵守】
+A. 【文字架構】 — 所有文字（標題、副標、要點、流程圖標籤、圖表說明、數字）
+   ★ 禁止使用 SVG <text> 元素放置任何內容文字
+   ★ 所有文字必須放在 foreignObject > div.rb > [contenteditable] 中
+   ★ 每個文字元素必須被獨立的 <g class="dg" transform="translate(X,Y)"> 包裹
 
-1. 完整 HTML 結構，從 <!DOCTYPE html> 到 </html>
-2. body 固定為 1920×1080px，overflow:hidden，margin/padding:0
-3. 字體只用系統字體棧："Segoe UI","PingFang SC","Microsoft YaHei",sans-serif
-4. 禁止引用任何外部 CSS 或 JS 資源（CDN / Google Fonts 等）
-5. 必須使用 CSS 變數主題系統，在 :root 定義（可根據投影片色彩創意調整，但需符合主題風格）：
-   :root {
-     --c1: [強調主色]; --c1-rgb: [R,G,B];
-     --c2: [輔助色2]; --c2-rgb: [R,G,B];
-     --c3: [輔助色3]; --c3-rgb: [R,G,B];
-     --c4: [輔助色4]; --c4-rgb: [R,G,B];
-   }
+B. 【流程圖/架構圖文字標籤規則】
+   - 流程圖的每個「方塊」= SVG 形狀（rect/circle）做外框 + 獨立的 .dg foreignObject 做文字
+   - 每個節點的標籤文字必須是獨立的 .dg 元素，可以單獨拖曳、編輯、改色
+   - 箭頭（SVG path/line）和裝飾可以繼續用 SVG，但文字標籤絕對不可以
 
-6. 主畫布必須是一個 SVG，id="slide-svg"，viewBox="0 0 1920 1080"，填滿 body。
-   SVG 內部結構：
-   a) <defs> — 定義所有漸層(linearGradient/radialGradient)、濾鏡(filter: shadow, glow)、pattern
-   b) 背景層 — 全尺寸矩形或複雜背景圖形
-   c) 裝飾層 — 幾何形狀、光暈、動態線條等視覺元素（直接在 SVG 內繪製，非 foreignObject）
-   d) 內容 <g class="dg"> 元素 — 每個可拖曳的文字卡片或圖解區塊
+C. 【防重疊規範】
+   - 每個 .dg 元素的 translate(X,Y) 坐標必須根據實際尺寸計算，確保不重疊
+   - diagram_slide 的節點佈局：4 節點水平排列間距 ≥ 420px，垂直排列間距 ≥ 200px
+   - text_only/text_and_image：所有文字卡片間距 ≥ 20px，不得超出 1920×1080 範圍
+   - foreignObject 的 width/height 必須小於兩個相鄰 .dg 之間的間距
 
-7. 文字卡片用 <g class="dg" transform="translate(x,y)"> 包裹，內含 <foreignObject>：
-   <g class="dg" transform="translate(X,Y)">
-     <foreignObject x="0" y="0" width="W" height="H">
-       <div class="rb" style="width:Wpx;height:Hpx;font-size:16px; ...可拖曳、可縮放的卡片樣式...">
-         <!-- 拖曳把手 -->
-         <div class="dh">⋯⋯⋯</div>
-         <!-- 控制列（hover 顯示）-->
-         <div class="ctrl">
-           <input type="color" value="#HEXVAL" oninput="updateThemeColor(1,this.value)">
-           <button onclick="adjustFontSize(this,-1)">A−</button>
-           <button onclick="adjustFontSize(this,+1)">A+</button>
-         </div>
-         <!-- 可編輯標題 -->
-         <h3 contenteditable="true" spellcheck="false" style="color:var(--c1)">標題</h3>
-         <!-- 可編輯內容 -->
-         <p contenteditable="true" spellcheck="false">內容...</p>
-       </div>
-     </foreignObject>
-   </g>
+D. 【標準文字卡 HTML 模板】（所有文字卡必須使用此結構）：
+<g class="dg" transform="translate(X,Y)">
+  <foreignObject x="0" y="0" width="W" height="H">
+    <div class="rb" xmlns="http://www.w3.org/1999/xhtml"
+         style="width:Wpx;height:Hpx;font-size:FS px;resize:both;overflow:hidden;
+                min-width:180px;min-height:60px;position:relative;box-sizing:border-box;
+                padding:16px 20px;CARD_BG_STYLE;border-radius:BR px;">
+      <div class="dh" style="cursor:grab;text-align:center;color:rgba(255,255,255,.2);
+           font-size:10px;letter-spacing:3px;padding:0 0 6px;user-select:none;">· · ·</div>
+      <div class="ctrl" style="opacity:0;transition:opacity .2s;position:absolute;top:6px;right:6px;
+           display:flex;align-items:center;gap:3px;background:rgba(8,14,28,.95);
+           border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:4px 6px;z-index:60;">
+        <input type="color" value="ACCENT_HEX" oninput="updateThemeColor(1,this.value)" title="主題色"
+               style="width:18px;height:18px;border:none;border-radius:3px;cursor:pointer;padding:0;">
+        <input type="color" value="TEXT_HEX" oninput="changeTextColor(this)" title="文字色"
+               style="width:18px;height:18px;border:none;border-radius:3px;cursor:pointer;padding:0;">
+        <input type="color" value="BG_HEX" oninput="changeBgColor(this)" title="底色"
+               style="width:18px;height:18px;border:none;border-radius:3px;cursor:pointer;padding:0;">
+        <div style="width:1px;height:12px;background:rgba(255,255,255,.15);margin:0 2px;"></div>
+        <button onclick="adjustFontSize(this,-1)"
+                style="font-size:9px;font-weight:700;padding:1px 5px;border:none;background:rgba(255,255,255,.1);border-radius:3px;cursor:pointer;color:#e2e8f0;">A−</button>
+        <button onclick="adjustFontSize(this,+1)"
+                style="font-size:9px;font-weight:700;padding:1px 5px;border:none;background:rgba(255,255,255,.1);border-radius:3px;cursor:pointer;color:#e2e8f0;">A+</button>
+      </div>
+      CONTENT_HERE <!-- 所有文字加 contenteditable="true" spellcheck="false" -->
+    </div>
+  </foreignObject>
+</g>
 
-8. 卡片 CSS（.rb class）需包含：resize:both; overflow:auto; min-width:280px; min-height:150px;
-   控制列（.ctrl）預設 opacity:0，hover 時 opacity:1。
-   所有可編輯文字（h3/p/span）加 contenteditable="true" spellcheck="false"。
+E. 【圖片拖曳模板】：
+<g class="dg" transform="translate(X,Y)">
+  <image href="REPLACE_IMAGE_SRC" x="0" y="0" width="W" height="H" preserveAspectRatio="xMidYMid slice"/>
+</g>
 
-9. 在 SVG 主體之外（</svg>之後）插入一個特殊 placeholder：
-   <!--SLIDE_INTERACTION_SCRIPT-->
-   這個 placeholder 將被替換為互動 JS（拖曳、縮放同步、色彩更新）。
+F. 【技術規範】
+   1. 完整 HTML，從 <!DOCTYPE html> 到 </html>
+   2. body：width:1920px; height:1080px; overflow:hidden; margin:0; padding:0
+   3. 字體棧："Segoe UI","PingFang SC","Microsoft YaHei",sans-serif
+   4. 禁止引用任何外部 CSS/JS 資源
+   5. :root 定義 CSS 色彩變數 --c1~--c4 及對應 --c1-rgb 等
+   6. SVG id="slide-svg" viewBox="0 0 1920 1080"
+   7. </svg> 後插入：<!--SLIDE_INTERACTION_SCRIPT-->
+   8. foreignObject 內的 div 必須加 xmlns="http://www.w3.org/1999/xhtml"
 
-10. layout 版型設計指引：
+G. 【各版型佈局規範】
 
   ★ title_only（封面）：
-    - 全螢幕震撼視覺，不需要 foreignObject 卡片
-    - 使用大型 SVG 文字元素 <text> 直接在 SVG 繪製標題
-    - 背景要極具視覺衝擊（漸層+光暈+幾何形狀）
-    - 副標題、頁碼等可用小型 <text>
+    - 背景：全尺寸 SVG 漸層/裝飾（可用 SVG rect, path, circle 等）
+    - 主標題：.dg foreignObject，translate(100, 350)，width:1400，height:280，font-size:80px，font-weight:900
+    - 副標題（若有）：.dg foreignObject，translate(100, 650)，width:900，height:120，font-size:32px
+    - 裝飾：SVG 幾何形狀（禁止在裝飾上放文字）
 
   ★ text_only（純文字）：
-    - 左側大面積裝飾 SVG 插圖（幾何抽象、圖標群組）
-    - 右側 1~2 個 foreignObject 文字卡，含編號、標題、要點清單
-    - 要點清單每項前面要有自訂 SVG bullet
+    - 左側：SVG 裝飾圖形（無文字）
+    - 標題卡：translate(80, 60)，width:1760，height:140，font-size:52px，bold
+    - 內容卡片群組（每個要點一個獨立的 .dg）：
+      要點 1：translate(80, 240)，width:830，height:170
+      要點 2：translate(80, 430)，width:830，height:170
+      要點 3：translate(80, 620)，width:830，height:170
+      要點 4：translate(80, 810)，width:830，height:170
+      （最多 4 個，超過則調整 height）
+    - 右側裝飾：translate(960, 200) 放 SVG 視覺元素
 
-  ★ text_and_image（圖文）：
-    - 圖片佔 50% 畫面（左或右），用 SVG <image> 或 foreignObject <img> 放置
-    - 圖片區要有 clip-path 或遮罩裝飾（斜切、波浪等）
-    - 文字側含 1~2 個 foreignObject 卡片
-    - 圖片 src 用 "REPLACE_IMAGE_SRC"
+  ★ text_and_image（圖文並排）：
+    - 標題卡：translate(60, 40)，width:880，height:130，font-size:44px
+    - 要點卡片（每個要點獨立）：
+      要點 1：translate(60, 210)，width:880，height:160
+      要點 2：translate(60, 390)，width:880，height:160
+      要點 3：translate(60, 570)，width:880，height:160
+    - 圖片：translate(1000, 80)，width:860，height:900（用 E 的圖片模板）
 
-  ★ diagram_slide（圖解）：
-    - 根據 diagram_description 在 SVG 內用純 SVG 繪製精美的流程圖/架構圖/時間軸
-    - 使用箭頭（marker）、圓角矩形、連接線、圖示
-    - 頂部小型 foreignObject 顯示標題與說明
-    - 整體佔滿畫面，資訊豐富
+  ★ diagram_slide（流程圖/架構圖）：
+    - 標題卡：translate(60, 30)，width:1800，height:110，font-size:44px
+    - 每個流程節點 = SVG 背景框（rect）+ 獨立 .dg 文字標籤
+    - 4 節點水平佈局範例：
+      SVG 框 1：x=60,y=200,width=380,height=220
+      節點 1 文字：translate(70, 210)，width:360，height:200，font-size:20px
+      SVG 框 2：x=520,y=200,width=380,height=220
+      節點 2 文字：translate(530, 210)，width:360，height:200
+      SVG 框 3：x=980,y=200,width=380,height=220
+      節點 3 文字：translate(990, 210)，width:360，height:200
+      SVG 框 4：x=1440,y=200,width=380,height=220
+      節點 4 文字：translate(1450, 210)，width:360，height:200
+      箭頭（SVG path）：在框之間繪製，用 marker-end 箭頭
+    - 說明卡（選用）：translate(60, 500)，width:1800，height:400，font-size:18px
 
-11. 視覺品質要求：
-    - 善用 SVG filter：<feDropShadow>、<feGaussianBlur>（glow 效果）
-    - 大膽使用漸層填充（linearGradient/radialGradient）
-    - 裝飾元素要有層次感（前中後景）
-    - 每張投影片的視覺風格要有獨特性，不千篇一律
+H. 【對比度規範】
+   - 深色背景→文字用淺色（#f8fafc/#ffffff）；淺色背景→文字用深色（#111827/#0f172a）
+   - ${AppState.bgTemplateBase64 ? '自訂底稿：預設用深色文字 #111827' : `背景：${theme.bg}`}
 
-12. 整體配色風格參考（可創意演繹）：
-    背景基調: ${theme.bg}
-    主標題色: ${theme.titleColor}
-    主強調色: ${theme.accent}
-    正文色: ${theme.text}
-    卡片背景: ${theme.card}
-
-13. 最後只輸出純 HTML 程式碼，不含任何 markdown 標記或說明文字。
+I. 只輸出純 HTML，不含任何 markdown 標記。
 
 請開始輸出完整 HTML：`;
 
@@ -1223,8 +1593,19 @@ ${JSON.stringify(slideData, null, 2)}
             // 並且加上 crossorigin="anonymous" 有助於後續 PPTX 的 html2canvas 截圖。
             if (hasImage) {
                 html = html.replace(/REPLACE_IMAGE_SRC/g, imageB64);
-                // 嘗試將外嵌圖片加上 CORS 標籤
                 html = html.replace(/<img([^>]*)src=["']([^"']+)["']([^>]*)>/g, '<img$1src="$2" crossorigin="anonymous"$3>');
+            }
+
+            // Inject background template
+            if (AppState.bgTemplateBase64) {
+                html = html.replace(/REPLACE_BG_SRC/g, AppState.bgTemplateBase64);
+                // If LLM didn't include placeholder, insert as first SVG child
+                if (!html.includes(AppState.bgTemplateBase64) && html.includes('id="slide-svg"')) {
+                    html = html.replace(
+                        /(id="slide-svg"[^>]*>)/,
+                        `$1\n<image href="${AppState.bgTemplateBase64}" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice"/>`
+                    );
+                }
             }
 
             if (AppState.logoBase64) {
@@ -1238,6 +1619,9 @@ ${JSON.stringify(slideData, null, 2)}
                 }
             }
 
+            // Auto contrast fix (inject after all replacements)
+            html = injectContrastFix(html, theme);
+
             return html;
         } catch(e) {
             lastErr = e;
@@ -1246,6 +1630,66 @@ ${JSON.stringify(slideData, null, 2)}
         }
     }
     throw new Error(`HTML 投影片生成失敗: ${lastErr?.message}`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTRAST UTILITY ── ensure text is readable against background
+// ═══════════════════════════════════════════════════════════════════
+function getLuminance(r, g, b) {
+    const toLinear = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+function hexToRgbArr(hex) {
+    const m = (hex || '').match(/#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/);
+    if (!m) return [128, 128, 128];
+    return [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)];
+}
+function getContrastRatio(hex1, hex2) {
+    const l1 = getLuminance(...hexToRgbArr(hex1));
+    const l2 = getLuminance(...hexToRgbArr(hex2));
+    const [L, D] = l1 > l2 ? [l1, l2] : [l2, l1];
+    return (L + 0.05) / (D + 0.05);
+}
+function pickReadableColor(bgHex, preferred, fallbackLight = '#f8fafc', fallbackDark = '#0f172a') {
+    const contrastPreferred = getContrastRatio(bgHex, preferred);
+    if (contrastPreferred >= 4.5) return preferred;
+    const contrastLight = getContrastRatio(bgHex, fallbackLight);
+    const contrastDark  = getContrastRatio(bgHex, fallbackDark);
+    return contrastLight >= contrastDark ? fallbackLight : fallbackDark;
+}
+
+// Inject contrast-safe CSS overrides into an HTML slide string
+function injectContrastFix(html, theme) {
+    const bgHex = AppState.bgTemplateBase64
+        ? '#808080'   // unknown bg image → use mid-grey assumption, safer to use light text
+        : (theme.bg.match(/#([0-9a-fA-F]{6})/)?.[0] || '#0f172a');
+
+    const [bgR, bgG, bgB] = hexToRgbArr(bgHex);
+    const bgLum = getLuminance(bgR, bgG, bgB);
+    const bgIsLight = bgLum > 0.18;
+
+    // Pick safe text color based on bg luminance
+    const safeText    = bgIsLight ? '#111827' : '#f1f5f9';
+    const safeSubText = bgIsLight ? '#374151' : '#cbd5e1';
+    const safeAccent  = (() => {
+        const a = theme.accent || '#818cf8';
+        return getContrastRatio(bgHex, a) >= 3.0 ? a : (bgIsLight ? '#1d4ed8' : '#a5b4fc');
+    })();
+
+    // Build override CSS block
+    const overrideCss = `
+<style id="contrast-override">
+/* Auto contrast override */
+body { --safe-text:${safeText}; --safe-sub:${safeSubText}; --safe-accent:${safeAccent}; }
+svg text { fill: ${safeText}; }
+.rb, .rb p, .rb span, .rb li { color: ${safeText}; }
+</style>`;
+
+    // Inject after <head> or before first </head>
+    if (html.includes('</head>')) {
+        html = html.replace('</head>', overrideCss + '\n</head>');
+    }
+    return html;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1358,6 +1802,10 @@ function renderSlidePreviewCard(slideData, html, index) {
                 <p class="text-xs font-semibold text-slate-200 truncate">${slideData.title || '（無標題）'}</p>
             </div>
             <div class="flex gap-1.5 shrink-0">
+                <button onclick="openEditModal(${index})" title="編輯此頁"
+                    class="text-slate-500 hover:text-amber-400 transition-colors p-1">
+                    <i class="ph-bold ph-pencil-simple text-base"></i>
+                </button>
                 <button onclick="previewSingleSlide(${index})" title="全螢幕預覽"
                     class="text-slate-500 hover:text-sky-400 transition-colors p-1">
                     <i class="ph-bold ph-arrows-out text-base"></i>
@@ -1533,189 +1981,132 @@ function buildLogoTag() {
 }
 
 function buildFallbackSlideHTML(slideData, theme) {
-    const title   = (slideData.title || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const subtitle= (slideData.subtitle || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const bullets = slideData.bullet_points || [];
-    const accent  = theme.accent;
+    const title    = (slideData.title || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const subtitle = (slideData.subtitle || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const bullets  = slideData.bullet_points || [];
+    const accent   = theme.accent;
     const accentRgb = hexToRgbStr(accent);
-    const isCover = slideData.layout === 'title_only';
+    const isCover  = slideData.layout === 'title_only';
 
     function hexToRgbStr(c) {
         const m = (c||'').match(/#([0-9a-fA-F]{6})/);
-        if (m) {
-            const n = parseInt(m[1], 16);
-            return `${(n>>16)&255},${(n>>8)&255},${n&255}`;
-        }
+        if (m) { const n = parseInt(m[1], 16); return `${(n>>16)&255},${(n>>8)&255},${n&255}`; }
         return '99,102,241';
     }
 
-    if (isCover) {
-        return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
+    const bgLayer = AppState.bgTemplateBase64
+        ? `<image href="${AppState.bgTemplateBase64}" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice"/>`
+        : `<defs>
+  <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#060a18"/><stop offset="100%" stop-color="#0e1628"/>
+  </linearGradient>
+  <radialGradient id="aura" cx="80%" cy="20%" r="60%">
+    <stop offset="0%" stop-color="${accent}" stop-opacity="0.10"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<rect width="1920" height="1080" fill="url(#bg)"/>
+<rect width="1920" height="1080" fill="url(#aura)"/>`;
+
+    const textColorDefault = AppState.bgTemplateBase64 ? '#111827' : '#ffffff';
+    const ctrlBar = `<div class="ctrl">
+  <input type="color" value="${accent.startsWith('#')?accent:'#6366f1'}" oninput="updateThemeColor(1,this.value)" title="主題色">
+  <input type="color" value="${textColorDefault}" oninput="changeTextColor(this)" title="文字色">
+  <input type="color" value="rgba(0,0,0,0)" oninput="changeBgColor(this)" title="卡片底色">
+  <div style="width:1px;height:14px;background:rgba(255,255,255,.2);margin:0 2px;"></div>
+  <button onclick="adjustFontSize(this,-1)">A−</button>
+  <button onclick="adjustFontSize(this,+1)">A+</button>
+</div>`;
+
+    const sharedStyle = `
 *{margin:0;padding:0;box-sizing:border-box;}
 body{width:1920px;height:1080px;overflow:hidden;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
 :root{--c1:${accent};--c1-rgb:${accentRgb};}
-.rb{resize:both;overflow:auto;min-width:280px;min-height:120px;}
-.ctrl{opacity:0;transition:opacity .2s;position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.9);border-radius:6px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
-.dg:hover .ctrl{opacity:1;}
-.dh{text-align:center;color:rgba(255,255,255,.3);font-size:10px;letter-spacing:4px;padding:2px 0 6px;cursor:grab;}
-input[type=color]{width:22px;height:22px;border:none;border-radius:3px;cursor:pointer;padding:0;background:transparent;}
+.rb{resize:both;overflow:auto;min-width:280px;min-height:120px;position:relative;}
+.ctrl{opacity:0;transition:opacity .2s;position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:4px;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 7px;z-index:50;}
+.dg:hover .ctrl,.rb:hover>.ctrl{opacity:1;}
+.dh{text-align:center;color:rgba(255,255,255,.25);font-size:10px;letter-spacing:4px;padding:3px 0 8px;cursor:grab;user-select:none;}
+input[type=color]{width:20px;height:20px;border:none;border-radius:3px;cursor:pointer;padding:0;background:transparent;}
 input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
-input[type=color]::-webkit-color-swatch{border:1px solid rgba(0,0,0,.15);border-radius:3px;}
-.ctrl button{font-size:10px;font-weight:700;padding:2px 6px;border:none;background:#f1f5f9;border-radius:3px;cursor:pointer;color:#475569;}
-.ctrl button:hover{background:#e2e8f0;}
-[contenteditable]:focus{outline:2px solid rgba(var(--c1-rgb),.4);border-radius:3px;}
-</style></head>
+input[type=color]::-webkit-color-swatch{border:1px solid rgba(255,255,255,.2);border-radius:3px;}
+.ctrl button{font-size:10px;font-weight:700;padding:2px 6px;border:none;background:rgba(255,255,255,.1);border-radius:3px;cursor:pointer;color:#e2e8f0;}
+.ctrl button:hover{background:rgba(255,255,255,.2);}
+[contenteditable]:hover{background:rgba(${accentRgb},.06);border-radius:3px;}
+[contenteditable]:focus{outline:2px solid rgba(${accentRgb},.5);border-radius:3px;}`;
+
+    if (isCover) {
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${sharedStyle}</style></head>
 <body>
-<svg id="slide-svg" viewBox="0 0 1920 1080" style="width:100%;height:100%;position:absolute;inset:0;" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
-<defs>
-  <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stop-color="#0a0a1a"/>
-    <stop offset="50%" stop-color="#12122a"/>
-    <stop offset="100%" stop-color="#0f0f20"/>
-  </linearGradient>
-  <radialGradient id="glow1" cx="75%" cy="50%" r="55%">
-    <stop offset="0%" stop-color="${accent}" stop-opacity="0.18"/>
-    <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
-  </radialGradient>
-  <radialGradient id="glow2" cx="15%" cy="80%" r="40%">
-    <stop offset="0%" stop-color="${accent}" stop-opacity="0.10"/>
-    <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
-  </radialGradient>
-  <filter id="blur5"><feGaussianBlur stdDeviation="5"/></filter>
-  <filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  <clipPath id="diagClip"><polygon points="1100,0 1920,0 1920,1080 900,1080"/></clipPath>
-</defs>
-<rect width="1920" height="1080" fill="url(#bg)"/>
-<rect width="1920" height="1080" fill="url(#glow1)"/>
-<rect width="1920" height="1080" fill="url(#glow2)"/>
-<polygon points="1200,0 1920,0 1920,1080 950,1080" fill="${accent}" opacity="0.07"/>
-<polygon points="1260,0 1320,0 1070,1080 1010,1080" fill="${accent}" opacity="0.06"/>
-<circle cx="1680" cy="200" r="280" fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.15"/>
-<circle cx="1680" cy="200" r="180" fill="none" stroke="${accent}" stroke-width="1" opacity="0.10"/>
-<circle cx="150" cy="950" r="200" fill="${accent}" opacity="0.05" filter="url(#blur5)"/>
-<line x1="0" y1="540" x2="1920" y2="540" stroke="${accent}" stroke-width="0.5" opacity="0.06"/>
-<line x1="960" y1="0" x2="960" y2="1080" stroke="${accent}" stroke-width="0.5" opacity="0.06"/>
+<svg id="slide-svg" viewBox="0 0 1920 1080" style="width:100%;height:100%;position:absolute;inset:0;" xmlns="http://www.w3.org/2000/svg">
+${bgLayer}
+<filter id="glow" xmlns="http://www.w3.org/2000/svg"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 <rect x="80" y="200" width="6" height="480" rx="3" fill="${accent}" opacity="0.8" filter="url(#glow)"/>
-<text x="110" y="190" font-family="Segoe UI,sans-serif" font-size="13" font-weight="700" fill="${accent}" letter-spacing="5" opacity="0.7">SLIDE ${slideData.slide_number || '01'}</text>
-<text x="110" y="460" font-family="Segoe UI,PingFang SC,Microsoft YaHei,sans-serif" font-size="108" font-weight="900" fill="white" filter="url(#glow)">${title}</text>
+<text x="110" y="460" font-family="Segoe UI,PingFang SC,Microsoft YaHei,sans-serif" font-size="108" font-weight="900" fill="${textColorDefault}" filter="url(#glow)">${title}</text>
 ${subtitle ? `<text x="114" y="560" font-family="Segoe UI,sans-serif" font-size="34" font-weight="300" fill="${accent}" opacity="0.85">${subtitle}</text>` : ''}
 <rect x="110" y="630" width="200" height="5" rx="2.5" fill="${accent}"/>
-<rect x="322" y="632" width="80" height="1.5" rx="0.75" fill="${accent}" opacity="0.4"/>
 </svg>
 ${SLIDE_INTERACTION_SCRIPT}
 ${buildLogoTag()}
 </body></html>`;
+        return injectContrastFix(html, theme);
     }
-
-    const bulletItems = bullets.map((b, i) => {
-        const safe = b.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        return `<div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
-          <div style="width:28px;height:28px;border-radius:50%;background:rgba(${accentRgb},0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-            <span style="color:${accent};font-size:13px;font-weight:700;">${i+1}</span>
-          </div>
-          <p contenteditable="true" spellcheck="false" style="color:#cbd5e1;font-size:1em;line-height:1.6;flex:1;margin:0;cursor:text;">${safe}</p>
-        </div>`;
-    }).join('');
 
     const isDiagram = slideData.layout === 'diagram_slide';
     const diagDesc  = (slideData.diagram_description || title).replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{width:1920px;height:1080px;overflow:hidden;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
-:root{--c1:${accent};--c1-rgb:${accentRgb};}
-.rb{resize:both;overflow:auto;min-width:320px;min-height:180px;background:rgba(15,23,42,.75);border:1px solid rgba(${accentRgb},0.3);border-top:4px solid ${accent};border-radius:16px;padding:28px 32px;position:relative;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.4);}
-.ctrl{opacity:0;transition:opacity .2s;position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:4px;background:rgba(15,23,42,.9);border:1px solid rgba(${accentRgb},.3);border-radius:6px;padding:4px 6px;z-index:20;}
-.dg:hover .ctrl{opacity:1;}
-.dh{text-align:center;color:rgba(255,255,255,.2);font-size:10px;letter-spacing:4px;padding-bottom:10px;cursor:grab;user-select:none;}
-input[type=color]{width:22px;height:22px;border:none;border-radius:3px;cursor:pointer;padding:0;background:transparent;}
-input[type=color]::-webkit-color-swatch-wrapper{padding:0;}
-input[type=color]::-webkit-color-swatch{border:1px solid rgba(255,255,255,.2);border-radius:3px;}
-.ctrl button{font-size:10px;font-weight:700;padding:2px 7px;border:none;background:rgba(${accentRgb},.15);border-radius:3px;cursor:pointer;color:${accent};}
-.ctrl button:hover{background:rgba(${accentRgb},.3);}
-[contenteditable]:hover{background:rgba(${accentRgb},.06);border-radius:4px;}
-[contenteditable]:focus{outline:2px solid rgba(${accentRgb},.5);border-radius:4px;}
+    let fallbackHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${sharedStyle}
+.rb-card{background:rgba(15,23,42,.78);border:1px solid rgba(${accentRgb},0.3);border-top:4px solid ${accent};border-radius:16px;padding:28px 32px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.4);}
 </style></head>
 <body>
-<svg id="slide-svg" viewBox="0 0 1920 1080" style="width:100%;height:100%;position:absolute;inset:0;" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+<svg id="slide-svg" viewBox="0 0 1920 1080" style="width:100%;height:100%;position:absolute;inset:0;" xmlns="http://www.w3.org/2000/svg">
 <defs>
-  <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" stop-color="#060a18"/>
-    <stop offset="100%" stop-color="#0e1628"/>
-  </linearGradient>
-  <radialGradient id="aura" cx="80%" cy="20%" r="60%">
-    <stop offset="0%" stop-color="${accent}" stop-opacity="0.10"/>
-    <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
-  </radialGradient>
   <filter id="shadow"><feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="#000" flood-opacity="0.35"/></filter>
   <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  <filter id="blur10"><feGaussianBlur stdDeviation="10"/></filter>
 </defs>
-<rect width="1920" height="1080" fill="url(#bg)"/>
-<rect width="1920" height="1080" fill="url(#aura)"/>
-<circle cx="1800" cy="100" r="300" fill="${accent}" opacity="0.04" filter="url(#blur10)"/>
-<circle cx="100" cy="1000" r="200" fill="${accent}" opacity="0.05" filter="url(#blur10)"/>
+${bgLayer}
 <rect x="0" y="0" width="1920" height="4" fill="${accent}" opacity="0.5"/>
 <rect x="60" y="60" width="5" height="960" rx="2.5" fill="${accent}" opacity="0.25"/>
-<text x="1840" y="1050" font-family="Segoe UI,sans-serif" font-size="16" fill="${accent}" opacity="0.4" text-anchor="end">${slideData.slide_number || 1} / —</text>
+<text x="1840" y="1050" font-family="Segoe UI,sans-serif" font-size="16" fill="${accent}" opacity="0.4" text-anchor="end">${slideData.slide_number || 1}</text>
+<text x="110" y="120" font-family="Segoe UI,PingFang SC,Microsoft YaHei,sans-serif" font-size="62" font-weight="800" fill="${textColorDefault}" filter="url(#glow)">${title}</text>
+<rect x="110" y="138" width="120" height="4" rx="2" fill="${accent}" opacity="0.9"/>
 
-${isDiagram ? `
-<g transform="translate(200,180)">
+${isDiagram ? `<g transform="translate(200,180)">
   <rect x="0" y="0" width="1500" height="60" rx="8" fill="${accent}" opacity="0.15"/>
   <text x="20" y="42" font-family="Segoe UI,PingFang SC,sans-serif" font-size="28" font-weight="700" fill="${accent}">${diagDesc}</text>
   <g transform="translate(0,100)">
     ${bullets.slice(0,4).map((b,i) => {
         const safe2 = (b||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').slice(0,40);
-        const bx = i * 380;
-        return `<rect x="${bx}" y="0" width="340" height="180" rx="12" fill="rgba(${accentRgb},0.12)" stroke="${accent}" stroke-width="1.5" opacity="0.9"/>
-<text x="${bx+170}" y="70" font-size="16" font-weight="700" fill="${accent}" text-anchor="middle" font-family="Segoe UI,sans-serif">${i+1}</text>
-<text x="${bx+170}" y="110" font-size="15" fill="white" text-anchor="middle" font-family="Segoe UI,PingFang SC,sans-serif" opacity="0.85">${safe2}</text>
-${i<3?`<polygon points="${bx+350},90 ${bx+370},90 ${bx+360},100" fill="${accent}" opacity="0.7"/>
-<line x1="${bx+340}" y1="90" x2="${bx+375}" y2="90" stroke="${accent}" stroke-width="2" opacity="0.7"/>
-<line x1="${bx+375}" y1="90" x2="${bx+380}" y2="90" stroke="${accent}" stroke-width="2" opacity="0.7"/>`:''}`;
+        const bx = i*380;
+        return `<rect x="${bx}" y="0" width="340" height="180" rx="12" fill="rgba(${accentRgb},0.12)" stroke="${accent}" stroke-width="1.5"/>
+<text x="${bx+170}" y="70" font-size="16" font-weight="700" fill="${accent}" text-anchor="middle">${i+1}</text>
+<text x="${bx+170}" y="110" font-size="15" fill="${textColorDefault}" text-anchor="middle" opacity="0.85">${safe2}</text>
+${i<3?`<line x1="${bx+340}" y1="90" x2="${bx+380}" y2="90" stroke="${accent}" stroke-width="2" opacity="0.7"/><polygon points="${bx+375},85 ${bx+380},90 ${bx+375},95" fill="${accent}" opacity="0.7"/>`:''}`;
     }).join('')}
   </g>
-  <line x1="340" y1="190" x2="380" y2="190" stroke="${accent}" stroke-width="2" opacity="0.5"/>
-  <line x1="720" y1="190" x2="760" y2="190" stroke="${accent}" stroke-width="2" opacity="0.5"/>
-  <line x1="1100" y1="190" x2="1140" y2="190" stroke="${accent}" stroke-width="2" opacity="0.5"/>
-</g>
-` : ''}
-
-<text x="110" y="120" font-family="Segoe UI,PingFang SC,Microsoft YaHei,sans-serif" font-size="62" font-weight="800" fill="white">${title}</text>
-<rect x="110" y="138" width="120" height="4" rx="2" fill="${accent}" opacity="0.9"/>
-
-${!isDiagram ? `
+</g>` : `
 <g class="dg" transform="translate(110, 180)" filter="url(#shadow)">
   <foreignObject x="0" y="0" width="1680" height="820">
-    <div class="rb" style="width:1680px;height:820px;font-size:18px;">
+    <div class="rb rb-card" style="width:1680px;height:820px;font-size:18px;">
       <div class="dh">· · · · ·</div>
-      <div class="ctrl">
-        <input type="color" value="${accent.startsWith('#') ? accent : '#6366f1'}" oninput="updateThemeColor(1,this.value)" title="主題色">
-        <div style="width:1px;height:16px;background:rgba(255,255,255,.15);margin:0 3px;"></div>
-        <button onclick="adjustFontSize(this,-1)">A−</button>
-        <button onclick="adjustFontSize(this,+1)">A+</button>
-      </div>
+      ${ctrlBar}
       <div style="margin-bottom:24px;">
         ${bullets.map((b,i) => {
             const safe2 = b.replace(/</g,'&lt;').replace(/>/g,'&gt;');
             return `<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:22px;">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(${accentRgb},.2);border:1.5px solid rgba(${accentRgb},.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-                <span style="color:${accent};font-size:14px;font-weight:700;">${i+1}</span>
-              </div>
-              <p contenteditable="true" spellcheck="false" style="color:#cbd5e1;font-size:1em;line-height:1.65;flex:1;margin:0;">${safe2}</p>
-            </div>`;
+  <div style="width:32px;height:32px;border-radius:50%;background:rgba(${accentRgb},.2);border:1.5px solid rgba(${accentRgb},.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+    <span style="color:${accent};font-size:14px;font-weight:700;">${i+1}</span>
+  </div>
+  <p contenteditable="true" spellcheck="false" style="color:${textColorDefault};font-size:1em;line-height:1.65;flex:1;margin:0;">${safe2}</p>
+</div>`;
         }).join('')}
       </div>
     </div>
   </foreignObject>
-</g>
-` : ''}
+</g>`}
 </svg>
 ${SLIDE_INTERACTION_SCRIPT}
 ${buildLogoTag()}
 </body></html>`;
+    return injectContrastFix(fallbackHtml, theme);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1837,8 +2228,147 @@ document.addEventListener('keydown', e=>{
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// EDITABLE PPTX  (text + shapes, not screenshot)
+// EDITABLE PPTX  ── parse live HTML DOM to extract real text boxes ──
 // ═══════════════════════════════════════════════════════════════════
+
+// Load a slide HTML string into a hidden iframe and return its document
+function loadSlideInHiddenIframe(html) {
+    return new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1920px;height:1080px;visibility:hidden;border:none;';
+        iframe.sandbox = 'allow-scripts allow-same-origin';
+        document.body.appendChild(iframe);
+        iframe.onload = () => resolve({ iframe, doc: iframe.contentDocument });
+        iframe.srcdoc = html;
+        setTimeout(() => resolve({ iframe, doc: iframe.contentDocument }), 3000);
+    });
+}
+
+// Parse color string → 6-char hex for PptxGenJS
+function colorToHex6(cssColor) {
+    if (!cssColor || cssColor === 'inherit' || cssColor === 'transparent') return null;
+    const m = (cssColor || '').match(/#([0-9a-fA-F]{3,6})/);
+    if (m) {
+        let h = m[1]; if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+        return h.toUpperCase();
+    }
+    const rgbM = (cssColor || '').match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (rgbM) {
+        return [rgbM[1], rgbM[2], rgbM[3]]
+            .map(n => parseInt(n).toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+    return null;
+}
+
+// Extract text runs (with inline color spans) from a contenteditable element
+function extractTextRuns(el, defaultColor) {
+    const runs = [];
+    function walk(node, curColor) {
+        if (node.nodeType === 3) { // text node
+            const txt = node.textContent;
+            if (txt) runs.push({ text: txt, color: curColor });
+            return;
+        }
+        if (node.nodeType !== 1) return;
+        let color = curColor;
+        const inlineColor = colorToHex6(node.style?.color || '');
+        if (inlineColor) color = inlineColor;
+        const isBold   = node.tagName === 'B' || node.tagName === 'STRONG' || node.style?.fontWeight === 'bold';
+        const isItalic = node.tagName === 'I' || node.tagName === 'EM';
+        // Add line break for block elements
+        const isBlock = ['P','DIV','LI','H1','H2','H3','H4','H5','H6','BR'].includes(node.tagName);
+        if (isBlock && runs.length > 0 && runs[runs.length-1].text !== '\n') {
+            runs.push({ text: '\n', color });
+        }
+        Array.from(node.childNodes).forEach(child => walk(child, color));
+    }
+    walk(el, defaultColor);
+    // Clean up trailing newlines
+    while (runs.length > 0 && runs[runs.length-1].text === '\n') runs.pop();
+    return runs.filter(r => r.text.trim() !== '' || r.text === '\n');
+}
+
+// Build PptxGenJS text array from runs
+function runsToPptxText(runs, fontSize, baseBold, baseItalic) {
+    return runs.map(r => ({
+        text: r.text,
+        options: {
+            color: r.color || 'FFFFFF',
+            fontSize: fontSize || 16,
+            bold: baseBold || false,
+            italic: baseItalic || false,
+            fontFace: 'Arial',
+            breakLine: r.text === '\n'
+        }
+    })).filter(r => r.text !== '\n' || r.options.breakLine);
+}
+
+// Extract all text boxes from a slide's HTML by rendering it in a hidden iframe
+async function extractSlideTextBoxes(slideHtml) {
+    const { iframe, doc } = await loadSlideInHiddenIframe(slideHtml);
+    const boxes = [];
+
+    if (!doc) { iframe.remove(); return boxes; }
+
+    const svgEl = doc.getElementById('slide-svg');
+    if (!svgEl) { iframe.remove(); return boxes; }
+
+    // Find all .dg groups containing foreignObjects
+    svgEl.querySelectorAll('g.dg').forEach(g => {
+        // Get transform (position)
+        let tx = 0, ty = 0;
+        const tl = g.transform?.baseVal;
+        if (tl && tl.length > 0) {
+            tx = tl.getItem(0).matrix.e;
+            ty = tl.getItem(0).matrix.f;
+        }
+
+        const fo = g.querySelector('foreignObject');
+        if (!fo) return; // skip image-only groups
+
+        const rb = fo.querySelector('.rb, div');
+        if (!rb) return;
+
+        // Get size
+        const foW = parseFloat(fo.getAttribute('width') || 300);
+        const foH = parseFloat(fo.getAttribute('height') || 200);
+
+        // Convert 1920×1080 coordinates to PPTX inches (10"×5.625")
+        const pptX = (tx / 1920) * 10;
+        const pptY = (ty / 1080) * 5.625;
+        const pptW = Math.max(0.5, (foW / 1920) * 10);
+        const pptH = Math.max(0.3, (foH / 1080) * 5.625);
+
+        // Get font size
+        const fs = parseFloat(rb.style.fontSize || '16');
+        const pptFs = Math.max(8, Math.min(72, Math.round(fs * 0.75))); // px → pt approx
+
+        // Get background
+        const bgCss = rb.style.backgroundColor || rb.style.background || '';
+        const bgHex = colorToHex6(bgCss);
+
+        // Gather all contenteditable elements (skip .dh handle and .ctrl)
+        const editables = rb.querySelectorAll('[contenteditable]');
+        if (!editables.length) return;
+
+        // Collect all text with colors
+        let allRuns = [];
+        editables.forEach((el, idx) => {
+            if (idx > 0) allRuns.push({ text: '\n', color: null });
+            const elColor = colorToHex6(el.style.color || '') || 'FFFFFF';
+            const runs = extractTextRuns(el, elColor);
+            allRuns = allRuns.concat(runs);
+        });
+
+        if (!allRuns.some(r => r.text.trim())) return; // skip empty
+
+        boxes.push({ pptX, pptY, pptW, pptH, pptFs, bgHex, runs: allRuns });
+    });
+
+    iframe.remove();
+    return boxes;
+}
+
 async function downloadEditablePptx() {
     if (!AppState.generatedSlides.length) { showToast('❌ 尚未生成投影片'); return; }
 
@@ -1853,12 +2383,8 @@ async function downloadEditablePptx() {
 
         const templateKey = document.getElementById('sel-template').value;
         const theme = HTML_THEMES[templateKey] || HTML_THEMES.modern;
-
         const accentHex = (theme.accent.match(/#([0-9a-fA-F]{6})/)?.[1] || '818cf8');
-        const bgHex     = (theme.bg.match(/#([0-9a-fA-F]{6})/)?.[1] || '0f172a');
-        const titleHex  = (theme.titleColor.match(/#([0-9a-fA-F]{6})/)?.[1] || 'ffffff');
-        const textHex   = (theme.text.match(/#([0-9a-fA-F]{6})/)?.[1] || 'cbd5e1');
-
+        const bgHex     = AppState.bgTemplateBase64 ? 'FFFFFF' : (theme.bg.match(/#([0-9a-fA-F]{6})/)?.[1] || '0f172a').toUpperCase();
         const logoPos    = document.getElementById('sel-logo-pos').value;
         const logoPosMap = { TR:[8.5,0.2], BR:[8.5,5.0], TL:[0.2,0.2], BL:[0.2,5.0] };
         const [lx, ly]   = logoPosMap[logoPos] || [8.5, 0.2];
@@ -1866,74 +2392,78 @@ async function downloadEditablePptx() {
         for (const s of AppState.generatedSlides) {
             const sd    = s.slideData || {};
             const slide = pres.addSlide();
+            addLog(`📝 解析第 ${s.slideNumber} 頁文字方塊...`, 'info');
 
-            slide.addShape('rect', { x:0, y:0, w:10, h:5.625, fill:{ color: bgHex } });
-            slide.addShape('rect', { x:0, y:0, w:10, h:0.06, fill:{ color: accentHex } });
-            slide.addShape('rect', { x:0, y:0, w:0.08, h:5.625, fill:{ color: accentHex, transparency: 60 } });
-
-            if (sd.layout === 'title_only') {
-                slide.addShape('rect', {
-                    x:5.5, y:0, w:4.5, h:5.625,
-                    fill:{ color: accentHex, transparency: 92 },
-                    line:{ color: accentHex, transparency: 80, width: 0 }
-                });
-                slide.addText(sd.title || '', {
-                    x:0.5, y:1.5, w:8.5, h:2.0,
-                    fontSize: 52, bold: true, color: titleHex,
-                    fontFace: 'Arial', lineSpacingMultiple: 1.15
-                });
-                if (sd.subtitle) {
-                    slide.addText(sd.subtitle, {
-                        x:0.5, y:3.7, w:6, h:0.8,
-                        fontSize: 24, color: accentHex, fontFace: 'Arial'
-                    });
-                }
-                slide.addShape('rect', { x:0.5, y:4.6, w:1.5, h:0.06, fill:{ color: accentHex } });
-
+            // ── Background ───────────────────────────────────────────
+            if (AppState.bgTemplateBase64) {
+                slide.addImage({ data: AppState.bgTemplateBase64, x:0, y:0, w:10, h:5.625 });
             } else {
-                slide.addText(sd.title || '', {
-                    x:0.3, y:0.25, w:9.4, h:0.75,
-                    fontSize: 30, bold: true, color: titleHex, fontFace: 'Arial'
-                });
-                slide.addShape('rect', { x:0.3, y:1.05, w:1.2, h:0.05, fill:{ color: accentHex } });
+                slide.addShape('rect', { x:0, y:0, w:10, h:5.625, fill:{ color: bgHex } });
+            }
 
-                const bullets = (sd.bullet_points || []).map(b => ({
-                    text: b,
+            // ── Extract text boxes from HTML DOM ─────────────────────
+            const textBoxes = await extractSlideTextBoxes(s.html);
+            addLog(`  → 找到 ${textBoxes.length} 個可編輯文字方塊`, 'success');
+
+            for (const box of textBoxes) {
+                const pptxRuns = box.runs.map(r => ({
+                    text: r.text || ' ',
                     options: {
-                        bullet: { type: 'number' },
-                        color: textHex,
-                        fontSize: 18,
-                        paraSpaceAfter: 14,
-                        fontFace: 'Arial'
+                        color: r.color || accentHex,
+                        fontSize: box.pptFs,
+                        fontFace: 'Arial',
+                        breakLine: r.text === '\n'
                     }
                 }));
 
-                if (bullets.length > 0) {
+                // Background shape for the text box
+                if (box.bgHex) {
                     slide.addShape('rect', {
-                        x:0.3, y:1.2, w:9.4, h:4.1,
-                        fill:{ color: accentHex, transparency: 94 },
-                        line:{ color: accentHex, transparency: 75, width: 1.5 },
-                        rectRadius: 0.1
-                    });
-                    slide.addText(bullets, {
-                        x:0.5, y:1.35, w:9.0, h:3.9,
-                        valign: 'top', fontFace: 'Arial'
+                        x: box.pptX, y: box.pptY, w: box.pptW, h: box.pptH,
+                        fill: { color: box.bgHex },
+                        line: { color: accentHex, transparency: 70, width: 0.5 },
+                        rectRadius: 0.05
                     });
                 }
 
-                if (sd.layout === 'diagram_slide' && sd.diagram_description) {
-                    slide.addText(`📊 ${sd.diagram_description}`, {
-                        x:0.5, y:4.8, w:9.0, h:0.6,
-                        fontSize:11, color:accentHex, italic:true, fontFace:'Arial'
-                    });
+                // Editable text box
+                slide.addText(pptxRuns.filter(r => !r.options.breakLine || r.text.trim()), {
+                    x: box.pptX, y: box.pptY, w: box.pptW, h: box.pptH,
+                    valign: 'top', wrap: true,
+                    inset: 0.1,
+                    fontFace: 'Arial'
+                });
+            }
+
+            // ── Images (picture objects, not screenshots) ─────────────
+            if (s.imageB64) {
+                const imgSrc = s.imageB64;
+                try {
+                    if (imgSrc.startsWith('data:')) {
+                        slide.addImage({ data: imgSrc, x:5.1, y:0.8, w:4.7, h:4.6 });
+                    } else if (imgSrc.startsWith('http')) {
+                        slide.addImage({ path: imgSrc, x:5.1, y:0.8, w:4.7, h:4.6 });
+                    }
+                } catch(e) { addLog(`⚠ 圖片物件插入失敗: ${e.message}`, 'warning'); }
+            }
+
+            // ── Diagram slides: add screenshot as picture object ──────
+            if (sd.layout === 'diagram_slide') {
+                addLog(`📸 截圖流程圖頁 ${s.slideNumber}...`, 'info');
+                const diagImg = await slideHTMLToBase64(s.html, s.slideNumber);
+                if (diagImg) {
+                    // Place diagram screenshot as a selectable picture (behind text boxes)
+                    slide.addImage({ data: diagImg, x:0, y:0, w:10, h:5.625 });
                 }
             }
 
+            // ── Page number ──────────────────────────────────────────
             slide.addText(`${s.slideNumber}`, {
                 x:9.2, y:5.3, w:0.6, h:0.25,
                 fontSize:10, color:accentHex, align:'right', fontFace:'Arial'
             });
 
+            // ── Logo ─────────────────────────────────────────────────
             if (AppState.logoBase64) {
                 slide.addImage({ data: AppState.logoBase64, x:lx, y:ly, w:1.0, h:0.5,
                     sizing:{ type:'contain', w:1.0, h:0.5 } });
@@ -2443,6 +2973,466 @@ async function getSlideImage(sData, imageMode, slideIndex) {
 // ═══════════════════════════════════════════════════════════════════
 // MAIN GENERATION LOOP
 // ═══════════════════════════════════════════════════════════════════
+// SLIDE EDIT MODAL  (iframe-based, fully isolated)
+// ═══════════════════════════════════════════════════════════════════
+let _editingSlideIndex = -1;
+
+function _scaleEditIframe() {
+    const vp     = document.getElementById('edit-slide-viewport');
+    const scaler = document.getElementById('edit-slide-scaler');
+    const iframe = document.getElementById('edit-slide-iframe');
+    if (!vp || !scaler || !iframe) return;
+    const padW = 32, padH = 32;
+    const availW = vp.clientWidth  - padW;
+    const availH = vp.clientHeight - padH;
+    if (availW <= 0 || availH <= 0) return;
+    const scale   = Math.min(availW / 1920, availH / 1080);
+    const scaledW = Math.floor(1920 * scale);
+    const scaledH = Math.floor(1080 * scale);
+    scaler.style.width  = scaledW + 'px';
+    scaler.style.height = scaledH + 'px';
+    iframe.style.transform = `scale(${scale})`;
+}
+
+function openEditModal(index) {
+    const s = AppState.generatedSlides[index];
+    if (!s) return;
+    _editingSlideIndex = index;
+
+    document.getElementById('edit-modal-title').textContent =
+        `編輯第 ${s.slideNumber} 頁：${s.title || ''}`;
+
+    // Inject slide HTML into the iframe via srcdoc
+    // Prepend an extra interaction layer that enables:
+    //  - per-selection text coloring via Range API
+    //  - floating mini-toolbar
+    //  - robust drag for ALL .dg groups including dark cards
+    const extraScript = `
+<script>
+(function(){
+  /* ── Floating color toolbar on selection ── */
+  var miniBar=null;
+  function removeMini(){if(miniBar){miniBar.remove();miniBar=null;}}
+
+  /* Wrap selected text in <span style="color:C"> using Range API */
+  function applyColorToSelection(color){
+    var sel=window.getSelection();
+    if(!sel||sel.isCollapsed||sel.rangeCount===0) return false;
+    var range=sel.getRangeAt(0);
+    /* Check selection is inside a contenteditable */
+    var anc=range.commonAncestorContainer;
+    var node=anc.nodeType===3?anc.parentNode:anc;
+    if(!node.closest('[contenteditable]')) return false;
+    /* Extract, wrap in span, reinsert */
+    var frag=range.extractContents();
+    var span=document.createElement('span');
+    span.style.color=color;
+    span.appendChild(frag);
+    range.insertNode(span);
+    /* Collapse selection after span */
+    sel.removeAllRanges();
+    var newRange=document.createRange();
+    newRange.setStartAfter(span);
+    newRange.collapse(true);
+    sel.addRange(newRange);
+    return true;
+  }
+
+  /* Adjust font size of selected contenteditable's parent .rb */
+  function applyFontSizeAdj(delta){
+    var sel=window.getSelection();
+    if(!sel||sel.rangeCount===0) return;
+    var node=sel.getRangeAt(0).commonAncestorContainer;
+    node=node.nodeType===3?node.parentNode:node;
+    var rb=node.closest('.rb'); if(!rb) return;
+    var cur=parseFloat(rb.style.fontSize)||16;
+    rb.style.fontSize=Math.max(8,Math.min(96,cur+delta*2))+'px';
+  }
+
+  function buildMiniBar(rect){
+    removeMini();
+    var t=document.createElement('div');
+    t.style.cssText='position:fixed;z-index:9999;display:flex;align-items:center;gap:5px;'+
+      'background:rgba(8,14,28,.97);border:1.5px solid rgba(99,102,241,.7);'+
+      'border-radius:9px;padding:5px 9px;box-shadow:0 6px 24px rgba(0,0,0,.6);';
+    t.style.left=Math.max(0,rect.left+rect.width/2-100)+'px';
+    t.style.top=(rect.top-50)+'px';
+
+    function lbl(txt){var s=document.createElement('span');s.textContent=txt;s.style.cssText='color:#94a3b8;font-size:10px;font-weight:600;white-space:nowrap;';return s;}
+    function clrPicker(title,initColor,onChange){
+      var cp=document.createElement('input');cp.type='color';cp.value=initColor;cp.title=title;
+      cp.style.cssText='width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:0;';
+      cp.addEventListener('input',function(){
+        var saved=null;
+        try{var sel=window.getSelection();if(sel&&sel.rangeCount)saved=sel.getRangeAt(0).cloneRange();}catch(e){}
+        onChange(cp.value,saved);
+      });
+      return cp;
+    }
+    function fmtBtn(label,action){
+      var b=document.createElement('button');b.textContent=label;
+      b.style.cssText='font-size:12px;font-weight:700;padding:2px 6px;border:none;'+
+        'background:rgba(255,255,255,.12);border-radius:4px;cursor:pointer;color:#e2e8f0;';
+      b.addEventListener('mousedown',function(ev){ev.preventDefault();action();});
+      return b;
+    }
+
+    t.appendChild(lbl('文字色'));
+    t.appendChild(clrPicker('文字顏色','#ffffff',function(c,saved){
+      if(saved){try{var sel=window.getSelection();sel.removeAllRanges();sel.addRange(saved);}catch(e){}}
+      applyColorToSelection(c);
+    }));
+    t.appendChild(lbl('大小'));
+    t.appendChild(fmtBtn('A−',function(){applyFontSizeAdj(-1);}));
+    t.appendChild(fmtBtn('A+',function(){applyFontSizeAdj(+1);}));
+    var sep=document.createElement('span');sep.style.cssText='width:1px;height:14px;background:rgba(255,255,255,.18);margin:0 2px;';
+    t.appendChild(sep);
+    t.appendChild(fmtBtn('B',function(){document.execCommand('bold');}));
+    t.appendChild(fmtBtn('I',function(){document.execCommand('italic');}));
+    var x=document.createElement('button');x.textContent='×';
+    x.style.cssText='font-size:14px;padding:0 4px;border:none;background:transparent;color:#64748b;cursor:pointer;';
+    x.addEventListener('click',removeMini);
+    t.appendChild(x);
+    document.body.appendChild(t);
+    miniBar=t;
+  }
+
+  document.addEventListener('mouseup',function(){
+    setTimeout(function(){
+      var sel=window.getSelection();
+      if(!sel||sel.isCollapsed||!sel.rangeCount){removeMini();return;}
+      var range=sel.getRangeAt(0);
+      var anc=range.commonAncestorContainer;
+      var node=anc.nodeType===3?anc.parentNode:anc;
+      if(!node.closest('[contenteditable]')){removeMini();return;}
+      buildMiniBar(range.getBoundingClientRect());
+    },60);
+  });
+  document.addEventListener('mousedown',function(e){if(miniBar&&!miniBar.contains(e.target))removeMini();});
+})();
+<\/script>`;
+
+    const slideHtml = s.html.replace('</body>', extraScript + '\n</body>');
+    const iframe = document.getElementById('edit-slide-iframe');
+
+    // Show modal BEFORE writing iframe so viewport size is available
+    document.getElementById('slide-edit-modal').classList.remove('hidden');
+
+    // Write content to iframe
+    iframe.srcdoc = slideHtml;
+
+    // Scale after iframe has rendered
+    iframe.onload = () => {
+        requestAnimationFrame(() => { requestAnimationFrame(_scaleEditIframe); });
+    };
+    window._editScaleHandler = _scaleEditIframe;
+    window.addEventListener('resize', _scaleEditIframe);
+}
+
+function saveSlideEdits() {
+    const s = AppState.generatedSlides[_editingSlideIndex];
+    if (!s) return closeEditModal();
+
+    const iframe = document.getElementById('edit-slide-iframe');
+    const idoc   = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!idoc) { showToast('❌ 無法存取 iframe 內容'); return closeEditModal(); }
+
+    const svg = idoc.getElementById('slide-svg');
+    if (svg) {
+        // Freeze all drag transforms so they survive serialization
+        svg.querySelectorAll('.dg').forEach(g => {
+            const tl = g.transform?.baseVal;
+            if (tl && tl.length > 0) {
+                const m = tl.getItem(0).matrix;
+                g.setAttribute('transform', `translate(${Math.round(m.e)},${Math.round(m.f)})`);
+            }
+        });
+        // Freeze all .rb sizes
+        svg.querySelectorAll('.rb').forEach(rb => {
+            const fo = rb.closest('foreignObject');
+            if (fo) {
+                fo.setAttribute('width',  rb.offsetWidth);
+                fo.setAttribute('height', rb.offsetHeight);
+                rb.style.width  = rb.offsetWidth  + 'px';
+                rb.style.height = rb.offsetHeight + 'px';
+            }
+        });
+    }
+
+    // Serialize the live iframe DOM (removes scripts, then reattaches interaction)
+    let updatedHTML = '<!DOCTYPE html>\n<html>' +
+        (idoc.head?.outerHTML || '') +
+        (idoc.body?.outerHTML || '') +
+        '</html>';
+    // Remove runtime script tags (they'll be re-injected next time)
+    updatedHTML = updatedHTML.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    // Re-attach the standard interaction script
+    updatedHTML = updatedHTML.replace('</body>', SLIDE_INTERACTION_SCRIPT + '\n</body>');
+
+    s.html = updatedHTML;
+    AppState.generatedSlides[_editingSlideIndex] = s;
+
+    // Refresh thumbnail iframe
+    const grid  = document.getElementById('slides-preview-grid');
+    const cards = grid.querySelectorAll('.slide-preview-card');
+    if (cards[_editingSlideIndex]) {
+        const thumb = cards[_editingSlideIndex].querySelector('iframe');
+        if (thumb) {
+            const esc = updatedHTML.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+            thumb.setAttribute('srcdoc', esc);
+        }
+    }
+
+    showToast(`✅ 第 ${s.slideNumber} 頁變更已儲存`);
+    closeEditModal();
+}
+
+function closeEditModal() {
+    const iframe = document.getElementById('edit-slide-iframe');
+    if (iframe) iframe.srcdoc = '';
+    document.getElementById('slide-edit-modal').classList.add('hidden');
+    if (window._editScaleHandler) {
+        window.removeEventListener('resize', window._editScaleHandler);
+        window._editScaleHandler = null;
+    }
+    _editingSlideIndex = -1;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 5: VISUAL QUALITY REVIEW (Grok 4.1 Fast Reasoning)
+// ═══════════════════════════════════════════════════════════════════
+
+// Render a slide HTML to a canvas screenshot (base64 JPEG)
+async function captureSlideScreenshot(html) {
+    return new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1920px;height:1080px;visibility:hidden;border:none;';
+        iframe.sandbox = 'allow-scripts';
+        document.body.appendChild(iframe);
+
+        const timeout = setTimeout(() => {
+            document.body.contains(iframe) && document.body.removeChild(iframe);
+            resolve(null);
+        }, 15000);
+
+        iframe.addEventListener('load', async () => {
+            try {
+                await new Promise(r => setTimeout(r, 600)); // wait for fonts/SVG
+                const canvas = await html2canvas(iframe.contentDocument.body, {
+                    width: 1920, height: 1080, scale: 0.5,
+                    backgroundColor: null, logging: false,
+                    useCORS: true, allowTaint: true
+                });
+                clearTimeout(timeout);
+                document.body.contains(iframe) && document.body.removeChild(iframe);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+            } catch(e) {
+                clearTimeout(timeout);
+                document.body.contains(iframe) && document.body.removeChild(iframe);
+                resolve(null);
+            }
+        });
+        iframe.srcdoc = html;
+    });
+}
+
+// Call Grok 4.1 (or selected reviewer) to visually review a slide screenshot
+async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel) {
+    const xaiKey    = AppState.xaiApiKey;
+    const geminiKey = AppState.googleApiKey;
+    const isGrok    = isGrokModel(reviewModel);
+
+    const reviewPrompt = `你是投影片視覺品質審查師。請審查這張投影片截圖並回傳 JSON 審查報告。
+
+投影片資料：
+- 標題：${slideData.title || ''}
+- 版型：${slideData.layout || ''}
+- 要點數：${(slideData.bullet_points || []).length}
+
+請檢查以下問題：
+1. overlap（重疊）：文字/圖片元素是否相互重疊
+2. contrast（對比度）：文字與背景對比是否足夠
+3. readability（可讀性）：文字大小是否合適（標題≥36px，正文≥18px）
+4. layout（佈局）：元素是否超出投影片邊界，或有不當留白
+
+嚴格輸出純 JSON，不含任何 markdown：
+{
+  "pass": true/false,
+  "score": 0-100,
+  "issues": [
+    {"type": "overlap|contrast|readability|layout", "description": "問題描述（中文，具體說明哪個元素有問題）", "fix": "具體修正指令（中文）"}
+  ]
+}
+若沒有問題，issues 為空陣列，pass 為 true。`;
+
+    try {
+        if (isGrok && xaiKey) {
+            // Grok vision: send image as base64 in chat completions
+            const targetUrl = 'https://api.x.ai/v1/chat/completions';
+            const proxyUrl  = `${GROK_PROXY}?url=${encodeURIComponent(targetUrl)}`;
+            const resp = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${xaiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: reviewModel,
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: screenshotB64 } },
+                            { type: 'text', text: reviewPrompt }
+                        ]
+                    }],
+                    temperature: 0.2
+                }),
+                signal: AbortSignal.timeout(30000)
+            });
+            if (!resp.ok) throw new Error(`Grok review HTTP ${resp.status}`);
+            const data = await resp.json();
+            const raw = data.choices?.[0]?.message?.content || '{}';
+            const m = raw.match(/\{[\s\S]*\}/);
+            return JSON.parse(m ? m[0] : '{}');
+        } else if (geminiKey) {
+            // Gemini vision review
+            const model = reviewModel.startsWith('grok') ? 'gemini-2.5-flash' : reviewModel;
+            const ver   = getGeminiApiVersion(model);
+            const resp = await fetch(
+                `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${geminiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts: [
+                            { inlineData: { mimeType: 'image/jpeg', data: screenshotB64.split(',')[1] } },
+                            { text: reviewPrompt }
+                        ]}],
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+                    }),
+                    signal: AbortSignal.timeout(30000)
+                }
+            );
+            if (!resp.ok) throw new Error(`Gemini review HTTP ${resp.status}`);
+            const data = await resp.json();
+            const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+            const m = raw.match(/\{[\s\S]*\}/);
+            return JSON.parse(m ? m[0] : '{}');
+        }
+    } catch(e) {
+        addLog(`⚠ 審查模型呼叫失敗: ${e.message}`, 'warning');
+    }
+    return { pass: true, score: 100, issues: [] }; // graceful fallback
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 6: AUTO-FIX (Gemini 2.5 Pro corrects based on review)
+// ═══════════════════════════════════════════════════════════════════
+async function fixSlideHTML(html, reviewResult, slideData, theme) {
+    if (!reviewResult?.issues?.length) return html;
+
+    const issuesSummary = reviewResult.issues.map((iss, i) =>
+        `${i+1}. [${iss.type.toUpperCase()}] ${iss.description}\n   修正方式：${iss.fix}`
+    ).join('\n');
+
+    const fixPrompt = `你是投影片 HTML 修正工程師。請根據審查報告修正以下 HTML 投影片。
+
+【審查問題清單】
+${issuesSummary}
+
+【原始 HTML】
+${html.slice(0, 60000)}
+
+【修正要求】
+1. 只修正有問題的元素，保留其他所有結構和樣式不變
+2. 若是重疊問題：調整 transform translate 座標或 foreignObject width/height
+3. 若是對比問題：調整文字 color 或卡片 background 顏色
+4. 若是可讀性問題：調整 font-size
+5. 若是佈局問題：調整座標確保在 1920×1080 範圍內
+6. 保留所有 .dg class、contenteditable、ctrl 控制列不變
+7. 保留 <!--SLIDE_INTERACTION_SCRIPT--> placeholder
+
+只輸出完整修正後的 HTML，不含任何說明文字或 markdown 標記：`;
+
+    const apiKey    = AppState.googleApiKey;
+    const fixModels = ['gemini-2.5-pro', 'gemini-2.5-flash'];
+
+    for (const model of fixModels) {
+        if (!apiKey) break;
+        try {
+            const ver = getGeminiApiVersion(model);
+            const resp = await fetch(
+                `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts: [{ text: fixPrompt }] }],
+                        generationConfig: { temperature: 0.3, maxOutputTokens: 16384 }
+                    }),
+                    signal: AbortSignal.timeout(60000)
+                }
+            );
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            let fixed = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            fixed = fixed.replace(/^```html\s*/im,'').replace(/^```\s*/im,'').replace(/\s*```$/im,'').trim();
+            if (fixed.toLowerCase().includes('<!doctype') || fixed.includes('<html')) {
+                // Re-inject interaction script if missing
+                if (!fixed.includes('SLIDE_INTERACTION_SCRIPT')) {
+                    fixed = fixed.replace('</body>', '<!--SLIDE_INTERACTION_SCRIPT-->\n</body>');
+                }
+                fixed = fixed.replace('<!--SLIDE_INTERACTION_SCRIPT-->', SLIDE_INTERACTION_SCRIPT);
+                return injectContrastFix(fixed, theme);
+            }
+        } catch(e) {
+            addLog(`⚠ 修正模型 ${model} 失敗: ${e.message}`, 'warning');
+        }
+    }
+    return html; // return original if fix failed
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REVIEW + FIX PIPELINE (wraps a single slide through Phase 5→6)
+// ═══════════════════════════════════════════════════════════════════
+async function reviewAndFixSlide(html, sData, theme) {
+    const enabled    = document.getElementById('chk-review-enabled')?.checked;
+    if (!enabled) return html;
+
+    const reviewModel  = document.getElementById('sel-review-model')?.value || 'grok-4-1-fast-reasoning';
+    const maxIter      = parseInt(document.getElementById('sel-review-iterations')?.value || '2');
+
+    let currentHTML = html;
+    for (let iter = 1; iter <= maxIter; iter++) {
+        if (AppState.cancelRequested) break;
+
+        addLog(`🔍 第五階段：審查第 ${sData.slide_number} 頁（迭代 ${iter}/${maxIter}）...`, 'ai');
+        const screenshot = await captureSlideScreenshot(currentHTML);
+        if (!screenshot) {
+            addLog(`⚠ 截圖失敗，跳過審查`, 'warning');
+            break;
+        }
+
+        const review = await reviewSlideWithLLM(screenshot, sData, reviewModel);
+        const score  = review.score ?? (review.pass ? 100 : 60);
+        const issueCount = (review.issues || []).length;
+
+        addLog(`  審查分數：${score}/100，問題數：${issueCount}${review.pass ? ' ✓ 通過' : ' ✗ 需修正'}`, review.pass ? 'success' : 'warning');
+        (review.issues || []).forEach(iss => addLog(`  • [${iss.type}] ${iss.description}`, 'warning'));
+
+        if (review.pass || !issueCount) break;
+
+        addLog(`🔧 第六階段：Gemini 自動修正中...`, 'ai');
+        const fixed = await fixSlideHTML(currentHTML, review, sData, theme);
+        if (fixed !== currentHTML) {
+            currentHTML = fixed;
+            addLog(`  ✓ 修正完成，繼續審查...`, 'success');
+        } else {
+            addLog(`  ⚠ 修正無變化，停止迭代`, 'warning');
+            break;
+        }
+    }
+    return currentHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 async function startGeneration() {
     const selectedModel = document.getElementById('sel-text-model').value;
     const needsGemini = !isGrokModel(selectedModel);
@@ -2522,16 +3512,26 @@ async function startGeneration() {
                 html = buildFallbackSlideHTML(sData, theme);
             }
 
+            // ── Phase 5 & 6: Visual Review + Auto-Fix ────────────────
+            if (document.getElementById('chk-review-enabled')?.checked && !AppState.cancelRequested) {
+                html = await reviewAndFixSlide(html, sData, theme);
+            }
+
             AppState.generatedSlides.push({
                 slideNumber: sData.slide_number,
                 title: sData.title,
                 layout: sData.layout,
-                slideData: sData,   
+                slideData: sData,
+                imageB64: imageB64,   // stored for editable PPTX picture objects
                 html
             });
             renderSlidePreviewCard(sData, html, i);
 
-            const pct = 15 + ((i + 1) / slides.length) * 80;
+            const reviewEnabled = document.getElementById('chk-review-enabled')?.checked;
+            // Phase 4 = 15–75%, Phase 5+6 = 75–95% (if review enabled)
+            const pct = reviewEnabled
+                ? 15 + ((i + 1) / slides.length) * 60
+                : 15 + ((i + 1) / slides.length) * 80;
             setProgress(pct);
             document.getElementById('preview-slide-count').textContent =
                 `${i + 1} / ${slides.length} 頁`;
