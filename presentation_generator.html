@@ -1216,6 +1216,28 @@ const SLIDE_INTERACTION_SCRIPT = `
     var toolbar=null, savedRange=null, pickerOpen=false;
     function removeMini(){if(toolbar){toolbar.remove();toolbar=null;} savedRange=null; pickerOpen=false;}
 
+    /* ── Apply font size to selected range (not the whole container) ──
+       Uses execCommand('fontSize','7') as a temporary marker, then
+       replaces the generated <font size="7"> with <span style="font-size:Xpx">.
+       This is the only cross-browser way to resize arbitrary selected text. */
+    function applyFontSizeToRange(range, delta){
+      try{ var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range); }catch(e){ return; }
+      var anc=range.commonAncestorContainer;
+      var node=anc.nodeType===3?anc.parentNode:anc;
+      var curPx=parseFloat(window.getComputedStyle(node).fontSize)||18;
+      var newPx=Math.max(8, Math.min(120, curPx+delta));
+      document.execCommand('fontSize', false, '7');
+      var rb=node.closest('.rb')||node.closest('[contenteditable]');
+      var scope=rb||document.body;
+      scope.querySelectorAll('font[size="7"]').forEach(function(f){
+        var span=document.createElement('span');
+        span.style.fontSize=newPx+'px';
+        while(f.firstChild) span.appendChild(f.firstChild);
+        f.parentNode.replaceChild(span, f);
+      });
+      try{ var s2=window.getSelection(); if(s2.rangeCount) savedRange=s2.getRangeAt(0).cloneRange(); }catch(e){}
+    }
+
     function mkLabel(txt){
       var s=document.createElement('span');
       s.textContent=txt;
@@ -1318,19 +1340,11 @@ const SLIDE_INTERACTION_SCRIPT = `
         t.appendChild(mkLabel('大小'));
         t.appendChild(mkBtn('A−',function(){
           if(!savedRange) return;
-          var anc2=savedRange.commonAncestorContainer;
-          var n2=anc2.nodeType===3?anc2.parentNode:anc2;
-          var rb2=n2.closest('.rb'); if(!rb2) return;
-          var cur=parseFloat(rb2.style.fontSize)||16;
-          rb2.style.fontSize=Math.max(8,cur-2)+'px';
+          applyFontSizeToRange(savedRange, -2);
         }));
         t.appendChild(mkBtn('A+',function(){
           if(!savedRange) return;
-          var anc2=savedRange.commonAncestorContainer;
-          var n2=anc2.nodeType===3?anc2.parentNode:anc2;
-          var rb2=n2.closest('.rb'); if(!rb2) return;
-          var cur=parseFloat(rb2.style.fontSize)||16;
-          rb2.style.fontSize=Math.min(96,cur+2)+'px';
+          applyFontSizeToRange(savedRange, +2);
         }));
         t.appendChild(mkSep());
         /* Format */
@@ -3233,9 +3247,19 @@ function openEditModal(index) {
     if(!sel||sel.rangeCount===0) return;
     var node=sel.getRangeAt(0).commonAncestorContainer;
     node=node.nodeType===3?node.parentNode:node;
-    var rb=node.closest('.rb'); if(!rb) return;
-    var cur=parseFloat(rb.style.fontSize)||16;
-    rb.style.fontSize=Math.max(8,Math.min(96,cur+delta*2))+'px';
+    var curPx=parseFloat(window.getComputedStyle(node).fontSize)||18;
+    var newPx=Math.max(8,Math.min(120,curPx+delta*2));
+    /* Restore selection, then use execCommand marker trick */
+    if(savedRange){ try{ var s3=window.getSelection();s3.removeAllRanges();s3.addRange(savedRange); }catch(e){} }
+    document.execCommand('fontSize',false,'7');
+    var rb2=node.closest('.rb')||node.closest('[contenteditable]');
+    var scope2=rb2||document.body;
+    scope2.querySelectorAll('font[size="7"]').forEach(function(f){
+      var span=document.createElement('span');span.style.fontSize=newPx+'px';
+      while(f.firstChild)span.appendChild(f.firstChild);
+      f.parentNode.replaceChild(span,f);
+    });
+    try{ var s4=window.getSelection();if(s4.rangeCount)savedRange=s4.getRangeAt(0).cloneRange(); }catch(e){}
   }
 
   var savedRange=null; // save selection range at minibar-build time
@@ -3544,7 +3568,7 @@ async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel) {
                     }],
                     temperature: 0.2
                 }),
-                signal: AbortSignal.timeout(30000)
+                signal: AbortSignal.timeout(90000)
             });
             if (!resp.ok) throw new Error(`Grok review HTTP ${resp.status}`);
             const data = await resp.json();
@@ -3567,7 +3591,7 @@ async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel) {
                         ]}],
                         generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
                     }),
-                    signal: AbortSignal.timeout(30000)
+                    signal: AbortSignal.timeout(90000)
                 }
             );
             if (!resp.ok) throw new Error(`Gemini review HTTP ${resp.status}`);
