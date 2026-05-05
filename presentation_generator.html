@@ -1217,25 +1217,31 @@ const SLIDE_INTERACTION_SCRIPT = `
     function removeMini(){if(toolbar){toolbar.remove();toolbar=null;} savedRange=null; pickerOpen=false;}
 
     /* ── Apply font size to selected range (not the whole container) ──
-       Uses execCommand('fontSize','7') as a temporary marker, then
-       replaces the generated <font size="7"> with <span style="font-size:Xpx">.
-       This is the only cross-browser way to resize arbitrary selected text. */
+       Uses range.surroundContents() to wrap selected text in a span.
+       Falls back to changing the container if selection crosses element boundaries. */
     function applyFontSizeToRange(range, delta){
+      /* Restore the selection first */
       try{ var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range); }catch(e){ return; }
+
       var anc=range.commonAncestorContainer;
       var node=anc.nodeType===3?anc.parentNode:anc;
       var curPx=parseFloat(window.getComputedStyle(node).fontSize)||18;
       var newPx=Math.max(8, Math.min(120, curPx+delta));
-      document.execCommand('fontSize', false, '7');
-      var rb=node.closest('.rb')||node.closest('[contenteditable]');
-      var scope=rb||document.body;
-      scope.querySelectorAll('font[size="7"]').forEach(function(f){
+
+      try{
+        /* Clone the range to avoid mutation issues */
+        var r=range.cloneRange();
         var span=document.createElement('span');
         span.style.fontSize=newPx+'px';
-        while(f.firstChild) span.appendChild(f.firstChild);
-        f.parentNode.replaceChild(span, f);
-      });
-      try{ var s2=window.getSelection(); if(s2.rangeCount) savedRange=s2.getRangeAt(0).cloneRange(); }catch(e){}
+        r.surroundContents(span);
+        /* Move selection inside the new span and update savedRange */
+        var s2=window.getSelection(); s2.removeAllRanges(); s2.selectAllChildren(span);
+        savedRange=s2.getRangeAt(0).cloneRange();
+      }catch(e){
+        /* surroundContents throws if selection crosses element boundaries —
+           fall back to adjusting the container element */
+        node.style.fontSize=newPx+'px';
+      }
     }
 
     function mkLabel(txt){
@@ -2701,13 +2707,24 @@ function saveToHistory() {
         const history = loadRawHistory();
         const id = 'h_' + Date.now();
 
-        const slidesForStorage = AppState.generatedSlides.map(s => ({
-            slideNumber: s.slideNumber,
-            title: s.title,
-            layout: s.layout,
-            slideData: s.slideData,
-            html: (s.html || '').slice(0, SLIDE_HTML_SIZE_LIMIT)
-        }));
+        const slidesForStorage = AppState.generatedSlides.map(s => {
+            // Strip inline base64 images from HTML, replace with placeholder
+            // so the HTML stays small enough for localStorage
+            let html = s.html || '';
+            const imgB64 = s.imageB64 || null;
+            if (imgB64) {
+                // Replace the embedded base64 in html with a recoverable placeholder
+                html = html.split(imgB64).join('__SLIDE_IMG_B64__');
+            }
+            return {
+                slideNumber: s.slideNumber,
+                title: s.title,
+                layout: s.layout,
+                slideData: s.slideData,
+                imageB64: imgB64,                              // stored separately
+                html: html.slice(0, 300000)                   // larger budget now images stripped
+            };
+        });
 
         const entry = {
             id,
@@ -2725,9 +2742,21 @@ function saveToHistory() {
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
             addLog(`📁 已儲存至歷史記錄（共 ${history.length} 筆）`, 'success');
         } catch(storageErr) {
-            const slim = history.slice(0, 5).map(e => ({ ...e, slides: e.slides.map(s => ({ ...s, html: '' })) }));
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(slim));
-            addLog(`⚠ 儲存空間不足，已儲存精簡版歷史`, 'warning');
+            // First try: strip imageB64 from older entries (keep newest 10 with images)
+            const slim = history.map((e, ei) => ({
+                ...e,
+                slides: e.slides.map(s => ({
+                    ...s,
+                    imageB64: ei < 3 ? s.imageB64 : null,   // keep images only in newest 3
+                    html: ei < 10 ? s.html : ''             // keep html only in newest 10
+                }))
+            }));
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(slim));
+                addLog(`⚠ 儲存空間不足，部分歷史圖片已清除`, 'warning');
+            } catch(e2) {
+                addLog(`⚠ 歷史記錄儲存失敗`, 'warning');
+            }
         }
 
         renderHistoryPanels();
@@ -2739,6 +2768,15 @@ function saveToHistory() {
 function loadRawHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
     catch { return []; }
+}
+
+/** Re-inject imageB64 into slide HTML that was stripped for storage */
+function hydrateSlideHTML(slide) {
+    let html = slide.html || '';
+    if (slide.imageB64 && html.includes('__SLIDE_IMG_B64__')) {
+        html = html.split('__SLIDE_IMG_B64__').join(slide.imageB64);
+    }
+    return html;
 }
 
 function renderHistoryPanels() {
@@ -2807,14 +2845,14 @@ function loadFromHistory(id) {
     const entry   = history.find(e => e.id === id);
     if (!entry) { showToast('❌ 找不到此記錄'); return; }
 
-    AppState.generatedSlides   = entry.slides || [];
+    AppState.generatedSlides   = entry.slides?.map(s => ({ ...s, html: hydrateSlideHTML(s) })) || [];
     AppState.presentationData  = { presentation_title: entry.title, slides: entry.slides?.map(s => s.slideData) };
 
     document.getElementById('section-empty').classList.add('hidden');
     document.getElementById('section-preview').classList.remove('hidden');
     const grid = document.getElementById('slides-preview-grid');
     grid.innerHTML = '';
-    entry.slides?.forEach((s, i) => renderSlidePreviewCard(s.slideData || { slide_number: s.slideNumber, title: s.title, layout: s.layout }, s.html, i));
+    entry.slides?.forEach((s, i) => renderSlidePreviewCard(s.slideData || { slide_number: s.slideNumber, title: s.title, layout: s.layout }, hydrateSlideHTML(s), i));
 
     document.getElementById('preview-slide-count').textContent = `${entry.slides?.length || 0} 張`;
     document.getElementById('btn-pptx-group').classList.remove('hidden');
@@ -2835,7 +2873,7 @@ function redownloadHTML(id) {
     if (!entry) return;
     const backup = AppState.generatedSlides;
     const backupData = AppState.presentationData;
-    AppState.generatedSlides  = entry.slides || [];
+    AppState.generatedSlides  = entry.slides?.map(s => ({ ...s, html: hydrateSlideHTML(s) })) || [];
     AppState.presentationData = { presentation_title: entry.title };
     saveAllSlidesAsHTML();
     AppState.generatedSlides  = backup;
@@ -3249,17 +3287,18 @@ function openEditModal(index) {
     node=node.nodeType===3?node.parentNode:node;
     var curPx=parseFloat(window.getComputedStyle(node).fontSize)||18;
     var newPx=Math.max(8,Math.min(120,curPx+delta*2));
-    /* Restore selection, then use execCommand marker trick */
-    if(savedRange){ try{ var s3=window.getSelection();s3.removeAllRanges();s3.addRange(savedRange); }catch(e){} }
-    document.execCommand('fontSize',false,'7');
-    var rb2=node.closest('.rb')||node.closest('[contenteditable]');
-    var scope2=rb2||document.body;
-    scope2.querySelectorAll('font[size="7"]').forEach(function(f){
-      var span=document.createElement('span');span.style.fontSize=newPx+'px';
-      while(f.firstChild)span.appendChild(f.firstChild);
-      f.parentNode.replaceChild(span,f);
-    });
-    try{ var s4=window.getSelection();if(s4.rangeCount)savedRange=s4.getRangeAt(0).cloneRange(); }catch(e){}
+    if(savedRange){
+      try{
+        var s3=window.getSelection(); s3.removeAllRanges(); s3.addRange(savedRange);
+        var r2=savedRange.cloneRange();
+        var span2=document.createElement('span'); span2.style.fontSize=newPx+'px';
+        r2.surroundContents(span2);
+        s3.removeAllRanges(); s3.selectAllChildren(span2);
+        savedRange=s3.getRangeAt(0).cloneRange();
+        return;
+      }catch(e){ /* fall through to container resize */ }
+    }
+    node.style.fontSize=newPx+'px';
   }
 
   var savedRange=null; // save selection range at minibar-build time
@@ -3526,28 +3565,33 @@ async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel) {
     const geminiKey = AppState.googleApiKey;
     const isGrok    = isGrokModel(reviewModel);
 
-    const reviewPrompt = `你是投影片視覺品質審查師。請審查這張投影片截圖並回傳 JSON 審查報告。
+    const reviewPrompt = `你是投影片視覺品質審查師。請對這張投影片截圖做嚴格品質審查，回傳 JSON 報告。
 
 投影片資料：
 - 標題：${slideData.title || ''}
 - 版型：${slideData.layout || ''}
 - 要點數：${(slideData.bullet_points || []).length}
 
-請檢查以下問題：
-1. overlap（重疊）：文字/圖片元素是否相互重疊
-2. contrast（對比度）：文字與背景對比是否足夠
-3. readability（可讀性）：文字大小是否合適（標題≥36px，正文≥18px）
-4. layout（佈局）：元素是否超出投影片邊界，或有不當留白
+【必須審查的 4 個面向，每個都要認真檢查】
+1. overlap（重疊）：文字/圖片元素是否相互遮擋、重疊
+2. contrast（對比度）：★ 這是最重要的檢查 ★
+   - 所有文字（標題、要點、說明）與其背景色的對比率必須 ≥ 4.5:1（WCAG AA）
+   - 深色背景（如深藍/黑）上出現深灰文字 = 嚴重對比不足，必須標記
+   - 淺色背景上出現白色文字 = 嚴重對比不足，必須標記
+   - 只要發現任何文字看起來「難以辨讀」就必須回報
+   - 若有對比問題，score 必須 ≤ 60，pass 必須為 false
+3. readability（可讀性）：標題 ≥ 36px，正文 ≥ 18px
+4. layout（佈局）：元素是否超出邊界、不當留白
 
-嚴格輸出純 JSON，不含任何 markdown：
+嚴格輸出純 JSON（不含任何 markdown）：
 {
   "pass": true/false,
   "score": 0-100,
   "issues": [
-    {"type": "overlap|contrast|readability|layout", "description": "問題描述（中文，具體說明哪個元素有問題）", "fix": "具體修正指令（中文）"}
+    {"type": "overlap|contrast|readability|layout", "description": "具體問題（中文）", "fix": "具體修正指令（中文）"}
   ]
 }
-若沒有問題，issues 為空陣列，pass 為 true。`;
+pass=true 的條件：score ≥ 80 且沒有 contrast 問題。若有任何 contrast 問題，pass 必須為 false。`;
 
     try {
         if (isGrok && xaiKey) {
@@ -3687,6 +3731,88 @@ ${minified.slice(0, 55000)}
 // ═══════════════════════════════════════════════════════════════════
 // REVIEW + FIX PIPELINE (wraps a single slide through Phase 5→6)
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// PROGRAMMATIC CONTRAST PRE-SCAN
+// Parses HTML string, detects low-contrast text, injects !important CSS
+// ═══════════════════════════════════════════════════════════════════
+function programmaticContrastFix(html, theme) {
+    try {
+        const parser  = new DOMParser();
+        const doc     = parser.parseFromString(html, 'text/html');
+
+        // ── Helper: parse any CSS color → {r,g,b} ──────────────────
+        function parseColor(c) {
+            if (!c || c === 'none' || c === 'transparent') return null;
+            // rgb(r,g,b) or rgba(r,g,b,a)
+            const m = c.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (m) return { r:+m[1], g:+m[2], b:+m[3] };
+            // hex #rrggbb or #rgb
+            const h = c.replace('#','');
+            if (h.length === 6) return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) };
+            if (h.length === 3) return { r:parseInt(h[0]+h[0],16), g:parseInt(h[1]+h[1],16), b:parseInt(h[2]+h[2],16) };
+            return null;
+        }
+        function lum(c) {
+            if (!c) return 0;
+            function ch(v){ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+            return 0.2126*ch(c.r)+0.7152*ch(c.g)+0.0722*ch(c.b);
+        }
+        function contrast(c1, c2) {
+            const l1=lum(c1), l2=lum(c2);
+            return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+        }
+        function bestTextColor(bg) {
+            const white={r:255,g:255,b:255}, black={r:0,g:0,b:0};
+            return contrast(bg, white) >= contrast(bg, black) ? '#ffffff' : '#111111';
+        }
+
+        // ── Scan SVG text elements for low fill/background contrast ─
+        const bg = theme?.bg_hex || '#0f172a';
+        const bgColor = parseColor(bg) || {r:15,g:23,b:42};
+
+        const issues = [];
+
+        // SVG text fill attributes
+        doc.querySelectorAll('text, tspan').forEach(el => {
+            const fill = el.getAttribute('fill') || el.style.fill || '';
+            const c = parseColor(fill);
+            if (!c) return;
+            if (contrast(c, bgColor) < 3.5) {
+                el.setAttribute('fill', bestTextColor(bgColor));
+                issues.push('svg-text');
+            }
+        });
+
+        // HTML text colors (inside foreignObject or .rb divs)
+        doc.querySelectorAll('[style*="color"]').forEach(el => {
+            const col = el.style.color;
+            const c = parseColor(col);
+            if (!c) return;
+            // Try to find actual background of this element
+            let bgEl = el;
+            let bgC = bgColor;
+            while (bgEl) {
+                const elBg = bgEl.style?.backgroundColor || bgEl.style?.background || '';
+                const parsed = parseColor(elBg);
+                if (parsed) { bgC = parsed; break; }
+                bgEl = bgEl.parentElement;
+            }
+            if (contrast(c, bgC) < 3.5) {
+                el.style.color = bestTextColor(bgC);
+                issues.push('inline-color');
+            }
+        });
+
+        if (issues.length > 0) {
+            addLog(`🎨 程式化對比修正：修正了 ${issues.length} 個低對比元素`, 'info');
+            return '<!DOCTYPE html>' + doc.documentElement.outerHTML;
+        }
+    } catch(e) {
+        // Non-critical — silently skip
+    }
+    return html;
+}
+
 async function reviewAndFixSlide(html, sData, theme) {
     const enabled    = document.getElementById('chk-review-enabled')?.checked;
     if (!enabled) return { html, screenshotB64: null };
@@ -3818,6 +3944,9 @@ async function startGeneration() {
                 addLog(`⚠ 第 ${sData.slide_number} 頁 HTML 生成失敗，使用備用模板`, 'warning');
                 html = buildFallbackSlideHTML(sData, theme);
             }
+
+            // ── Phase 4b: Programmatic contrast pre-scan (fast, no API) ─
+            html = programmaticContrastFix(html, theme);
 
             // ── Phase 5 & 6: Visual Review + Auto-Fix ────────────────
             let screenshotB64 = null;
