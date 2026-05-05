@@ -1552,7 +1552,7 @@ async function generateSlideHTML(slideData, theme, imageB64) {
     const prompt = `你是世界最頂級的 HTML/SVG 互動式投影片設計師。你的投影片必須完全符合以下架構規範。
 
 【投影片資料】
-${JSON.stringify(slideData, null, 2)}
+${JSON.stringify(slideData)}
 
 【圖片】${imgInstruction}
 【Logo】${logoInstruction || '無 Logo。'}
@@ -1622,47 +1622,42 @@ F. 【技術規範】
    7. </svg> 後插入：<!--SLIDE_INTERACTION_SCRIPT-->
    8. foreignObject 內的 div 必須加 xmlns="http://www.w3.org/1999/xhtml"
 
-G. 【各版型佈局規範】
+G. 【版型佈局規範（僅本頁適用：${slideData.layout}）】
 
-  ★ title_only（封面）：
-    - 背景：全尺寸 SVG 漸層/裝飾（可用 SVG rect, path, circle 等）
-    - 主標題：.dg foreignObject，translate(100, 350)，width:1400，height:280，font-size:80px，font-weight:900
-    - 副標題（若有）：.dg foreignObject，translate(100, 650)，width:900，height:120，font-size:32px
-    - 裝飾：SVG 幾何形狀（禁止在裝飾上放文字）
-
-  ★ text_only（純文字）：
-    - 左側：SVG 裝飾圖形（無文字）
-    - 標題卡：translate(80, 60)，width:1760，height:140，font-size:52px，bold
-    - 內容卡片群組（每個要點一個獨立的 .dg）：
-      要點 1：translate(80, 240)，width:830，height:170
-      要點 2：translate(80, 430)，width:830，height:170
-      要點 3：translate(80, 620)，width:830，height:170
-      要點 4：translate(80, 810)，width:830，height:170
-      （最多 4 個，超過則調整 height）
-    - 右側裝飾：translate(960, 200) 放 SVG 視覺元素
-
-  ★ text_and_image（圖文並排）：
-    - 標題卡：translate(60, 40)，width:880，height:130，font-size:44px
+${(()=>{
+  const L = slideData.layout;
+  if (L === 'title_only') return `  ★ title_only（封面）：
+    - 背景：全尺寸 SVG 漸層/裝飾（SVG rect, path, circle 等）
+    - 主標題：.dg foreignObject，translate(100,350)，width:1400，height:280，font-size:80px，font-weight:900
+    - 副標題（若有）：.dg foreignObject，translate(100,650)，width:900，height:120，font-size:32px
+    - 裝飾：SVG 幾何形狀（禁止在裝飾上放文字）`;
+  if (L === 'text_only') return `  ★ text_only（純文字）：
+    - 標題卡：translate(80,60)，width:1760，height:140，font-size:52px，bold
+    - 要點卡片（每個要點獨立 .dg）：
+      要點1：translate(80,240)，width:830，height:170
+      要點2：translate(80,430)，width:830，height:170
+      要點3：translate(80,620)，width:830，height:170
+      要點4：translate(80,810)，width:830，height:170（最多4個）
+    - 右側裝飾：translate(960,200) 放 SVG 視覺元素`;
+  if (L === 'text_and_image') return `  ★ text_and_image（圖文並排）：
+    - 標題卡：translate(60,40)，width:880，height:130，font-size:44px
     - 要點卡片（每個要點獨立）：
-      要點 1：translate(60, 210)，width:880，height:160
-      要點 2：translate(60, 390)，width:880，height:160
-      要點 3：translate(60, 570)，width:880，height:160
-    - 圖片：translate(1000, 80)，width:860，height:900（用 E 的圖片模板）
-
-  ★ diagram_slide（流程圖/架構圖）：
-    - 標題卡：translate(60, 30)，width:1800，height:110，font-size:44px
-    - 每個流程節點 = SVG 背景框（rect）+ 獨立 .dg 文字標籤
-    - 4 節點水平佈局範例：
-      SVG 框 1：x=60,y=200,width=380,height=220
-      節點 1 文字：translate(70, 210)，width:360，height:200，font-size:20px
-      SVG 框 2：x=520,y=200,width=380,height=220
-      節點 2 文字：translate(530, 210)，width:360，height:200
-      SVG 框 3：x=980,y=200,width=380,height=220
-      節點 3 文字：translate(990, 210)，width:360，height:200
-      SVG 框 4：x=1440,y=200,width=380,height=220
-      節點 4 文字：translate(1450, 210)，width:360，height:200
-      箭頭（SVG path）：在框之間繪製，用 marker-end 箭頭
-    - 說明卡（選用）：translate(60, 500)，width:1800，height:400，font-size:18px
+      要點1：translate(60,210)，width:880，height:160
+      要點2：translate(60,390)，width:880，height:160
+      要點3：translate(60,570)，width:880，height:160
+    - 圖片：translate(1000,80)，width:860，height:900（用 E 模板）`;
+  if (L === 'diagram_slide') return `  ★ diagram_slide（流程圖/架構圖）：
+    - 標題卡：translate(60,30)，width:1800，height:110，font-size:44px
+    - 每個流程節點 = SVG 框(rect) + 獨立 .dg 文字標籤
+    - 4節點水平佈局（間距≥420px）：
+      框1：x=60,y=200,w=380,h=220 → 文字：translate(70,210),width:360,height:200
+      框2：x=520,y=200,w=380,h=220 → 文字：translate(530,210),width:360,height:200
+      框3：x=980,y=200,w=380,h=220 → 文字：translate(990,210),width:360,height:200
+      框4：x=1440,y=200,w=380,h=220 → 文字：translate(1450,210),width:360,height:200
+      箭頭：SVG path + marker-end
+    - 說明卡（選用）：translate(60,500)，width:1800，height:400，font-size:18px`;
+  return `  ★ 使用 text_only 佈局作為預設（layout="${L}" 未定義，自動 fallback）`;
+})()}
 
 H. 【對比度規範】
    - 深色背景→文字用淺色（#f8fafc/#ffffff）；淺色背景→文字用深色（#111827/#0f172a）
@@ -1692,7 +1687,7 @@ I. 只輸出純 HTML，不含任何 markdown 標記。
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.75, maxOutputTokens: 16384 }
+                        generationConfig: { temperature: 0.75, maxOutputTokens: 10240 }
                     }),
                     signal: AppState.abortController.signal
                 });
@@ -2105,11 +2100,31 @@ async function downloadPptx(mode = 'image') {
         const logoPosMap = { TR:[8.5,0.2], BR:[8.5,5.0], TL:[0.2,0.2], BL:[0.2,5.0] };
         const [lx, ly] = logoPosMap[logoPos] || [8.5, 0.2];
 
-        for (let i = 0; i < AppState.generatedSlides.length; i++) {
-            const s = AppState.generatedSlides[i];
-            addLog(`📸 截圖第 ${s.slideNumber}/${AppState.generatedSlides.length} 頁...`, 'info');
+        // ── Step 1: resolve screenshots (use cache or capture in parallel) ──
+        const CONCURRENCY = 3;
+        const slides = AppState.generatedSlides;
+        const screenshots = new Array(slides.length).fill(null);
 
-            const imgB64 = await slideHTMLToBase64(s.html, s.slideNumber);
+        // Fill from cache first
+        slides.forEach((s, i) => { if (s.screenshotB64) screenshots[i] = s.screenshotB64; });
+
+        // Capture missing ones in batches of CONCURRENCY
+        const missing = slides.map((s, i) => i).filter(i => !screenshots[i]);
+        addLog(`📸 PPTX 截圖：${slides.length - missing.length} 頁使用快取，${missing.length} 頁需截圖`, 'info');
+
+        for (let b = 0; b < missing.length; b += CONCURRENCY) {
+            const batch = missing.slice(b, b + CONCURRENCY);
+            await Promise.all(batch.map(async (idx) => {
+                const s = slides[idx];
+                addLog(`📸 截圖第 ${s.slideNumber}/${slides.length} 頁...`, 'info');
+                screenshots[idx] = await slideHTMLToBase64(s.html, s.slideNumber);
+            }));
+        }
+
+        // ── Step 2: build PPTX slides in order ────────────────────────
+        for (let i = 0; i < slides.length; i++) {
+            const s = slides[i];
+            const imgB64 = screenshots[i];
             const slide  = pres.addSlide();
 
             if (imgB64) {
@@ -3573,6 +3588,17 @@ async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel) {
 async function fixSlideHTML(html, reviewResult, slideData, theme) {
     if (!reviewResult?.issues?.length) return html;
 
+    // ── Minify HTML before sending to reduce input tokens ~30-40% ──
+    function minifyHtml(src) {
+        return src
+            .replace(/<!--(?!SLIDE_INTERACTION_SCRIPT)[\s\S]*?-->/g, '') // strip comments except placeholder
+            .replace(/\n\s*\n/g, '\n')    // collapse blank lines
+            .replace(/>\s{2,}</g, '><')    // collapse whitespace between tags
+            .replace(/\s{2,}/g, ' ')       // collapse multiple spaces
+            .trim();
+    }
+    const minified = minifyHtml(html);
+
     const issuesSummary = reviewResult.issues.map((iss, i) =>
         `${i+1}. [${iss.type.toUpperCase()}] ${iss.description}\n   修正方式：${iss.fix}`
     ).join('\n');
@@ -3583,7 +3609,7 @@ async function fixSlideHTML(html, reviewResult, slideData, theme) {
 ${issuesSummary}
 
 【原始 HTML】
-${html.slice(0, 60000)}
+${minified.slice(0, 55000)}
 
 【修正要求】
 1. 只修正有問題的元素，保留其他所有結構和樣式不變
@@ -3639,12 +3665,13 @@ ${html.slice(0, 60000)}
 // ═══════════════════════════════════════════════════════════════════
 async function reviewAndFixSlide(html, sData, theme) {
     const enabled    = document.getElementById('chk-review-enabled')?.checked;
-    if (!enabled) return html;
+    if (!enabled) return { html, screenshotB64: null };
 
     const reviewModel  = document.getElementById('sel-review-model')?.value || 'grok-4-1-fast-reasoning';
     const maxIter      = parseInt(document.getElementById('sel-review-iterations')?.value || '2');
 
     let currentHTML = html;
+    let lastScreenshot = null;          // ← cache: reuse in PPTX export
     for (let iter = 1; iter <= maxIter; iter++) {
         if (AppState.cancelRequested) break;
 
@@ -3654,6 +3681,7 @@ async function reviewAndFixSlide(html, sData, theme) {
             addLog(`⚠ 截圖失敗，跳過審查`, 'warning');
             break;
         }
+        lastScreenshot = screenshot;   // ← save latest good screenshot
 
         const review = await reviewSlideWithLLM(screenshot, sData, reviewModel);
         const score  = review.score ?? (review.pass ? 100 : 60);
@@ -3668,13 +3696,14 @@ async function reviewAndFixSlide(html, sData, theme) {
         const fixed = await fixSlideHTML(currentHTML, review, sData, theme);
         if (fixed !== currentHTML) {
             currentHTML = fixed;
+            lastScreenshot = null;     // HTML changed — screenshot is stale, clear it
             addLog(`  ✓ 修正完成，繼續審查...`, 'success');
         } else {
             addLog(`  ⚠ 修正無變化，停止迭代`, 'warning');
             break;
         }
     }
-    return currentHTML;
+    return { html: currentHTML, screenshotB64: lastScreenshot };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3767,8 +3796,11 @@ async function startGeneration() {
             }
 
             // ── Phase 5 & 6: Visual Review + Auto-Fix ────────────────
+            let screenshotB64 = null;
             if (document.getElementById('chk-review-enabled')?.checked && !AppState.cancelRequested) {
-                html = await reviewAndFixSlide(html, sData, theme);
+                const result = await reviewAndFixSlide(html, sData, theme);
+                html = result.html;
+                screenshotB64 = result.screenshotB64;   // ← reuse in PPTX export
             }
 
             AppState.generatedSlides.push({
@@ -3776,7 +3808,8 @@ async function startGeneration() {
                 title: sData.title,
                 layout: sData.layout,
                 slideData: sData,
-                imageB64: imageB64,   // stored for editable PPTX picture objects
+                imageB64: imageB64,
+                screenshotB64,          // ← cached screenshot (may be null)
                 html
             });
             renderSlidePreviewCard(sData, html, i);
