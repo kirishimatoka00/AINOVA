@@ -321,6 +321,33 @@
                             <p class="text-slate-600 text-[10px] leading-relaxed">審查後若發現重疊、對比不足等問題，Gemini 2.5 Pro 將自動修正並重新渲染</p>
                         </div>
                     </div>
+
+                    <!-- Content Density -->
+                    <div class="border-t border-slate-800 pt-3">
+                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-sliders text-cyan-400"></i>
+                            內容密度模式
+                        </label>
+                        <select id="sel-density" onchange="updateDensityHint()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-amber-500 outline-none mb-1.5">
+                            <option value="document">📄 閱讀型 — 詳細文字 + 圖表 + 少量圖片</option>
+                            <option value="balanced" selected>⚖️ 均衡型 — 重點 + 圖表 + 圖片</option>
+                            <option value="presentation">🎤 簡報型 — 精簡重點 + 視覺主導</option>
+                        </select>
+                        <p id="density-hint" class="text-slate-600 text-[10px] leading-relaxed">每頁 3–5 點，要點控制在 25 字內，適合現場簡報</p>
+                    </div>
+
+                    <!-- Quality -->
+                    <div class="border-t border-slate-800 pt-3">
+                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-star text-amber-400"></i>
+                            投影片品質等級
+                        </label>
+                        <select id="sel-quality" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-amber-500 outline-none">
+                            <option value="premium">✨ Premium — 精緻設計（慢，多 token）</option>
+                            <option value="standard" selected>⚡ Standard — 均衡品質與速度</option>
+                        </select>
+                    </div>
+
                             <span id="slide-count-val" class="text-amber-400 font-bold">10 張</span>
                         </label>
                         <input type="range" id="range-slide-count" min="2" max="50" value="10"
@@ -689,8 +716,18 @@ function updateImageModeHint() {
     if (el) el.textContent = hints[mode] || '';
 }
 
+function updateDensityHint() {
+    const mode = document.getElementById('sel-density')?.value || 'balanced';
+    const hints = {
+        document:     '每頁 5–8 點，每點 30–80 字，配詳細圖表，適合作為報告文件閱讀',
+        balanced:     '每頁 3–5 點，每點 15–35 字，配圖表與插圖，適合現場簡報兼閱讀',
+        presentation: '每頁 2–3 點，每點 8–20 字，大標題視覺主導，適合現場演講'
+    };
+    const el = document.getElementById('density-hint');
+    if (el) el.textContent = hints[mode] || '';
+}
+
 function updateReviewHint() {
-    const enabled = document.getElementById('chk-review-enabled')?.checked;
     const cfg = document.getElementById('review-config');
     if (cfg) cfg.classList.toggle('hidden', !enabled);
 }
@@ -1043,10 +1080,12 @@ async function callGeminiForOutline(topic, context) {
     if (AppState.cancelRequested) throw new Error('CanceledByUser');
 
     const userModel  = document.getElementById('sel-text-model').value;
-    const slideCount = document.getElementById('range-slide-count').value;
+    const slideCount  = document.getElementById('range-slide-count').value;
     const templateKey = document.getElementById('sel-template').value;
     const theme = HTML_THEMES[templateKey] || HTML_THEMES.modern;
     const imageMode = document.getElementById('sel-image-mode').value;
+    const density   = document.getElementById('sel-density')?.value   || 'balanced';
+    const quality   = document.getElementById('sel-quality')?.value   || 'standard';
 
     const GEMINI_FALLBACKS = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-3-flash-preview'];
     const MODEL_QUEUE = isGrokModel(userModel)
@@ -1063,20 +1102,48 @@ async function callGeminiForOutline(topic, context) {
         serp_mixed:   'SerpAPI + AI 混合模式，有需要配圖時使用 text_and_image'
     }[imageMode] || '';
 
-    const systemPrompt = `你是世界頂級的簡報內容策略師與視覺設計顧問。請為以下主題生成一份具備極高知識密度的 HTML 簡報大綱 JSON。
+    const densityRules = {
+        document: `【閱讀型密度規則】
+- 每張 bullet_points：5–8 點，每點 30–80 字（詳細解釋，包含數據、案例、背景）
+- 允許 diagram_slide 佔 30% 以上（圖表、數據表格、比較圖）
+- text_and_image 圖片僅輔助說明，非視覺主角
+- 文字資訊密度：高；視覺娛樂性：低`,
+        balanced: `【均衡型密度規則】
+- 每張 bullet_points：3–5 點，每點 15–35 字
+- diagram_slide 佔 20–30%（流程圖、架構圖）
+- text_and_image 約佔 20–30%
+- 文字資訊密度：中；視覺吸引力：中`,
+        presentation: `【簡報型密度規則】
+- 每張 bullet_points：2–3 點，每點 8–20 字（精簡有力，口語化）
+- diagram_slide 佔 20%（簡單流程圖、架構圖）
+- text_and_image 佔 40–50%（視覺為主角）
+- title_only 封面要視覺震撼
+- 文字資訊密度：低；視覺衝擊力：高`
+    }[density] || '';
+
+    const qualityRules = quality === 'premium' ? `
+【Premium 品質要求 — NotebookLM 水準】
+- 每張投影片必須有獨特的視覺亮點（資料視覺化、圖標、關鍵數字強調）
+- diagram_slide 必須是真正有洞察力的圖表（不是簡單清單）
+- 標題要有行動力和驚喜感（問句、數字開頭、對比結構）
+- 資料點：每張至少有 1 個具體數字或統計
+- 版型多樣性：相鄰頁不允許相同 layout` : '';
+
+    const systemPrompt = `你是世界頂級的簡報內容策略師與視覺設計顧問。請為以下主題生成一份 HTML 簡報大綱 JSON。
 
 視覺風格主題：${theme.label || 'Modern Dark'}
 投影片張數：${slideCount} 張
 圖片使用策略：${imageModeHint}
 
-【內容品質要求】
-1. 拒絕空泛：必須含具體案例、數據預估、深度邏輯推演
-2. 每張的 bullet_points 必須 3~5 點，每點 15~40 字
-3. layout 只能是: "title_only", "text_only", "text_and_image", "diagram_slide"
-4. diagram_slide 表示需要流程圖、圖表、架構圖的頁面
-5. image_prompt 為具體英文 AI 繪圖提示詞 (text_and_image 時必填)
-6. diagram_description 描述圖解內容 (diagram_slide 時必填)
-7. 嚴格輸出純 JSON，禁止包含任何 markdown 標記
+${densityRules}
+${qualityRules}
+
+【基本品質要求】
+1. 拒絕空泛：必須含具體案例、數據、深度邏輯
+2. layout 只能是: "title_only", "text_only", "text_and_image", "diagram_slide"
+3. diagram_slide 時 diagram_description 必填（具體描述圖解內容）
+4. text_and_image 時 image_prompt 必填（英文具體繪圖提示詞）
+5. 嚴格輸出純 JSON，禁止包含任何 markdown 標記
 
 JSON Schema:
 {
@@ -1256,55 +1323,48 @@ const SLIDE_INTERACTION_SCRIPT = `
       return s;
     }
     function mkColorPicker(title,initColor,onPick){
-      /* ── Two-element pattern ──────────────────────────────────────────
-         Hidden <input type="color"> is what the browser opens for picking.
-         Visible <button> (colour swatch) handles mousedown:
-           1. preventDefault() → keeps contenteditable focused / selection alive
-           2. saves range snapshot
-           3. setTimeout → programmatically fires .click() on the hidden input
-               (triggered outside a mousedown, so browser opens the picker)
+      /* ── Direct-input pattern ─────────────────────────────────────────
+         Use a real <input type="color"> styled as a swatch.
+         mousedown on it:
+           1. ev.preventDefault() → keeps contenteditable focus + selection
+           2. snapshots savedRange
+         Then the browser receives a genuine click (mousedown→mouseup on the
+         same element = click) and opens the OS colour picker normally.
+         This avoids the setTimeout→hidden.click() trick which browsers now
+         block as a non-gesture-triggered picker open.
          ─────────────────────────────────────────────────────────────── */
-      var hidden=document.createElement('input');
-      hidden.type='color'; hidden.value=initColor;
-      hidden.style.cssText='position:absolute;width:0;height:0;opacity:0;pointer-events:none;';
-      hidden.addEventListener('input',function(){
-        /* Restore selection, then apply colour */
-        if(savedRange){
-          try{ var s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); }catch(e){}
-        }
-        onPick(hidden.value, savedRange);
-        /* Keep swatch colour in sync */
-        swatch.style.background=hidden.value;
-      });
+      var inp=document.createElement('input');
+      inp.type='color'; inp.value=initColor; inp.title=title;
+      inp.style.cssText=
+        'width:22px;height:22px;border:2px solid rgba(255,255,255,.35);'+
+        'border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;'+
+        'background:'+initColor+';appearance:none;-webkit-appearance:none;overflow:hidden;';
+      /* Make the colour swatch visible: hide the default browser chrome */
+      inp.style.setProperty('--webkit-color-swatch-wrapper-padding','0px');
 
-      var swatch=document.createElement('button');
-      swatch.title=title;
-      swatch.style.cssText='width:22px;height:22px;border:2px solid rgba(255,255,255,.35);'+
-        'border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;background:'+initColor+';';
-      swatch.addEventListener('mousedown',function(ev){
-        ev.preventDefault();        /* ← keeps selection alive */
-        /* Re-snapshot range right now (user may have adjusted selection) */
+      /* mousedown: save selection & signal picker is opening */
+      inp.addEventListener('mousedown',function(ev){
+        /* DO NOT preventDefault here — we need the browser to process the
+           click on the <input type="color"> as a real user gesture so that
+           the OS colour-picker dialog opens. Instead we just snapshot range. */
         try{
           var s=window.getSelection();
           if(s&&s.rangeCount&&!s.isCollapsed) savedRange=s.getRangeAt(0).cloneRange();
         }catch(e){}
-        /* Signal that a picker is about to open — block mouseup from closing toolbar */
         pickerOpen=true;
-        /* Open picker on next tick (outside the mousedown handler) */
-        setTimeout(function(){ hidden.click(); }, 0);
       });
 
-      /* When picker closes (change fires after user picks or cancels) */
-      hidden.addEventListener('change', function(){ pickerOpen=false; });
-      /* Also clear on blur in case user hits Escape */
-      hidden.addEventListener('blur',   function(){ setTimeout(function(){ pickerOpen=false; }, 200); });
+      inp.addEventListener('input',function(){
+        if(savedRange){
+          try{ var s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); }catch(e){}
+        }
+        onPick(inp.value, savedRange);
+        inp.style.background=inp.value;
+      });
+      inp.addEventListener('change', function(){ setTimeout(function(){ pickerOpen=false; },100); });
+      inp.addEventListener('blur',   function(){ setTimeout(function(){ pickerOpen=false; },200); });
 
-      /* Wrap both in a tiny container */
-      var wrap=document.createElement('span');
-      wrap.style.cssText='position:relative;display:inline-flex;flex-shrink:0;';
-      wrap.appendChild(hidden);
-      wrap.appendChild(swatch);
-      return wrap;
+      return inp;
     }
     function mkBtn(label,action){
       var b=document.createElement('button'); b.textContent=label;
@@ -1569,6 +1629,37 @@ async function generateSlideHTML(slideData, theme, imageB64) {
         ? `【特別重要】本簡報使用自定義底稿背景圖片。背景層必須是 <image href="REPLACE_BG_SRC" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice"/>，放在所有其他元素之前。禁止使用漸層或純色作為背景，必須使用此底稿圖片。文字和卡片配色需配合底稿，若底稿較亮則用深色文字，若底稿較暗則用淺色文字。`
         : `背景基調: ${theme.bg}（使用此漸層或顏色作為全背景）`;
 
+    const density = document.getElementById('sel-density')?.value || 'balanced';
+    const quality = document.getElementById('sel-quality')?.value || 'standard';
+
+    const densityVisualRules = {
+        document: `【閱讀型視覺規範】
+- 文字卡片要寬，字體 font-size: 18–22px，bullet 項目條列清晰
+- 每個要點完整顯示（不截斷），允許卡片較高（height > 200px）
+- 圖表優先（diagram_slide 用詳細、資訊豐富的 SVG 圖表）
+- 視覺裝飾簡約，以資訊清晰為主`,
+        balanced: `【均衡型視覺規範】
+- 文字卡片與視覺元素 50/50 平衡
+- font-size 20–26px，留白適中
+- 圖表清晰易讀，圖片與文字良好搭配`,
+        presentation: `【簡報型視覺規範】
+- 標題極大（font-size ≥ 64px），要點極簡
+- 大量留白，視覺衝擊第一，文字第二
+- 用大色塊、漸層、幾何形狀製造視覺震撼
+- 每點文字控制在一行內（< 20 字）`
+    }[density] || '';
+
+    const premiumRules = quality === 'premium' ? `
+【★ Premium 設計規範 — 比肩 NotebookLM】
+1. 色彩深度：背景使用至少 3 層漸層（主色 + 輔助光暈 + 邊緣暗化），不用單一純色
+2. 版型多樣：善用非對稱佈局（30/70、黃金比例）而非均分
+3. 資料視覺化：diagram_slide 必須有真正的資料圖（bar chart SVG、折線圖、同心圓等），不只是方框加箭頭
+4. 關鍵數字：重要數字（百分比、金額、年份）用超大字體（≥ 80px）單獨展示，形成視覺錨點
+5. 微細節：圓角 border-radius 12–20px，卡片加 backdrop-filter:blur(12px)，投影用 drop-shadow
+6. 圖標：在要點前用內聯 SVG 圖標（⚡📊🎯🔑等 Unicode 也可）增加視覺層次
+7. 動態感：漸層角度 135deg，光暈偏角，製造運動感
+8. 一致性：整張投影片的強調色只用 1–2 種，避免色彩混亂` : '';
+
     const prompt = `你是世界最頂級的 HTML/SVG 互動式投影片設計師。你的投影片必須完全符合以下架構規範。
 
 【投影片資料】
@@ -1577,6 +1668,9 @@ ${JSON.stringify(slideData)}
 【圖片】${imgInstruction}
 【Logo】${logoInstruction || '無 Logo。'}
 【背景】${bgInstruction}
+
+${densityVisualRules}
+${premiumRules}
 
 ══════════════════════════════════════════════════════
 ★★★ 核心強制規範（違反任何一條都是錯誤輸出）★★★
