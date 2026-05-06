@@ -321,6 +321,26 @@
                             <p class="text-slate-600 text-[10px] leading-relaxed">審查後若發現重疊、對比不足等問題，Gemini 2.5 Pro 將自動修正並重新渲染</p>
                         </div>
                     </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-text-t text-amber-400"></i>
+                            投影片文字密度
+                            <span id="density-val" class="text-amber-400 font-bold ml-1">均衡</span>
+                        </label>
+                        <input type="range" id="range-text-density" min="1" max="3" value="2"
+                            oninput="updateDensityLabel(this.value)"
+                            class="w-full">
+                        <div class="flex justify-between text-slate-600 text-[10px] mt-1">
+                            <span>簡報<br/><span class="text-[9px] text-slate-700">3點·精簡</span></span>
+                            <span class="text-center">均衡<br/><span class="text-[9px] text-slate-700">4~5點·標準</span></span>
+                            <span class="text-right">閱讀<br/><span class="text-[9px] text-slate-700">6~8點·詳盡</span></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-presentation-chart text-amber-400"></i>
+                            投影片數量
                             <span id="slide-count-val" class="text-amber-400 font-bold">10 張</span>
                         </label>
                         <input type="range" id="range-slide-count" min="2" max="50" value="10"
@@ -719,7 +739,10 @@ function updateReviewHint() {
     if (cfg) cfg.classList.toggle('hidden', !enabled);
 }
 
-function updateWsPanel() {
+function updateDensityLabel(v) {
+    const labels = { '1':'簡報', '2':'均衡', '3':'閱讀' };
+    document.getElementById('density-val').textContent = labels[v] || '均衡';
+}
     const chkWS = document.getElementById('chk-web-search');
     const panel = document.getElementById('web-search-mode-panel');
     if (panel) panel.classList.toggle('hidden', !chkWS?.checked);
@@ -1177,6 +1200,12 @@ async function callGeminiForOutline(topic, context) {
 
     const userModel  = document.getElementById('sel-text-model').value;
     const slideCount = document.getElementById('range-slide-count').value;
+    const densityVal = document.getElementById('range-text-density')?.value || '2';
+    const densitySpec = {
+        '1': '簡報模式：每張 bullet_points 精確 3 點，每點 10~20 字，簡潔有力，適合演講投影',
+        '2': '均衡模式：每張 bullet_points 4~5 點，每點 15~35 字，資訊豐富且清晰',
+        '3': '閱讀模式：每張 bullet_points 6~8 點，每點 30~60 字，詳盡說明，適合自學閱讀'
+    }[densityVal] || '均衡模式：每張 bullet_points 4~5 點，每點 15~35 字';
     const templateKey = document.getElementById('sel-template').value;
     const theme = HTML_THEMES[templateKey] || HTML_THEMES.modern;
     const imageMode = document.getElementById('sel-image-mode').value;
@@ -1204,7 +1233,7 @@ async function callGeminiForOutline(topic, context) {
 
 【內容品質要求】
 1. 拒絕空泛：必須含具體案例、數據預估、深度邏輯推演
-2. 每張的 bullet_points 必須 3~5 點，每點 15~40 字
+2. 文字密度規則：${densitySpec}
 3. layout 只能是: "title_only", "text_only", "text_and_image", "diagram_slide"
 4. diagram_slide 表示需要流程圖、圖表、架構圖的頁面
 5. image_prompt 為具體英文 AI 繪圖提示詞 (text_and_image 時必填)
@@ -1780,11 +1809,26 @@ G. 【版型佈局規範（僅本頁適用：${slideData.layout}）】
 
 ${(()=>{
   const L = slideData.layout;
-  if (L === 'title_only') return `  ★ title_only（封面）：
-    - 背景：全尺寸 SVG 漸層/裝飾（SVG rect, path, circle 等）
-    - 主標題：.dg foreignObject，translate(100,350)，width:1400，height:280，font-size:80px，font-weight:900
-    - 副標題（若有）：.dg foreignObject，translate(100,650)，width:900，height:120，font-size:32px
-    - 裝飾：SVG 幾何形狀（禁止在裝飾上放文字）`;
+  if (L === 'title_only') return `  ★ title_only（精美封面）— 務必用豐富的 SVG 背景藝術：
+    【背景層（必須做，不可省略）】
+    1. 主背景：<rect width="1920" height="1080" fill="url(#bgGrad)"/> 使用 2~3 色深色漸層
+       linearGradient 範例：from ${theme.bg} → 更深的同色系 → 加一個對比accent色
+    2. 幾何裝飾（至少 4 個大型形狀）：
+       a) 右上角大圓：<circle cx="1650" cy="-100" r="550" fill="rgba(99,102,241,0.15)"/>
+       b) 左下角弧：<ellipse cx="100" cy="1100" rx="600" ry="400" fill="rgba(139,92,246,0.1)"/>
+       c) 斜線裝飾帶：<polygon points="0,800 400,1080 0,1080" fill="rgba(255,255,255,0.03)"/>
+       d) 右側豎條：<rect x="1700" y="0" width="8" height="1080" fill="rgba(99,102,241,0.5)" rx="4"/>
+    3. 光暈效果：<circle cx="960" cy="540" r="700" fill="url(#glowGrad)" opacity="0.15"/>
+    4. 小點綴（4~8 個）：小圓點 r="3"~"8"，散落角落，fill="rgba(255,255,255,0.2)"
+    5. 必須在 <defs> 定義 2 個 linearGradient（bgGrad + glowGrad）和至少 1 個 radialGradient
+    【文字層】
+    - 主標題：.dg foreignObject translate(120,360) width:1340 height:280
+      font-size:72~90px font-weight:900 letter-spacing:-1px line-height:1.1
+      加 text-shadow: 0 4px 40px rgba(0,0,0,0.5)
+    - 副標題：.dg foreignObject translate(120,660) width:1000 height:120
+      font-size:28~34px font-weight:400 opacity:0.85 letter-spacing:1px
+    - 裝飾線條：<line x1="120" y1="340" x2="500" y2="340" stroke="accent色" stroke-width="3"/>
+    【設計原則】色彩不超過 3 種主色系，但透過不同 opacity 創造層次感`;
   if (L === 'text_only') return `  ★ text_only（純文字）：
     - 標題卡：translate(80,60)，width:1760，height:140，font-size:52px，bold
     - 要點卡片（每個要點獨立 .dg）：
@@ -1816,6 +1860,7 @@ ${(()=>{
 H. 【對比度規範】
    - 深色背景→文字用淺色（#f8fafc/#ffffff）；淺色背景→文字用深色（#111827/#0f172a）
    - ${AppState.bgTemplateBase64 ? '自訂底稿：預設用深色文字 #111827' : `背景：${theme.bg}`}
+   - 文字密度模式：${densityHint}（${densityHint.includes('精簡') ? '字型放大 20%，減少要點' : densityHint.includes('詳盡') ? '字型縮小 15%，行間距 1.4' : '維持標準字型'}）
 
 I. 只輸出純 HTML，不含任何 markdown 標記。
 
@@ -1857,6 +1902,7 @@ I. 只輸出純 HTML，不含任何 markdown 標記。
             }
 
             const dynamicMode = document.getElementById('chk-dynamic-mode')?.checked !== false;
+            const densityHint = { '1': '精簡（大字、少文）', '2': '均衡', '3': '詳盡（小字、多文）' }[document.getElementById('range-text-density')?.value || '2'] || '均衡';
             if (dynamicMode) {
                 html = html.replace('<!--SLIDE_INTERACTION_SCRIPT-->', SLIDE_INTERACTION_SCRIPT);
                 if (!html.includes(SLIDE_INTERACTION_SCRIPT.slice(0, 30))) {
@@ -3699,38 +3745,52 @@ async function captureSlideScreenshot(html) {
 }
 
 // Call Grok 4.1 (or selected reviewer) to visually review a slide screenshot
-async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel) {
+async function reviewSlideWithLLM(screenshotB64, slideData, reviewModel, slideHtml) {
     const xaiKey    = AppState.xaiApiKey;
     const geminiKey = AppState.googleApiKey;
     const isGrok    = isGrokModel(reviewModel);
+
+    // Extract real element positions from HTML for grounding (prevents hallucination)
+    let elementInfo = '';
+    try {
+        const doc = new DOMParser().parseFromString(slideHtml || '', 'text/html');
+        const elems = [];
+        doc.querySelectorAll('.dg').forEach(dg => {
+            const tf = dg.getAttribute('transform') || '';
+            const tm = tf.match(/translate\(\s*([\d.-]+)[,\s]+([\d.-]+)\s*\)/);
+            const fo = dg.querySelector('foreignObject');
+            if (tm && fo) {
+                const txt = fo.querySelector('[contenteditable]')?.textContent?.trim().slice(0,30) || '';
+                const w = fo.getAttribute('width'), h = fo.getAttribute('height');
+                elems.push(`  · (${Math.round(tm[1])},${Math.round(tm[2])}) ${w}×${h}px — "${txt}"`);
+            }
+        });
+        if (elems.length) elementInfo = '\n\n【投影片中的實際元素位置（勿幻覺）】\n' + elems.join('\n');
+    } catch(e) {}
 
     const reviewPrompt = `你是投影片視覺品質審查師。請對這張投影片截圖做嚴格品質審查，回傳 JSON 報告。
 
 投影片資料：
 - 標題：${slideData.title || ''}
 - 版型：${slideData.layout || ''}
-- 要點數：${(slideData.bullet_points || []).length}
+- 要點數：${(slideData.bullet_points || []).length}${elementInfo}
 
-【必須審查的 4 個面向，每個都要認真檢查】
-1. overlap（重疊）：文字/圖片元素是否相互遮擋、重疊
-2. contrast（對比度）：★ 這是最重要的檢查 ★
-   - 所有文字（標題、要點、說明）與其背景色的對比率必須 ≥ 4.5:1（WCAG AA）
-   - 深色背景（如深藍/黑）上出現深灰文字 = 嚴重對比不足，必須標記
-   - 淺色背景上出現白色文字 = 嚴重對比不足，必須標記
-   - 只要發現任何文字看起來「難以辨讀」就必須回報
-   - 若有對比問題，score 必須 ≤ 60，pass 必須為 false
+【必須審查的 4 個面向】
+1. overlap（重疊）：文字/圖片元素是否相互遮擋、重疊。只依據截圖中「實際可見」的狀況判斷，勿幻覺。
+2. contrast（對比度）★最重要★：
+   - 所有文字與其背景對比率必須 ≥ 4.5:1（WCAG AA）
+   - 深色背景出現深灰/深藍文字 = 嚴重對比不足
+   - 淺色背景出現白色文字 = 嚴重對比不足
+   - 只要發現任何「難以辨讀」的文字必須回報
+   - 若有對比問題，score ≤ 60，pass = false
 3. readability（可讀性）：標題 ≥ 36px，正文 ≥ 18px
-4. layout（佈局）：元素是否超出邊界、不當留白
+4. layout（佈局）：元素超出 1920×1080 邊界、不當留白
+
+⚠ 重要：只描述截圖中「實際存在且可見」的問題，禁止幻覺。
 
 嚴格輸出純 JSON（不含任何 markdown）：
-{
-  "pass": true/false,
-  "score": 0-100,
-  "issues": [
-    {"type": "overlap|contrast|readability|layout", "description": "具體問題（中文）", "fix": "具體修正指令（中文）"}
-  ]
-}
-pass=true 的條件：score ≥ 80 且沒有 contrast 問題。若有任何 contrast 問題，pass 必須為 false。`;
+{"pass":true/false,"score":0-100,"issues":[{"type":"overlap|contrast|readability|layout","description":"具體問題","fix":"具體修正指令"}]}
+pass=true 條件：score ≥ 85 且沒有 contrast/overlap 問題。`;
 
     try {
         if (isGrok && xaiKey) {
@@ -3874,6 +3934,51 @@ ${minified.slice(0, 55000)}
 // PROGRAMMATIC CONTRAST PRE-SCAN
 // Parses HTML string, detects low-contrast text, injects !important CSS
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// PROGRAMMATIC OVERLAP DETECTION — parses .dg transform coordinates
+// and foreignObject dimensions, reports any overlapping pairs.
+// This runs BEFORE the AI reviewer so real issues are always caught.
+// ═══════════════════════════════════════════════════════════════════
+function detectOverlaps(html) {
+    const issues = [];
+    try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const boxes = [];
+        doc.querySelectorAll('.dg').forEach(dg => {
+            // Parse translate(x,y) from transform attribute
+            const tf = dg.getAttribute('transform') || '';
+            const tm = tf.match(/translate\(\s*([\d.-]+)[,\s]+([\d.-]+)\s*\)/);
+            if (!tm) return;
+            const x = parseFloat(tm[1]), y = parseFloat(tm[2]);
+            // Find foreignObject or rect to get width/height
+            const fo = dg.querySelector('foreignObject');
+            const rect = dg.querySelector('rect');
+            const w = parseFloat(fo?.getAttribute('width') || rect?.getAttribute('width') || '0');
+            const h = parseFloat(fo?.getAttribute('height') || rect?.getAttribute('height') || '0');
+            if (w > 0 && h > 0) {
+                const label = fo?.querySelector('[contenteditable]')?.textContent?.slice(0, 20) || `元素@${Math.round(x)},${Math.round(y)}`;
+                boxes.push({ x, y, w, h, label });
+            }
+        });
+        // Check all pairs for intersection (with 10px tolerance)
+        const TOL = 10;
+        for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+                const a = boxes[i], b = boxes[j];
+                const overlapX = Math.min(a.x+a.w, b.x+b.w) - Math.max(a.x, b.x) - TOL;
+                const overlapY = Math.min(a.y+a.h, b.y+b.h) - Math.max(a.y, b.y) - TOL;
+                if (overlapX > 0 && overlapY > 0) {
+                    issues.push({ type: 'overlap', area: Math.round(overlapX * overlapY),
+                        description: `「${a.label}」與「${b.label}」重疊 ${Math.round(overlapX)}×${Math.round(overlapY)}px`,
+                        fix: `調整其中一個的 translate 座標使其不重疊，建議移動「${b.label}」至 translate(${Math.round(b.x)},${Math.round(a.y+a.h+20)})`
+                    });
+                }
+            }
+        }
+    } catch(e) {}
+    return issues;
+}
+
 function programmaticContrastFix(html, theme) {
     try {
         const parser  = new DOMParser();
@@ -3972,7 +4077,25 @@ async function reviewAndFixSlide(html, sData, theme) {
         }
         lastScreenshot = screenshot;   // ← save latest good screenshot
 
-        const review = await reviewSlideWithLLM(screenshot, sData, reviewModel);
+        const review = await reviewSlideWithLLM(screenshot, sData, reviewModel, currentHTML);
+        const progOverlaps = detectOverlaps(currentHTML);
+
+        // Merge programmatic overlap issues (ground truth) into AI review
+        if (progOverlaps.length) {
+            const aiOverlapTypes = (review.issues || []).filter(i=>i.type==='overlap');
+            if (!aiOverlapTypes.length) {
+                // AI missed real overlaps — inject them
+                review.issues = [...(review.issues||[]), ...progOverlaps];
+                review.pass   = false;
+                review.score  = Math.min(review.score ?? 80, 55);
+                addLog(`  ⚙ 程式化偵測到 ${progOverlaps.length} 個重疊（AI 未偵測到），已強制標記`, 'warning');
+            }
+        }
+        // Stricter pass: require score ≥ 85 AND no overlap AND no contrast
+        const hasContrast = (review.issues||[]).some(i=>i.type==='contrast');
+        const hasOverlap  = (review.issues||[]).some(i=>i.type==='overlap');
+        if (hasContrast || hasOverlap) review.pass = false;
+        if (review.pass && (review.score??100) < 85) review.pass = false;
         const score  = review.score ?? (review.pass ? 100 : 60);
         const issueCount = (review.issues || []).length;
 
