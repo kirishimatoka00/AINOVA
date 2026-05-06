@@ -222,15 +222,80 @@
                     </div>
 
                     <div class="border-t border-slate-800 pt-3">
-                        <label class="block text-slate-400 mb-1.5 font-semibold">簡報視覺風格</label>
-                        <select id="sel-template" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-amber-500 outline-none">
-                            <option value="modern">現代極簡 (Modern Dark)</option>
-                            <option value="tech">科技未來 (Tech Cyber)</option>
-                            <option value="corporate">商務專業 (Corporate Blue)</option>
-                            <option value="creative">活潑創意 (Creative Vivid)</option>
-                            <option value="elegant">高雅精緻 (Elegant Light)</option>
-                            <option value="white">純白底 (Pure White) ☁</option>
-                        </select>
+                        <label class="block text-slate-400 mb-2 font-semibold flex items-center gap-1.5">
+                            <i class="ph-fill ph-paint-bucket text-amber-400"></i>
+                            投影片底色設計
+                        </label>
+                        <!-- Mode tabs -->
+                        <div class="flex gap-1 mb-3 bg-slate-950 rounded-xl p-1">
+                            <button id="bgmode-btn-preset" onclick="setBgMode('preset')"
+                                class="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all bg-amber-500/20 text-amber-300">
+                                🎨 預設主題
+                            </button>
+                            <button id="bgmode-btn-ai" onclick="setBgMode('ai')"
+                                class="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all text-slate-400 hover:text-slate-200">
+                                ✨ AI 自行決定
+                            </button>
+                            <button id="bgmode-btn-custom" onclick="setBgMode('custom')"
+                                class="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all text-slate-400 hover:text-slate-200">
+                                ✏️ 自訂描述
+                            </button>
+                        </div>
+                        <!-- Preset mode -->
+                        <div id="bgmode-preset">
+                            <select id="sel-template" onchange="updateThemePreview()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-amber-500 outline-none">
+                                <option value="modern">現代極簡 (Modern Dark)</option>
+                                <option value="tech">科技未來 (Tech Cyber)</option>
+                                <option value="corporate">商務專業 (Corporate Blue)</option>
+                                <option value="creative">活潑創意 (Creative Vivid)</option>
+                                <option value="elegant">高雅精緻 (Elegant Light)</option>
+                                <option value="white">純白底 (Pure White) ☁</option>
+                            </select>
+                            <!-- Theme color preview strip -->
+                            <div id="theme-preview-strip" class="mt-2 flex gap-1.5 items-center">
+                                <div id="tp-bg" class="h-6 flex-1 rounded-md border border-slate-700"></div>
+                                <div id="tp-accent" class="h-6 w-8 rounded-md border border-slate-700"></div>
+                                <div id="tp-text" class="h-6 w-8 rounded-md border border-slate-700"></div>
+                                <div id="tp-card" class="h-6 w-8 rounded-md border border-slate-700"></div>
+                            </div>
+                        </div>
+                        <!-- AI decide mode -->
+                        <div id="bgmode-ai" class="hidden">
+                            <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-3.5 space-y-2">
+                                <p class="text-[11px] text-slate-300 font-semibold">🤖 AI 將根據簡報主題自行設計配色方案</p>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">包含背景漸層、文字顏色、強調色、卡片底色，完全由 AI 依據內容性質決定。</p>
+                                <!-- Live generated theme preview -->
+                                <div id="ai-theme-preview" class="hidden mt-2 rounded-lg overflow-hidden border border-slate-700">
+                                    <div id="ai-theme-bg" class="h-10 flex items-center px-3 gap-2">
+                                        <div id="ai-theme-accent" class="w-4 h-4 rounded-full"></div>
+                                        <span id="ai-theme-label" class="text-[10px] font-semibold text-white/80"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Custom description mode -->
+                        <div id="bgmode-custom" class="hidden space-y-2">
+                            <textarea id="inp-bg-desc" rows="3" placeholder="例如：深海藍漸層底色，右上角有金色光暈，左下角有幾何線條裝飾，整體氛圍神秘且專業…"
+                                class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:border-amber-500 outline-none resize-none text-[12px] leading-relaxed"></textarea>
+                            <button onclick="previewCustomTheme()"
+                                class="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-semibold hover:from-amber-500/30 hover:to-orange-500/30 transition-all flex items-center justify-center gap-1.5">
+                                <i class="ph-fill ph-sparkle"></i> 預覽 AI 生成配色
+                            </button>
+                            <!-- Generated theme preview card -->
+                            <div id="custom-theme-preview" class="hidden rounded-xl overflow-hidden border border-amber-500/30">
+                                <div id="ctp-bg" class="h-14 flex items-end px-3 pb-2 gap-2">
+                                    <div id="ctp-accent" class="w-5 h-5 rounded-full border border-white/30"></div>
+                                    <div id="ctp-text-swatch" class="w-5 h-5 rounded-full border border-white/30"></div>
+                                    <span id="ctp-label" class="text-[10px] text-white/70 font-semibold ml-1"></span>
+                                </div>
+                                <div id="ctp-card" class="px-3 py-1.5 flex items-center gap-2">
+                                    <span class="text-[10px] text-slate-400">卡片</span>
+                                    <div id="ctp-card-swatch" class="h-4 flex-1 rounded border border-slate-600"></div>
+                                    <span class="text-[10px] text-slate-400">文字</span>
+                                    <div id="ctp-text-preview" class="h-4 w-10 rounded border border-slate-600"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -583,6 +648,16 @@ const AppState = {
 };
 
 // ─── THEME DEFINITIONS ──────────────────────────────────────────────
+/** Returns the theme object to use based on current bg design mode */
+function resolveActiveTheme() {
+    if (AppState.bgDesignMode === 'custom' && AppState.customTheme) {
+        return AppState.customTheme;
+    }
+    // 'ai' mode: use modern as structural fallback, but prompt will override
+    const templateKey = document.getElementById('sel-template')?.value || 'modern';
+    return HTML_THEMES[templateKey] || HTML_THEMES.modern;
+}
+
 const HTML_THEMES = {
     modern: {
         label: '現代極簡 (Modern Dark)',
@@ -743,6 +818,121 @@ function updateDensityLabel(v) {
     const labels = { '1':'簡報', '2':'均衡', '3':'閱讀' };
     document.getElementById('density-val').textContent = labels[v] || '均衡';
 }
+
+// ─── Background Design Mode ───────────────────────────────────────
+AppState.bgDesignMode = 'preset';   // 'preset' | 'ai' | 'custom'
+AppState.customTheme  = null;        // generated theme object
+
+function setBgMode(mode) {
+    AppState.bgDesignMode = mode;
+    ['preset','ai','custom'].forEach(m => {
+        const btn   = document.getElementById(`bgmode-btn-${m}`);
+        const panel = document.getElementById(`bgmode-${m}`);
+        const active = m === mode;
+        btn.className  = `flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+            active ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-slate-200'
+        }`;
+        if (panel) panel.classList.toggle('hidden', !active);
+    });
+}
+
+function updateThemePreview() {
+    const key   = document.getElementById('sel-template')?.value || 'modern';
+    const theme = HTML_THEMES[key];
+    if (!theme) return;
+    const bg    = document.getElementById('tp-bg');
+    const acc   = document.getElementById('tp-accent');
+    const txt   = document.getElementById('tp-text');
+    const card  = document.getElementById('tp-card');
+    if (bg)   bg.style.background  = theme.bg;
+    if (acc)  acc.style.background  = theme.accent;
+    if (txt)  txt.style.background  = theme.text;
+    if (card) card.style.background = theme.card;
+}
+
+async function previewCustomTheme() {
+    const desc = document.getElementById('inp-bg-desc')?.value.trim();
+    if (!desc) { alert('請先輸入底色描述'); return; }
+    const apiKey = AppState.googleApiKey;
+    if (!apiKey) { alert('需要 Gemini API Key'); return; }
+
+    const btn = document.querySelector('[onclick="previewCustomTheme()"]');
+    if (btn) { btn.textContent = '⏳ AI 生成中...'; btn.disabled = true; }
+
+    try {
+        const theme = await generateCustomTheme(desc, apiKey);
+        if (theme) {
+            AppState.customTheme = theme;
+            _renderCustomThemePreview(theme);
+        }
+    } catch(e) {
+        console.error('Custom theme gen failed', e);
+    } finally {
+        if (btn) { btn.innerHTML = '<i class="ph-fill ph-sparkle"></i> 預覽 AI 生成配色'; btn.disabled = false; }
+    }
+}
+
+async function generateCustomTheme(description, apiKey) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const prompt = `你是投影片配色設計師。根據以下描述，生成一套完整的投影片配色方案。
+
+描述：${description}
+
+嚴格只輸出純 JSON，不含任何 markdown 或說明：
+{
+  "label": "配色名稱（中文，10字以內）",
+  "bg": "CSS 背景值（可用 linear-gradient 或純色 hex）",
+  "bg_hex": "背景主色 hex（#rrggbb）",
+  "titleColor": "標題顏色 hex",
+  "accent": "強調色 hex",
+  "text": "正文顏色 hex",
+  "muted": "次要文字顏色 hex",
+  "card": "卡片背景（rgba(r,g,b,a)）",
+  "border": "邊框顏色（rgba(r,g,b,a)）"
+}
+設計要求：
+- 確保文字與背景對比率 ≥ 4.5:1
+- bg 可使用漸層（linear-gradient）增加視覺豐富度
+- 整體風格符合描述的氛圍`;
+
+    const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+        })
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const raw  = data.candidates?.[0]?.content?.parts?.map(p => p.text||'').join('') || '';
+    const m    = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('No JSON in response');
+    return JSON.parse(m[0]);
+}
+
+function _renderCustomThemePreview(theme) {
+    const wrap = document.getElementById('custom-theme-preview');
+    if (!wrap) return;
+    wrap.classList.remove('hidden');
+    const bg   = document.getElementById('ctp-bg');
+    const acc  = document.getElementById('ctp-accent');
+    const txts = document.getElementById('ctp-text-swatch');
+    const lbl  = document.getElementById('ctp-label');
+    const card = document.getElementById('ctp-card-swatch');
+    const txtp = document.getElementById('ctp-text-preview');
+    if (bg)   bg.style.background   = theme.bg;
+    if (acc)  acc.style.background  = theme.accent;
+    if (txts) txts.style.background = theme.titleColor;
+    if (lbl)  lbl.textContent       = theme.label || '自訂配色';
+    if (card) { card.style.background = theme.card; card.style.border = `1px solid ${theme.border}`; }
+    if (txtp) txtp.style.background  = theme.text;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateThemePreview();
+    setBgMode('preset');
+});
     const chkWS = document.getElementById('chk-web-search');
     const panel = document.getElementById('web-search-mode-panel');
     if (panel) panel.classList.toggle('hidden', !chkWS?.checked);
@@ -1207,7 +1397,13 @@ async function callGeminiForOutline(topic, context) {
         '3': '閱讀模式：每張 bullet_points 6~8 點，每點 30~60 字，詳盡說明，適合自學閱讀'
     }[densityVal] || '均衡模式：每張 bullet_points 4~5 點，每點 15~35 字';
     const templateKey = document.getElementById('sel-template').value;
-    const theme = HTML_THEMES[templateKey] || HTML_THEMES.modern;
+    const theme = resolveActiveTheme();
+
+    const themeDesc = AppState.bgDesignMode === 'ai'
+        ? 'AI 自行決定最適合此主題的配色方案（不需依賴預設主題）'
+        : AppState.bgDesignMode === 'custom' && AppState.customTheme
+            ? `自訂配色「${AppState.customTheme.label}」：${AppState.customTheme.bg}`
+            : theme.label || 'Modern Dark';
     const imageMode = document.getElementById('sel-image-mode').value;
 
     const GEMINI_FALLBACKS = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-3-flash-preview'];
@@ -1227,7 +1423,7 @@ async function callGeminiForOutline(topic, context) {
 
     const systemPrompt = `你是世界頂級的簡報內容策略師與視覺設計顧問。請為以下主題生成一份具備極高知識密度的 HTML 簡報大綱 JSON。
 
-視覺風格主題：${theme.label || 'Modern Dark'}
+視覺風格主題：${themeDesc}
 投影片張數：${slideCount} 張
 圖片使用策略：${imageModeHint}
 
@@ -1732,6 +1928,19 @@ async function generateSlideHTML(slideData, theme, imageB64) {
         ? `【特別重要】本簡報使用自定義底稿背景圖片。背景層必須是 <image href="REPLACE_BG_SRC" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice"/>，放在所有其他元素之前。禁止使用漸層或純色作為背景，必須使用此底稿圖片。文字和卡片配色需配合底稿，若底稿較亮則用深色文字，若底稿較暗則用淺色文字。`
         : `背景基調: ${theme.bg}（使用此漸層或顏色作為全背景）`;
 
+    // Additional background design instruction based on mode
+    const bgDesignInstr = AppState.bgDesignMode === 'ai'
+        ? `\n   ★ AI 自主配色模式：請根據簡報主題的性質自行設計最合適的底色方案。
+      可使用多色漸層、幾何紋理、深色/淺色 — 完全由你決定，不受限於任何預設主題。
+      標準：背景需與內容有強烈視覺對比，文字必須清晰可讀。`
+        : AppState.bgDesignMode === 'custom' && AppState.customTheme
+            ? `\n   ★ 自訂配色「${AppState.customTheme.label}」：
+      背景：${AppState.customTheme.bg}
+      標題色：${AppState.customTheme.titleColor}  強調色：${AppState.customTheme.accent}
+      卡片底色：${AppState.customTheme.card}  邊框：${AppState.customTheme.border}
+      正文：${AppState.customTheme.text}  ← 請嚴格依此配色渲染`
+        : '';
+
     const prompt = `你是世界最頂級的 HTML/SVG 互動式投影片設計師。你的投影片必須完全符合以下架構規範。
 
 【投影片資料】
@@ -1859,7 +2068,7 @@ ${(()=>{
 
 H. 【對比度規範】
    - 深色背景→文字用淺色（#f8fafc/#ffffff）；淺色背景→文字用深色（#111827/#0f172a）
-   - ${AppState.bgTemplateBase64 ? '自訂底稿：預設用深色文字 #111827' : `背景：${theme.bg}`}
+   - ${AppState.bgTemplateBase64 ? '自訂底稿：預設用深色文字 #111827' : `背景：${theme.bg}`}${bgDesignInstr}
    - 文字密度模式：${densityHint}（${densityHint.includes('精簡') ? '字型放大 20%，減少要點' : densityHint.includes('詳盡') ? '字型縮小 15%，行間距 1.4' : '維持標準字型'}）
 
 I. 只輸出純 HTML，不含任何 markdown 標記。
@@ -2776,7 +2985,7 @@ async function downloadEditablePptx() {
         pres.layout = 'LAYOUT_16x9';
 
         const templateKey = document.getElementById('sel-template').value;
-        const theme = HTML_THEMES[templateKey] || HTML_THEMES.modern;
+        const theme = resolveActiveTheme();
         const accentHex = (theme.accent.match(/#([0-9a-fA-F]{6})/)?.[1] || '818cf8');
         const bgHex     = AppState.bgTemplateBase64 ? 'FFFFFF' : (theme.bg.match(/#([0-9a-fA-F]{6})/)?.[1] || '0f172a').toUpperCase();
         const logoPos    = document.getElementById('sel-logo-pos').value;
