@@ -321,33 +321,6 @@
                             <p class="text-slate-600 text-[10px] leading-relaxed">審查後若發現重疊、對比不足等問題，Gemini 2.5 Pro 將自動修正並重新渲染</p>
                         </div>
                     </div>
-
-                    <!-- Content Density -->
-                    <div class="border-t border-slate-800 pt-3">
-                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
-                            <i class="ph-fill ph-sliders text-cyan-400"></i>
-                            內容密度模式
-                        </label>
-                        <select id="sel-density" onchange="updateDensityHint()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-amber-500 outline-none mb-1.5">
-                            <option value="document">📄 閱讀型 — 詳細文字 + 圖表 + 少量圖片</option>
-                            <option value="balanced" selected>⚖️ 均衡型 — 重點 + 圖表 + 圖片</option>
-                            <option value="presentation">🎤 簡報型 — 精簡重點 + 視覺主導</option>
-                        </select>
-                        <p id="density-hint" class="text-slate-600 text-[10px] leading-relaxed">每頁 3–5 點，要點控制在 25 字內，適合現場簡報</p>
-                    </div>
-
-                    <!-- Quality -->
-                    <div class="border-t border-slate-800 pt-3">
-                        <label class="block text-slate-400 mb-1.5 font-semibold flex items-center gap-1.5">
-                            <i class="ph-fill ph-star text-amber-400"></i>
-                            投影片品質等級
-                        </label>
-                        <select id="sel-quality" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:border-amber-500 outline-none">
-                            <option value="premium">✨ Premium — 精緻設計（慢，多 token）</option>
-                            <option value="standard" selected>⚡ Standard — 均衡品質與速度</option>
-                        </select>
-                    </div>
-
                             <span id="slide-count-val" class="text-amber-400 font-bold">10 張</span>
                         </label>
                         <input type="range" id="range-slide-count" min="2" max="50" value="10"
@@ -402,7 +375,31 @@
                         <i class="ph-fill ph-globe text-sky-400 text-sm"></i>
                         <span class="text-[11px] text-slate-200 font-semibold">Google 聯網搜尋（Grounding）</span>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-0.5">啟用後 AI 將先搜尋最新資料再生成簡報，確保內容不依賴舊訓練資料庫</p>
+                    <!-- Web search mode selector — only shown when toggle is on -->
+                    <div id="web-search-mode-panel" class="mt-1.5 space-y-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="web-search-mode" id="wsm-auto" value="auto" checked class="accent-sky-400">
+                            <span class="text-[10px] text-slate-300">AI 自動選取搜尋結果</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="web-search-mode" id="wsm-manual" value="manual" class="accent-sky-400">
+                            <span class="text-[10px] text-slate-300">手動勾選搜尋結果（顯示 20 項）</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <!-- Dynamic editing mode toggle -->
+            <div class="mt-2 flex items-center gap-2.5 bg-slate-800/60 border border-slate-700 rounded-xl px-3.5 py-2.5">
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="chk-dynamic-mode" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <i class="ph-fill ph-pencil-simple text-emerald-400 text-sm"></i>
+                        <span class="text-[11px] text-slate-200 font-semibold">動態編輯模式</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-0.5">開啟：物件可拖曳、文字可直接編輯色彩大小。關閉：全靜態 HTML，由 AI 審查員負責修正排版與對比</p>
                 </div>
             </div>
         </div>
@@ -716,21 +713,21 @@ function updateImageModeHint() {
     if (el) el.textContent = hints[mode] || '';
 }
 
-function updateDensityHint() {
-    const mode = document.getElementById('sel-density')?.value || 'balanced';
-    const hints = {
-        document:     '每頁 5–8 點，每點 30–80 字，配詳細圖表，適合作為報告文件閱讀',
-        balanced:     '每頁 3–5 點，每點 15–35 字，配圖表與插圖，適合現場簡報兼閱讀',
-        presentation: '每頁 2–3 點，每點 8–20 字，大標題視覺主導，適合現場演講'
-    };
-    const el = document.getElementById('density-hint');
-    if (el) el.textContent = hints[mode] || '';
-}
-
 function updateReviewHint() {
+    const enabled = document.getElementById('chk-review-enabled')?.checked;
     const cfg = document.getElementById('review-config');
     if (cfg) cfg.classList.toggle('hidden', !enabled);
 }
+
+function updateWsPanel() {
+    const chkWS = document.getElementById('chk-web-search');
+    const panel = document.getElementById('web-search-mode-panel');
+    if (panel) panel.classList.toggle('hidden', !chkWS?.checked);
+}
+document.addEventListener('DOMContentLoaded', function(){
+    updateWsPanel();
+    document.getElementById('chk-web-search')?.addEventListener('change', updateWsPanel);
+});
 
 // ─── Logo ─────────────────────────────────────────────────────────
 function handleLogoUpload(e) {
@@ -1031,61 +1028,158 @@ function stopGeneration() {
 // LLM: OUTLINE GENERATION  ── supports Gemini + Grok ──
 // ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
-// Web Grounding: use Gemini Google Search to gather latest info on topic
-// Returns a string of researched context, or '' if disabled/failed.
+// Web Grounding — two modes: auto (AI picks) / manual (user picks)
 // ═══════════════════════════════════════════════════════════════════
 async function researchTopicWithGrounding(topic, signal) {
     if (!document.getElementById('chk-web-search')?.checked) return '';
     const apiKey = AppState.googleApiKey;
     if (!apiKey) { addLog('⚠ 聯網搜尋需要 Gemini API Key，略過', 'warning'); return ''; }
 
-    addLog('🌐 Google 聯網搜尋中，抓取最新資料...', 'ai');
+    const mode = document.querySelector('input[name="web-search-mode"]:checked')?.value || 'auto';
 
+    if (mode === 'auto') {
+        return await _groundingAuto(topic, signal, apiKey);
+    } else {
+        return await _groundingManual(topic, signal, apiKey);
+    }
+}
+
+async function _groundingAuto(topic, signal, apiKey) {
+    addLog('🌐 Google 聯網搜尋（AI 自動選取）...', 'ai');
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const body = {
-        contents: [{
-            role: 'user',
-            parts: [{ text: `請用繁體中文針對以下主題進行深度研究，整理最新數據、趨勢、案例、統計資料、重要觀點。內容要具體、有數字支撐、有來源說明，供後續製作專業簡報使用。\n\n主題：${topic}` }]
-        }],
+        contents: [{ role: 'user', parts: [{ text:
+            `請用繁體中文針對以下主題進行深度研究，整理最新數據、趨勢、案例、統計資料、重要觀點。內容要具體、有數字支撐、有來源說明，供後續製作專業簡報使用。\n\n主題：${topic}`
+        }]}],
         tools: [{ google_search: {} }],
         generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
     };
-
     try {
-        const resp = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-            signal
-        });
-        if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-        }
+        const resp = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+        const text = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
         const queries = data.candidates?.[0]?.groundingMetadata?.webSearchQueries || [];
         if (text) {
-            addLog(`✓ 聯網研究完成（搜尋了 ${queries.length} 個查詢），整合至大綱生成`, 'success');
+            addLog(`✓ 聯網研究完成（${queries.length} 個搜尋查詢）`, 'success');
             return `\n\n【Google 聯網搜尋最新資料 — ${new Date().toLocaleDateString('zh-TW')}】\n${text}`;
         }
     } catch(e) {
-        if (e.name === 'AbortError') throw e;
-        addLog(`⚠ 聯網搜尋失敗（${e.message}），改用模型自身知識`, 'warning');
+        if (e.name==='AbortError') throw e;
+        addLog(`⚠ 聯網搜尋失敗（${e.message}），略過`, 'warning');
     }
     return '';
+}
+
+async function _groundingManual(topic, signal, apiKey) {
+    addLog('🌐 Google 聯網搜尋（手動勾選模式）— 抓取搜尋結果清單...', 'ai');
+
+    // Step 1: fetch search results as structured JSON
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const listBody = {
+        contents: [{ role:'user', parts:[{ text:
+            `請針對主題「${topic}」搜尋最新資訊，整理出 20 條重要的搜尋結果或資料要點。
+每條格式如下（嚴格輸出 JSON 陣列，不含任何 markdown）：
+[{"id":1,"title":"標題","source":"來源名稱","summary":"一句話摘要（50字以內）"},...]`
+        }]}],
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 3000, temperature: 0.2 }
+    };
+
+    let results = [];
+    try {
+        const resp = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(listBody), signal });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const raw = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || '';
+        const m = raw.match(/\[[\s\S]*\]/);
+        if (m) results = JSON.parse(m[0]);
+    } catch(e) {
+        if (e.name==='AbortError') throw e;
+        addLog(`⚠ 抓取搜尋結果失敗（${e.message}），略過`, 'warning');
+        return '';
+    }
+
+    if (!results.length) { addLog('⚠ 未獲得搜尋結果', 'warning'); return ''; }
+
+    // Step 2: Show modal with checkboxes, wait for user selection
+    const selected = await _showSearchResultPicker(results);
+    if (!selected || !selected.length) {
+        addLog('ℹ 未選取任何搜尋結果，略過聯網資料', 'info');
+        return '';
+    }
+    addLog(`✓ 已選取 ${selected.length} 條搜尋結果，整合至大綱生成`, 'success');
+    const ctx = selected.map(r=>`[${r.source}] ${r.title}：${r.summary}`).join('\n');
+    return `\n\n【手動選取的聯網搜尋資料 — ${new Date().toLocaleDateString('zh-TW')}】\n${ctx}`;
+}
+
+function _showSearchResultPicker(results) {
+    return new Promise(resolve => {
+        // Build modal
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+        const box = document.createElement('div');
+        box.style.cssText = 'background:#0f172a;border:1.5px solid rgba(99,102,241,.6);border-radius:16px;width:100%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;';
+
+        // Header
+        const hdr = document.createElement('div');
+        hdr.style.cssText = 'padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;';
+        hdr.innerHTML = '<span style="color:#e2e8f0;font-weight:700;font-size:14px;">🌐 選取要納入的搜尋結果</span>' +
+            '<span style="color:#64748b;font-size:11px;">勾選後 AI 將只分析所選資料</span>';
+
+        // List
+        const list = document.createElement('div');
+        list.style.cssText = 'flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:6px;';
+
+        const checks = [];
+        results.forEach((r, i) => {
+            const row = document.createElement('label');
+            row.style.cssText = 'display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:8px 10px;cursor:pointer;';
+            const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=true;
+            cb.style.cssText = 'margin-top:2px;flex-shrink:0;accent-color:#818cf8;';
+            const txt = document.createElement('div');
+            txt.innerHTML = `<div style="color:#e2e8f0;font-size:12px;font-weight:600;line-height:1.3;">${r.title}</div>` +
+                `<div style="color:#64748b;font-size:10px;margin-top:2px;">${r.source} · ${r.summary}</div>`;
+            row.appendChild(cb); row.appendChild(txt);
+            list.appendChild(row);
+            checks.push({ cb, r });
+        });
+
+        // Footer
+        const ftr = document.createElement('div');
+        ftr.style.cssText = 'padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;justify-content:flex-end;';
+
+        const btnAll = document.createElement('button');
+        btnAll.textContent='全選'; btnAll.style.cssText='padding:6px 14px;background:rgba(255,255,255,.08);color:#94a3b8;border:none;border-radius:8px;cursor:pointer;font-size:12px;';
+        btnAll.onclick = () => checks.forEach(c => c.cb.checked=true);
+
+        const btnNone = document.createElement('button');
+        btnNone.textContent='全不選'; btnNone.style.cssText='padding:6px 14px;background:rgba(255,255,255,.08);color:#94a3b8;border:none;border-radius:8px;cursor:pointer;font-size:12px;';
+        btnNone.onclick = () => checks.forEach(c => c.cb.checked=false);
+
+        const btnConfirm = document.createElement('button');
+        btnConfirm.textContent='確認使用已勾選項目'; btnConfirm.style.cssText='padding:6px 18px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;';
+        btnConfirm.onclick = () => {
+            overlay.remove();
+            resolve(checks.filter(c=>c.cb.checked).map(c=>c.r));
+        };
+
+        ftr.appendChild(btnAll); ftr.appendChild(btnNone); ftr.appendChild(btnConfirm);
+        box.appendChild(hdr); box.appendChild(list); box.appendChild(ftr);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+    });
 }
 
 async function callGeminiForOutline(topic, context) {
     if (AppState.cancelRequested) throw new Error('CanceledByUser');
 
     const userModel  = document.getElementById('sel-text-model').value;
-    const slideCount  = document.getElementById('range-slide-count').value;
+    const slideCount = document.getElementById('range-slide-count').value;
     const templateKey = document.getElementById('sel-template').value;
     const theme = HTML_THEMES[templateKey] || HTML_THEMES.modern;
     const imageMode = document.getElementById('sel-image-mode').value;
-    const density   = document.getElementById('sel-density')?.value   || 'balanced';
-    const quality   = document.getElementById('sel-quality')?.value   || 'standard';
 
     const GEMINI_FALLBACKS = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-3-flash-preview'];
     const MODEL_QUEUE = isGrokModel(userModel)
@@ -1102,48 +1196,20 @@ async function callGeminiForOutline(topic, context) {
         serp_mixed:   'SerpAPI + AI 混合模式，有需要配圖時使用 text_and_image'
     }[imageMode] || '';
 
-    const densityRules = {
-        document: `【閱讀型密度規則】
-- 每張 bullet_points：5–8 點，每點 30–80 字（詳細解釋，包含數據、案例、背景）
-- 允許 diagram_slide 佔 30% 以上（圖表、數據表格、比較圖）
-- text_and_image 圖片僅輔助說明，非視覺主角
-- 文字資訊密度：高；視覺娛樂性：低`,
-        balanced: `【均衡型密度規則】
-- 每張 bullet_points：3–5 點，每點 15–35 字
-- diagram_slide 佔 20–30%（流程圖、架構圖）
-- text_and_image 約佔 20–30%
-- 文字資訊密度：中；視覺吸引力：中`,
-        presentation: `【簡報型密度規則】
-- 每張 bullet_points：2–3 點，每點 8–20 字（精簡有力，口語化）
-- diagram_slide 佔 20%（簡單流程圖、架構圖）
-- text_and_image 佔 40–50%（視覺為主角）
-- title_only 封面要視覺震撼
-- 文字資訊密度：低；視覺衝擊力：高`
-    }[density] || '';
-
-    const qualityRules = quality === 'premium' ? `
-【Premium 品質要求 — NotebookLM 水準】
-- 每張投影片必須有獨特的視覺亮點（資料視覺化、圖標、關鍵數字強調）
-- diagram_slide 必須是真正有洞察力的圖表（不是簡單清單）
-- 標題要有行動力和驚喜感（問句、數字開頭、對比結構）
-- 資料點：每張至少有 1 個具體數字或統計
-- 版型多樣性：相鄰頁不允許相同 layout` : '';
-
-    const systemPrompt = `你是世界頂級的簡報內容策略師與視覺設計顧問。請為以下主題生成一份 HTML 簡報大綱 JSON。
+    const systemPrompt = `你是世界頂級的簡報內容策略師與視覺設計顧問。請為以下主題生成一份具備極高知識密度的 HTML 簡報大綱 JSON。
 
 視覺風格主題：${theme.label || 'Modern Dark'}
 投影片張數：${slideCount} 張
 圖片使用策略：${imageModeHint}
 
-${densityRules}
-${qualityRules}
-
-【基本品質要求】
-1. 拒絕空泛：必須含具體案例、數據、深度邏輯
-2. layout 只能是: "title_only", "text_only", "text_and_image", "diagram_slide"
-3. diagram_slide 時 diagram_description 必填（具體描述圖解內容）
-4. text_and_image 時 image_prompt 必填（英文具體繪圖提示詞）
-5. 嚴格輸出純 JSON，禁止包含任何 markdown 標記
+【內容品質要求】
+1. 拒絕空泛：必須含具體案例、數據預估、深度邏輯推演
+2. 每張的 bullet_points 必須 3~5 點，每點 15~40 字
+3. layout 只能是: "title_only", "text_only", "text_and_image", "diagram_slide"
+4. diagram_slide 表示需要流程圖、圖表、架構圖的頁面
+5. image_prompt 為具體英文 AI 繪圖提示詞 (text_and_image 時必填)
+6. diagram_description 描述圖解內容 (diagram_slide 時必填)
+7. 嚴格輸出純 JSON，禁止包含任何 markdown 標記
 
 JSON Schema:
 {
@@ -1287,26 +1353,24 @@ const SLIDE_INTERACTION_SCRIPT = `
        Uses range.surroundContents() to wrap selected text in a span.
        Falls back to changing the container if selection crosses element boundaries. */
     function applyFontSizeToRange(range, delta){
-      /* Restore the selection first */
       try{ var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range); }catch(e){ return; }
-
       var anc=range.commonAncestorContainer;
       var node=anc.nodeType===3?anc.parentNode:anc;
       var curPx=parseFloat(window.getComputedStyle(node).fontSize)||18;
       var newPx=Math.max(8, Math.min(120, curPx+delta));
-
       try{
-        /* Clone the range to avoid mutation issues */
         var r=range.cloneRange();
         var span=document.createElement('span');
         span.style.fontSize=newPx+'px';
         r.surroundContents(span);
-        /* Move selection inside the new span and update savedRange */
-        var s2=window.getSelection(); s2.removeAllRanges(); s2.selectAllChildren(span);
-        savedRange=s2.getRangeAt(0).cloneRange();
+        /* Build a new range pointing inside the span — do NOT rely on getSelection() */
+        var newRange=document.createRange();
+        newRange.selectNodeContents(span);
+        savedRange=newRange;   /* update outer savedRange directly */
+        /* Also update live selection so it feels natural */
+        try{ var s2=window.getSelection(); s2.removeAllRanges(); s2.addRange(newRange); }catch(e){}
       }catch(e){
-        /* surroundContents throws if selection crosses element boundaries —
-           fall back to adjusting the container element */
+        /* surroundContents fails on multi-element selections — fallback to container */
         node.style.fontSize=newPx+'px';
       }
     }
@@ -1323,48 +1387,55 @@ const SLIDE_INTERACTION_SCRIPT = `
       return s;
     }
     function mkColorPicker(title,initColor,onPick){
-      /* ── Direct-input pattern ─────────────────────────────────────────
-         Use a real <input type="color"> styled as a swatch.
-         mousedown on it:
-           1. ev.preventDefault() → keeps contenteditable focus + selection
-           2. snapshots savedRange
-         Then the browser receives a genuine click (mousedown→mouseup on the
-         same element = click) and opens the OS colour picker normally.
-         This avoids the setTimeout→hidden.click() trick which browsers now
-         block as a non-gesture-triggered picker open.
+      /* ── Two-element pattern ──────────────────────────────────────────
+         Hidden <input type="color"> is what the browser opens for picking.
+         Visible <button> (colour swatch) handles mousedown:
+           1. preventDefault() → keeps contenteditable focused / selection alive
+           2. saves range snapshot
+           3. setTimeout → programmatically fires .click() on the hidden input
+               (triggered outside a mousedown, so browser opens the picker)
          ─────────────────────────────────────────────────────────────── */
-      var inp=document.createElement('input');
-      inp.type='color'; inp.value=initColor; inp.title=title;
-      inp.style.cssText=
-        'width:22px;height:22px;border:2px solid rgba(255,255,255,.35);'+
-        'border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;'+
-        'background:'+initColor+';appearance:none;-webkit-appearance:none;overflow:hidden;';
-      /* Make the colour swatch visible: hide the default browser chrome */
-      inp.style.setProperty('--webkit-color-swatch-wrapper-padding','0px');
+      var hidden=document.createElement('input');
+      hidden.type='color'; hidden.value=initColor;
+      hidden.style.cssText='position:absolute;width:0;height:0;opacity:0;pointer-events:none;';
+      hidden.addEventListener('input',function(){
+        /* Restore selection, then apply colour */
+        if(savedRange){
+          try{ var s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); }catch(e){}
+        }
+        onPick(hidden.value, savedRange);
+        /* Keep swatch colour in sync */
+        swatch.style.background=hidden.value;
+      });
 
-      /* mousedown: save selection & signal picker is opening */
-      inp.addEventListener('mousedown',function(ev){
-        /* DO NOT preventDefault here — we need the browser to process the
-           click on the <input type="color"> as a real user gesture so that
-           the OS colour-picker dialog opens. Instead we just snapshot range. */
+      var swatch=document.createElement('button');
+      swatch.title=title;
+      swatch.style.cssText='width:22px;height:22px;border:2px solid rgba(255,255,255,.35);'+
+        'border-radius:4px;cursor:pointer;padding:0;flex-shrink:0;background:'+initColor+';';
+      swatch.addEventListener('mousedown',function(ev){
+        ev.preventDefault();        /* ← keeps selection alive */
+        /* Re-snapshot range right now (user may have adjusted selection) */
         try{
           var s=window.getSelection();
           if(s&&s.rangeCount&&!s.isCollapsed) savedRange=s.getRangeAt(0).cloneRange();
         }catch(e){}
+        /* Signal that a picker is about to open — block mouseup from closing toolbar */
         pickerOpen=true;
+        /* Open picker on next tick (outside the mousedown handler) */
+        setTimeout(function(){ hidden.click(); }, 0);
       });
 
-      inp.addEventListener('input',function(){
-        if(savedRange){
-          try{ var s=window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); }catch(e){}
-        }
-        onPick(inp.value, savedRange);
-        inp.style.background=inp.value;
-      });
-      inp.addEventListener('change', function(){ setTimeout(function(){ pickerOpen=false; },100); });
-      inp.addEventListener('blur',   function(){ setTimeout(function(){ pickerOpen=false; },200); });
+      /* When picker closes (change fires after user picks or cancels) */
+      hidden.addEventListener('change', function(){ pickerOpen=false; });
+      /* Also clear on blur in case user hits Escape */
+      hidden.addEventListener('blur',   function(){ setTimeout(function(){ pickerOpen=false; }, 200); });
 
-      return inp;
+      /* Wrap both in a tiny container */
+      var wrap=document.createElement('span');
+      wrap.style.cssText='position:relative;display:inline-flex;flex-shrink:0;';
+      wrap.appendChild(hidden);
+      wrap.appendChild(swatch);
+      return wrap;
     }
     function mkBtn(label,action){
       var b=document.createElement('button'); b.textContent=label;
@@ -1570,11 +1641,14 @@ const SLIDE_INTERACTION_SCRIPT = `
   /* drag */
   function mpt(evt){var ctm=svg.getScreenCTM();var src=evt.touches?evt.touches[0]:evt;return {x:(src.clientX-ctm.e)/ctm.a,y:(src.clientY-ctm.f)/ctm.d};}
   function startDrag(evt){
-    if(evt.target.closest('.ctrl')||evt.target.tagName.toLowerCase()==='input'||evt.target.isContentEditable)return;
-    if(evt.target.tagName.toLowerCase()==='text')return;
+    if(evt.target.closest('.ctrl')) return;
+    if(evt.target.tagName.toLowerCase()==='input') return;
+    /* Only allow drag from the .dh drag-handle OR from the .dg border area.
+       If the pointer is inside a .rb text block → it's a text selection, not a drag. */
+    var insideRb = evt.target.closest('.rb');
+    var onHandle = evt.target.closest('.dh');
+    if(insideRb && !onHandle) return;   /* text area — let browser handle selection */
     var dg=evt.target.closest('.dg');if(!dg)return;
-    var box=evt.target.closest('.rb');
-    if(box){var rc=box.getBoundingClientRect();if(evt.clientX>rc.right-22&&evt.clientY>rc.bottom-22)return;}
     evt.preventDefault();
     sel=dg;sel.parentNode.appendChild(sel);
     var tl=sel.transform.baseVal;
@@ -1629,37 +1703,6 @@ async function generateSlideHTML(slideData, theme, imageB64) {
         ? `【特別重要】本簡報使用自定義底稿背景圖片。背景層必須是 <image href="REPLACE_BG_SRC" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice"/>，放在所有其他元素之前。禁止使用漸層或純色作為背景，必須使用此底稿圖片。文字和卡片配色需配合底稿，若底稿較亮則用深色文字，若底稿較暗則用淺色文字。`
         : `背景基調: ${theme.bg}（使用此漸層或顏色作為全背景）`;
 
-    const density = document.getElementById('sel-density')?.value || 'balanced';
-    const quality = document.getElementById('sel-quality')?.value || 'standard';
-
-    const densityVisualRules = {
-        document: `【閱讀型視覺規範】
-- 文字卡片要寬，字體 font-size: 18–22px，bullet 項目條列清晰
-- 每個要點完整顯示（不截斷），允許卡片較高（height > 200px）
-- 圖表優先（diagram_slide 用詳細、資訊豐富的 SVG 圖表）
-- 視覺裝飾簡約，以資訊清晰為主`,
-        balanced: `【均衡型視覺規範】
-- 文字卡片與視覺元素 50/50 平衡
-- font-size 20–26px，留白適中
-- 圖表清晰易讀，圖片與文字良好搭配`,
-        presentation: `【簡報型視覺規範】
-- 標題極大（font-size ≥ 64px），要點極簡
-- 大量留白，視覺衝擊第一，文字第二
-- 用大色塊、漸層、幾何形狀製造視覺震撼
-- 每點文字控制在一行內（< 20 字）`
-    }[density] || '';
-
-    const premiumRules = quality === 'premium' ? `
-【★ Premium 設計規範 — 比肩 NotebookLM】
-1. 色彩深度：背景使用至少 3 層漸層（主色 + 輔助光暈 + 邊緣暗化），不用單一純色
-2. 版型多樣：善用非對稱佈局（30/70、黃金比例）而非均分
-3. 資料視覺化：diagram_slide 必須有真正的資料圖（bar chart SVG、折線圖、同心圓等），不只是方框加箭頭
-4. 關鍵數字：重要數字（百分比、金額、年份）用超大字體（≥ 80px）單獨展示，形成視覺錨點
-5. 微細節：圓角 border-radius 12–20px，卡片加 backdrop-filter:blur(12px)，投影用 drop-shadow
-6. 圖標：在要點前用內聯 SVG 圖標（⚡📊🎯🔑等 Unicode 也可）增加視覺層次
-7. 動態感：漸層角度 135deg，光暈偏角，製造運動感
-8. 一致性：整張投影片的強調色只用 1–2 種，避免色彩混亂` : '';
-
     const prompt = `你是世界最頂級的 HTML/SVG 互動式投影片設計師。你的投影片必須完全符合以下架構規範。
 
 【投影片資料】
@@ -1668,9 +1711,6 @@ ${JSON.stringify(slideData)}
 【圖片】${imgInstruction}
 【Logo】${logoInstruction || '無 Logo。'}
 【背景】${bgInstruction}
-
-${densityVisualRules}
-${premiumRules}
 
 ══════════════════════════════════════════════════════
 ★★★ 核心強制規範（違反任何一條都是錯誤輸出）★★★
@@ -1816,9 +1856,14 @@ I. 只輸出純 HTML，不含任何 markdown 標記。
                 if (m) html = '<!DOCTYPE html>\n' + m[0];
             }
 
-            html = html.replace('<!--SLIDE_INTERACTION_SCRIPT-->', SLIDE_INTERACTION_SCRIPT);
-            if (!html.includes(SLIDE_INTERACTION_SCRIPT.slice(0, 30))) {
-                html = html.replace('</body>', SLIDE_INTERACTION_SCRIPT + '\n</body>');
+            const dynamicMode = document.getElementById('chk-dynamic-mode')?.checked !== false;
+            if (dynamicMode) {
+                html = html.replace('<!--SLIDE_INTERACTION_SCRIPT-->', SLIDE_INTERACTION_SCRIPT);
+                if (!html.includes(SLIDE_INTERACTION_SCRIPT.slice(0, 30))) {
+                    html = html.replace('</body>', SLIDE_INTERACTION_SCRIPT + '\n</body>');
+                }
+            } else {
+                html = html.replace('<!--SLIDE_INTERACTION_SCRIPT-->', '');
             }
 
             // 【修改點】：無論是 Base64 還是 URL，統一將 REPLACE_IMAGE_SRC 替換為實際圖片。
