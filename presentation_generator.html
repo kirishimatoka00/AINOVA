@@ -474,10 +474,15 @@
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-slate-400 w-20 shrink-0">背景圖 LLM</span>
                     <select id="sel-bg-gen-model" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 text-[11px] focus:border-violet-500 outline-none">
-                        <option value="imagen-3.0-generate-002">Gemini Imagen 3（推薦）</option>
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash（文生圖）</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro（文生圖）</option>
-                    </select>
+                <select id="sel-bg-gen-model" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 text-[11px] focus:border-violet-500 outline-none">
+                    <option value="imagen-4.0-generate-001">Imagen 4.0 Standard（推薦）</option>
+                    <option value="imagen-4.0-ultra-generate-001">Imagen 4.0 Ultra（最高品質）</option>
+                    <option value="imagen-4.0-fast-generate-001">Imagen 4.0 Fast（最快速）</option>
+                    <option value="grok-imagine-image-pro">Grok Imagine Image Pro</option>
+                    <option value="grok-imagine-image">Grok Imagine Image</option>
+                    <option value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash-Image</option>
+                    <option value="gemini-2.5-flash-image">Gemini 2.5 Flash-Image</option>
+                </select>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-slate-400 w-20 shrink-0">排版 LLM</span>
@@ -883,27 +888,76 @@ function setOutputMode(mode) {
 }
 
 // ─── Pure Image PPT: Imagen-3 Background Generator ────────────────
-async function generateSlideBackgroundImage(slideData, theme, bgModel, apiKey) {
-    const prompt = `Professional presentation slide background for "${slideData.title}". 
-Style: ${theme.label || 'modern dark'}, layout ${slideData.layout}.
-Visual: abstract, geometric shapes, gradients. NO text, NO charts, NO UI elements.
-Color: ${theme.bg?.includes('gradient') ? 'rich gradient matching '+theme.accent : theme.bg || '#0f172a'}.
-High quality, 1920x1080 widescreen slide background, ultra detailed.`;
+async function generateSlideBackgroundImage(slideData, theme, bgModel, signal) {
+    const prompt = `Professional presentation slide background image for topic "${slideData.title}". ` +
+        `Abstract geometric shapes, flowing gradients, depth. ` +
+        `Color palette: ${theme.accent || '#818cf8'} and ${theme.bg_hex || '#0f172a'}. ` +
+        `NO text, NO labels, NO charts. Widescreen 16:9 aspect ratio. Ultra detailed, premium quality.`;
 
-    if (bgModel.startsWith('imagen')) {
-        // Gemini Imagen 3
-        const resp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${bgModel}:predict?key=${apiKey}`,
-            { method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ instances:[{ prompt }], parameters:{ sampleCount:1, aspectRatio:'16:9' } }) }
-        );
-        if (!resp.ok) throw new Error(`Imagen HTTP ${resp.status}`);
-        const data = await resp.json();
-        const b64  = data.predictions?.[0]?.bytesBase64Encoded;
-        return b64 ? `data:image/png;base64,${b64}` : null;
+    // ── Grok image models (via xAI) ───────────────────────────────
+    if (bgModel.startsWith('grok')) {
+        const xaiKey = AppState.xaiApiKey;
+        if (!xaiKey) throw new Error('缺少 Grok API Key');
+        const r = await fetch(`${GROK_PROXY}?url=${encodeURIComponent(GROK_IMG_API)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${xaiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: bgModel, prompt, response_format: 'b64_json' }),
+            signal
+        });
+        if (!r.ok) throw new Error(`Grok Image HTTP ${r.status}`);
+        const item = (await r.json()).data?.[0];
+        if (item?.b64_json) return `data:image/png;base64,${item.b64_json}`;
+        throw new Error('Grok image: no data returned');
     }
-    // Fallback: text-gen model describes the background, we use a canvas gradient
-    return null;
+
+    // ── Imagen 4.0 / 3.0 (predict endpoint) ──────────────────────
+    if (bgModel.startsWith('imagen')) {
+        const apiKey = AppState.googleApiKey;
+        if (!apiKey) throw new Error('缺少 Gemini API Key');
+        // Imagen 4.0 uses v1alpha; Imagen 3.0 uses v1beta
+        const apiVer = bgModel.includes('4.0') ? 'v1alpha' : 'v1beta';
+        let url = `https://generativelanguage.googleapis.com/${apiVer}/models/${bgModel}:predict?key=${apiKey}`;
+        // Imagen 4.0 does NOT support aspectRatio — omit it
+        const payload = { instances: [{ prompt }], parameters: { sampleCount: 1 } };
+        let r = await fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload), signal
+        });
+        if (!r.ok) {
+            // Auto-fallback to Imagen 3.0
+            console.warn(`${bgModel} failed (HTTP ${r.status}), falling back to imagen-3.0-generate-001`);
+            url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
+            r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal });
+            if (!r.ok) throw new Error(`Imagen HTTP ${r.status}`);
+        }
+        const data = await r.json();
+        if (!data.predictions?.length || !data.predictions[0].bytesBase64Encoded)
+            throw new Error('Imagen: no image data in predictions');
+        return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+    }
+
+    // ── Gemini image gen (generateContent with IMAGE modality) ─────
+    if (bgModel.startsWith('gemini')) {
+        const apiKey = AppState.googleApiKey;
+        if (!apiKey) throw new Error('缺少 Gemini API Key');
+        const ver = bgModel.includes('preview') ? 'v1alpha' : 'v1beta';
+        const r = await fetch(
+            `https://generativelanguage.googleapis.com/${ver}/models/${bgModel}:generateContent?key=${apiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                  generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+              }), signal }
+        );
+        if (!r.ok) throw new Error(`Gemini Image HTTP ${r.status}`);
+        const imgPart = (await r.json()).candidates?.[0]?.content?.parts
+            ?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+        if (imgPart?.inlineData?.data)
+            return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+        throw new Error('Gemini image: no image part in response');
+    }
+
+    throw new Error(`未知的背景圖模型：${bgModel}`);
 }
 
 // ─── Pure Image PPT: Layout LLM composes text over background ─────
@@ -929,21 +983,54 @@ Requirements:
 
 Output complete HTML starting with <!DOCTYPE html>:`;
 
-    const ver = getGeminiApiVersion(layoutModel);
-    const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${layoutModel}:generateContent?key=${apiKey}`,
-        { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({
-              system_instruction: { parts:[{text: sysPrompt}] },
-              contents:[{role:'user', parts:[{text: userPrompt}]}],
-              generationConfig:{ temperature:0.7, maxOutputTokens:8192 }
-          }), signal }
-    );
-    if (!resp.ok) throw new Error(`Layout LLM HTTP ${resp.status}`);
-    const data = await resp.json();
-    let html = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
-    html = html.replace(/^```html\s*/im,'').replace(/\s*```$/im,'').trim();
-    if (hasBg && backgroundB64) html = html.replace(/REPLACE_BG_SRC/g, backgroundB64);
+    // Route to Grok or Gemini based on model name
+    let html = '';
+    if (isGrokModel(layoutModel)) {
+        const xaiKey = AppState.xaiApiKey;
+        if (!xaiKey) throw new Error('缺少 Grok API Key');
+        const r = await fetch(`${GROK_PROXY}?url=${encodeURIComponent('https://api.x.ai/v1/chat/completions')}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${xaiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: layoutModel,
+                messages: [
+                    { role: 'system', content: sysPrompt },
+                    { role: 'user',   content: userPrompt }
+                ],
+                max_tokens: 8192, temperature: 0.7
+            }),
+            signal
+        });
+        if (!r.ok) throw new Error(`Grok Layout HTTP ${r.status}`);
+        html = (await r.json()).choices?.[0]?.message?.content || '';
+    } else {
+        // Gemini
+        const apiKey = AppState.googleApiKey;
+        if (!apiKey) throw new Error('缺少 Gemini API Key');
+        const r = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${layoutModel}:generateContent?key=${apiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  system_instruction: { parts: [{ text: sysPrompt }] },
+                  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+                  generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+              }), signal }
+        );
+        if (!r.ok) throw new Error(`Layout LLM HTTP ${r.status}`);
+        html = (await r.json()).candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    }
+
+    // Clean up the HTML
+    html = html.replace(/^```html\s*/im, '').replace(/\s*```$/im, '').trim();
+    // Replace background placeholder if background was generated
+    if (hasBg && backgroundB64) {
+        html = html.replace(/REPLACE_BG_SRC/g, backgroundB64);
+    } else {
+        // Remove any broken REPLACE_BG_SRC placeholders (would cause black image)
+        html = html.replace(/src=["']REPLACE_BG_SRC["']/g,
+            `style="display:none"`)
+            .replace(/href=["']REPLACE_BG_SRC["']/g, '');
+    }
     return html;
 }
 
@@ -966,9 +1053,10 @@ async function startPureImageGeneration() {
     document.getElementById('btn-generate')?.classList.add('hidden');
     document.getElementById('btn-stop')?.classList.remove('hidden');
 
-    const bgGenModel   = document.getElementById('sel-bg-gen-model')?.value   || 'imagen-3.0-generate-002';
+    const bgGenModel   = document.getElementById('sel-bg-gen-model')?.value   || 'grok-imagine-image-pro';
     const layoutModel  = document.getElementById('sel-layout-model')?.value   || 'gemini-2.5-pro';
     const theme        = resolveActiveTheme();
+    const signal       = AppState.abortController.signal;
 
     try {
         addLog('📂 讀取資料來源...', 'info');
@@ -995,30 +1083,53 @@ async function startPureImageGeneration() {
             const sData = slides[i];
             addLog(`🖼 第 ${sData.slide_number}/${slides.length}：${sData.title}`, 'info');
 
-            // Step 1: Background LLM
+            // Step 1: Background LLM → generates visual background image
             let bgB64 = null;
             try {
                 addLog(`  🎨 背景 LLM（${bgGenModel}）生成背景圖...`, 'ai');
-                bgB64 = await generateSlideBackgroundImage(sData, theme, bgGenModel, apiKey);
+                bgB64 = await generateSlideBackgroundImage(sData, theme, bgGenModel, signal);
                 if (bgB64) addLog(`  ✓ 背景圖生成完成`, 'success');
-                else       addLog(`  ⚠ 背景圖生成失敗，使用純色`, 'warning');
-            } catch(e) { addLog(`  ⚠ 背景生成: ${e.message}`, 'warning'); }
+            } catch(e) {
+                if (e.name === 'AbortError' || e.message === 'CanceledByUser') throw new Error('CanceledByUser');
+                addLog(`  ⚠ 背景生成失敗 (${e.message})，使用主題漸層代替`, 'warning');
+            }
 
-            // Step 2: Layout LLM composites text + background
+            // Step 2: Layout LLM → composites text over background
             let html = '';
             try {
                 addLog(`  📐 排版 LLM（${layoutModel}）合成排版...`, 'ai');
-                html = await compositeSlideWithLayoutLLM(sData, bgB64, theme, layoutModel, apiKey, AppState.abortController.signal);
+                html = await compositeSlideWithLayoutLLM(sData, bgB64, theme, layoutModel, apiKey, signal);
                 addLog(`  ✓ 排版完成`, 'success');
             } catch(e) {
-                if (e.message==='CanceledByUser') throw e;
-                addLog(`  ⚠ 排版失敗: ${e.message}，使用備援`, 'warning');
-                html = buildFallbackSlide(sData, theme);
+                if (e.message === 'CanceledByUser') throw e;
+                addLog(`  ⚠ 排版失敗: ${e.message}，使用備援佈局`, 'warning');
+                html = buildFallbackSlideHTML(sData, theme);  // ← correct function name
             }
 
-            // Step 3: Screenshot the composed HTML → final slide image
-            addLog(`  📸 渲染截圖...`, 'info');
-            const screenshotB64 = await captureSlideScreenshot(html);
+            // Guard: ensure html is never empty
+            if (!html || html.trim().length < 50) {
+                addLog(`  ⚠ HTML 為空，使用備援佈局`, 'warning');
+                html = buildFallbackSlideHTML(sData, theme);
+            }
+
+            // Step 2b: Programmatic contrast pre-scan
+            html = programmaticContrastFix(html, theme);
+
+            // Step 3: Visual review (same as HTML mode, if enabled)
+            let screenshotB64 = null;
+            if (document.getElementById('chk-review-enabled')?.checked && !AppState.cancelRequested) {
+                addLog(`  🔍 視覺審查中...`, 'ai');
+                const reviewResult = await reviewAndFixSlide(html, sData, theme);
+                html         = reviewResult.html;
+                screenshotB64 = reviewResult.screenshotB64;
+            }
+
+            // Step 4: Screenshot → final slide image
+            if (!screenshotB64) {
+                addLog(`  📸 渲染截圖...`, 'info');
+                screenshotB64 = await captureSlideScreenshot(html);
+            }
+            if (!screenshotB64) addLog(`  ⚠ 截圖失敗，此頁將顯示為空`, 'warning');
 
             AppState.generatedSlides.push({
                 slideNumber: sData.slide_number, title: sData.title,
@@ -1138,8 +1249,8 @@ async function generateCustomTheme(description, apiKey, model = 'gemini-2.5-flas
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 1024,
-                responseMimeType: 'application/json'   // force JSON output, avoids thinking blocks
+                maxOutputTokens: 2048,             // ← 1024 → 2048, gradient CSS can be long
+                responseMimeType: 'application/json'
             }
         })
     });
@@ -2787,8 +2898,10 @@ async function downloadPptx(mode = 'image') {
         const slides = AppState.generatedSlides;
         const screenshots = new Array(slides.length).fill(null);
 
-        // Fill from cache first
-        slides.forEach((s, i) => { if (s.screenshotB64) screenshots[i] = s.screenshotB64; });
+        // Fill from cache first (review phase cached OR pure-image screenshotB64)
+        slides.forEach((s, i) => {
+            if (s.screenshotB64) screenshots[i] = s.screenshotB64;
+        });
 
         // Capture missing ones in batches of CONCURRENCY
         const missing = slides.map((s, i) => i).filter(i => !screenshots[i]);
@@ -2799,7 +2912,8 @@ async function downloadPptx(mode = 'image') {
             await Promise.all(batch.map(async (idx) => {
                 const s = slides[idx];
                 addLog(`📸 截圖第 ${s.slideNumber}/${slides.length} 頁...`, 'info');
-                screenshots[idx] = await slideHTMLToBase64(s.html, s.slideNumber);
+                screenshots[idx] = await slideHTMLToBase64(s.html, s.slideNumber)
+                    || await captureSlideScreenshot(s.html, true);  // highRes fallback
             }));
         }
 
@@ -3370,21 +3484,24 @@ function saveToHistory() {
         const id = 'h_' + Date.now();
 
         const slidesForStorage = AppState.generatedSlides.map(s => {
-            // Strip inline base64 images from HTML, replace with placeholder
-            // so the HTML stays small enough for localStorage
+            // Strip inline base64 from HTML (imageB64 content image)
             let html = s.html || '';
             const imgB64 = s.imageB64 || null;
-            if (imgB64) {
-                // Replace the embedded base64 in html with a recoverable placeholder
-                html = html.split(imgB64).join('__SLIDE_IMG_B64__');
-            }
+            if (imgB64) html = html.split(imgB64).join('__SLIDE_IMG_B64__');
+
+            // For pure-image mode: screenshotB64 IS the slide (store separately)
+            const shotB64 = s.screenshotB64 || null;
+            // Strip screenshotB64 from html too if it happens to be embedded
+            if (shotB64 && html.includes(shotB64)) html = html.split(shotB64).join('__SLIDE_SHOT_B64__');
+
             return {
-                slideNumber: s.slideNumber,
-                title: s.title,
-                layout: s.layout,
-                slideData: s.slideData,
-                imageB64: imgB64,                              // stored separately
-                html: html.slice(0, 300000)                   // larger budget now images stripped
+                slideNumber:  s.slideNumber,
+                title:        s.title,
+                layout:       s.layout,
+                slideData:    s.slideData,
+                imageB64:     imgB64,
+                screenshotB64: shotB64,      // ← new: store final rendered image
+                html:         html.slice(0, 300000)
             };
         });
 
@@ -3432,12 +3549,13 @@ function loadRawHistory() {
     catch { return []; }
 }
 
-/** Re-inject imageB64 into slide HTML that was stripped for storage */
+/** Re-inject imageB64 / screenshotB64 into slide HTML that was stripped for storage */
 function hydrateSlideHTML(slide) {
     let html = slide.html || '';
-    if (slide.imageB64 && html.includes('__SLIDE_IMG_B64__')) {
+    if (slide.imageB64 && html.includes('__SLIDE_IMG_B64__'))
         html = html.split('__SLIDE_IMG_B64__').join(slide.imageB64);
-    }
+    if (slide.screenshotB64 && html.includes('__SLIDE_SHOT_B64__'))
+        html = html.split('__SLIDE_SHOT_B64__').join(slide.screenshotB64);
     return html;
 }
 
@@ -3507,7 +3625,11 @@ function loadFromHistory(id) {
     const entry   = history.find(e => e.id === id);
     if (!entry) { showToast('❌ 找不到此記錄'); return; }
 
-    AppState.generatedSlides   = entry.slides?.map(s => ({ ...s, html: hydrateSlideHTML(s) })) || [];
+    AppState.generatedSlides   = entry.slides?.map(s => ({
+        ...s,
+        html:         hydrateSlideHTML(s),
+        screenshotB64: s.screenshotB64 || null   // ← keep for pure-image PPTX export
+    })) || [];
     AppState.presentationData  = { presentation_title: entry.title, slides: entry.slides?.map(s => s.slideData) };
 
     document.getElementById('section-empty').classList.add('hidden');
@@ -4171,7 +4293,7 @@ function closeEditModal() {
 // ─── Render a slide HTML → base64 JPEG via SVG serialization ────────────
 // Strategy: parse the slide's SVG from the HTML string, serialize it to a
 // Blob URL, draw onto an offscreen canvas, export JPEG. No iframe needed.
-async function captureSlideScreenshot(html) {
+async function captureSlideScreenshot(html, highRes = false) {
     // ── Primary: render slide in hidden iframe → html2canvas ──────────
     const iframeCapture = () => new Promise((resolve) => {
         try {
@@ -4180,21 +4302,22 @@ async function captureSlideScreenshot(html) {
             iframe.sandbox = 'allow-scripts allow-same-origin';
             document.body.appendChild(iframe);
             const cleanup = () => { try { iframe.remove(); } catch(_){} };
-            const timer = setTimeout(() => { cleanup(); resolve(null); }, 14000);
+            const timer = setTimeout(() => { cleanup(); resolve(null); }, 20000);  // longer for high-res
 
             iframe.onload = async () => {
                 try {
                     const idoc = iframe.contentDocument || iframe.contentWindow?.document;
                     if (!idoc || !idoc.body) { clearTimeout(timer); cleanup(); resolve(null); return; }
                     if (typeof html2canvas !== 'undefined') {
+                        const scale = highRes ? 1.5 : 1.0;   // ← 0.5→1.0 normal, 1.5 for PPTX
                         const canvas = await html2canvas(idoc.documentElement, {
-                            width: 1920, height: 1080, scale: 0.5,
+                            width: 1920, height: 1080, scale,
                             useCORS: true, allowTaint: true,
                             backgroundColor: '#0f172a', logging: false,
                             windowWidth: 1920, windowHeight: 1080
                         });
                         clearTimeout(timer); cleanup();
-                        resolve(canvas.toDataURL('image/jpeg', 0.82));
+                        resolve(canvas.toDataURL('image/jpeg', highRes ? 0.95 : 0.88));
                         return;
                     }
                     clearTimeout(timer); cleanup(); resolve(null);
