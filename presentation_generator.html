@@ -968,7 +968,7 @@ async function generateSlideBackgroundImage(slideData, theme, bgModel, signal) {
 }
 
 // ─── Pure Image PPT: Layout LLM composes text over background ─────
-async function compositeSlideWithLayoutLLM(slideData, backgroundB64, contentImgB64, theme, layoutModel, apiKey, signal) {
+async function compositeSlideWithLayoutLLM(slideData, backgroundB64, contentImgB64, theme, layoutModel, apiKey, signal, isUploadedTemplate = false) {
     const hasBg      = !!backgroundB64;
     const hasContent = !!contentImgB64;
 
@@ -979,7 +979,7 @@ async function compositeSlideWithLayoutLLM(slideData, backgroundB64, contentImgB
 Slide data: ${JSON.stringify(slideData)}
 Theme: ${theme.label || 'modern'}, bg: ${theme.bg}, accent: ${theme.accent}, text: ${theme.text || '#f8fafc'}
 Background layer: ${hasBg
-    ? '<img src="REPLACE_BG_SRC" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> as full background.'
+    ? `<img src="REPLACE_BG_SRC" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> as full background.${isUploadedTemplate ? '\n⚠ CRITICAL: This is a user-uploaded PPT template. Do NOT add any CSS background color, gradient, or SVG background shapes — the template image IS the background. Only overlay text and content images (z-index:2+) on top of it.' : ''}`
     : `CSS: background:${theme.bg};`}
 ${hasContent
     ? `Content image: <img src="REPLACE_CONTENT_SRC" style="position:absolute;right:60px;top:160px;width:820px;height:680px;object-fit:cover;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5);z-index:2;"> Place it on the RIGHT side, text on the LEFT.`
@@ -1124,22 +1124,28 @@ async function startPureImageGeneration() {
                 addLog(`  ⚠ 內容圖片: ${e.message}`, 'warning');
             }
 
-            // Step 1: Background LLM → generates visual background image
+            // Step 1: Background — use uploaded template if available, else call LLM
             let bgB64 = null;
-            try {
-                addLog(`  🎨 背景 LLM（${bgGenModel}）生成背景圖...`, 'ai');
-                bgB64 = await generateSlideBackgroundImage(sData, theme, bgGenModel, signal);
-                if (bgB64) addLog(`  ✓ 背景圖生成完成`, 'success');
-            } catch(e) {
-                if (e.name === 'AbortError' || e.message === 'CanceledByUser') throw new Error('CanceledByUser');
-                addLog(`  ⚠ 背景生成失敗 (${e.message})，使用主題漸層代替`, 'warning');
+            if (AppState.bgTemplateBase64) {
+                // User uploaded a PPT background template — use it directly, skip LLM generation
+                bgB64 = AppState.bgTemplateBase64;
+                addLog(`  🖼 使用上傳底稿（跳過背景 LLM）`, 'info');
+            } else {
+                try {
+                    addLog(`  🎨 背景 LLM（${bgGenModel}）生成背景圖...`, 'ai');
+                    bgB64 = await generateSlideBackgroundImage(sData, theme, bgGenModel, signal);
+                    if (bgB64) addLog(`  ✓ 背景圖生成完成`, 'success');
+                } catch(e) {
+                    if (e.name === 'AbortError' || e.message === 'CanceledByUser') throw new Error('CanceledByUser');
+                    addLog(`  ⚠ 背景生成失敗 (${e.message})，使用主題漸層代替`, 'warning');
+                }
             }
 
             // Step 2: Layout LLM → composites text over background
             let html = '';
             try {
                 addLog(`  📐 排版 LLM（${layoutModel}）合成排版...`, 'ai');
-                html = await compositeSlideWithLayoutLLM(sData, bgB64, contentImgB64, theme, layoutModel, apiKey, signal);
+                html = await compositeSlideWithLayoutLLM(sData, bgB64, contentImgB64, theme, layoutModel, apiKey, signal, !!AppState.bgTemplateBase64);
                 addLog(`  ✓ 排版完成`, 'success');
             } catch(e) {
                 if (e.message === 'CanceledByUser') throw e;
