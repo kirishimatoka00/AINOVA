@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI HTML 簡報生成器 v29 · NOVA 120 Pro</title>
+    <title>AI HTML 簡報生成器 v30 · NOVA 120 Pro</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -68,7 +68,7 @@
                 <i class="ph-bold ph-arrow-left"></i><span class="hidden sm:inline">返回 NOVA 120</span>
             </a>
             <div class="w-px h-5 bg-slate-700"></div>
-            <h1 class="text-sm font-bold text-white truncate">AI HTML 簡報生成器 v29 Pro</h1>
+            <h1 class="text-sm font-bold text-white truncate">AI HTML 簡報生成器 v30 Pro</h1>
         </div>
         <div class="flex items-center gap-2">
             <div id="header-model-badge" class="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-full">
@@ -1170,6 +1170,15 @@ async function startPureImageGeneration() {
                 const reviewResult = await reviewAndFixSlide(html, sData, theme);
                 html         = reviewResult.html;
                 screenshotB64 = reviewResult.screenshotB64;
+            }
+
+            // Step 3.5: Inject logo BEFORE screenshot (so it appears in preview image)
+            if (AppState.logoBase64) {
+                const lp = document.getElementById('sel-logo-pos')?.value || 'TR';
+                const lpM = { TR:'right:40px;top:30px;', TL:'left:40px;top:30px;', BR:'right:40px;bottom:30px;', BL:'left:40px;bottom:30px;' };
+                const lTag = `<img id="slide-logo" src="${AppState.logoBase64}" style="position:absolute;${lpM[lp]||lpM.TR}height:60px;max-width:200px;object-fit:contain;z-index:9999;opacity:0.9;pointer-events:none;">`;
+                if (html.includes('REPLACE_LOGO_SRC')) html = html.replace(/REPLACE_LOGO_SRC/g, AppState.logoBase64);
+                if (!html.includes('slide-logo')) html = html.replace('</body>', lTag + '\n</body>');
             }
 
             // Step 4: Screenshot → final slide image
@@ -5820,16 +5829,63 @@ function closeSlideEditModal() {
 
 function switchEditTab(tab) {
     _editTab = tab;
-    const isRegen = tab === 'regen';
-    const panelR = document.getElementById('panel-regen');
-    const panelM = document.getElementById('panel-modify');
-    panelR.classList.toggle('hidden', !isRegen); panelR.classList.toggle('flex', isRegen);
-    panelM.classList.toggle('hidden', isRegen);  panelM.classList.toggle('flex', !isRegen);
+    const panels = { regen: 'panel-regen', pureimg: 'panel-pureimg', modify: 'panel-modify' };
+    const tabs   = { regen: 'tab-regen',   pureimg: 'tab-pureimg',   modify: 'tab-modify'   };
+    const labels = { regen: '重新生成',     pureimg: '純圖生成',       modify: '套用修改'      };
     const activeClass = 'flex-1 py-3 text-sm font-semibold transition-all border-b-2 border-violet-500 text-violet-400';
     const idleClass   = 'flex-1 py-3 text-sm font-semibold transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200';
-    document.getElementById('tab-regen').className  = isRegen  ? activeClass : idleClass;
-    document.getElementById('tab-modify').className = !isRegen ? activeClass : idleClass;
-    document.getElementById('run-edit-label').textContent = isRegen ? '重新生成' : '套用修改';
+    Object.entries(panels).forEach(([key, panelId]) => {
+        const el = document.getElementById(panelId);
+        if (!el) return;
+        el.classList.toggle('hidden', key !== tab);
+        el.classList.toggle('flex',   key === tab);
+    });
+    Object.entries(tabs).forEach(([key, tabId]) => {
+        const el = document.getElementById(tabId);
+        if (el) el.className = key === tab ? activeClass : idleClass;
+    });
+    const lbl = document.getElementById('run-edit-label');
+    if (lbl) lbl.textContent = labels[tab] || '執行';
+}
+
+/**
+ * Generic single-turn text generation using the currently selected model.
+ * Routes to Gemini or Grok based on model name.
+ */
+async function callTextLLM(prompt, maxTokens) {
+    maxTokens = maxTokens || 8192;
+    const model  = (document.getElementById('sel-text-model') || {}).value || 'gemini-2.5-flash';
+    const isGrok = model.startsWith('grok');
+    const apiKey = isGrok ? AppState.xaiApiKey : AppState.googleApiKey;
+    if (!apiKey) throw new Error('缺少 API Key，請在右上角 ⚙ 設定填入');
+
+    if (isGrok) {
+        // Grok text API
+        const r = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, stream: false })
+        });
+        if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message || 'Grok HTTP ' + r.status); }
+        const d = await r.json();
+        return d.choices?.[0]?.message?.content || '';
+    } else {
+        // Gemini generateContent API
+        const isFlash = model.includes('flash');
+        const ver = 'v1beta';
+        const url = 'https://generativelanguage.googleapis.com/' + ver + '/models/' + model + ':generateContent?key=' + apiKey;
+        const body = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 }
+        };
+        if (isFlash) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message || 'Gemini HTTP ' + r.status); }
+        const d = await r.json();
+        const parts = d.candidates?.[0]?.content?.parts || [];
+        return parts.filter(p => p.text && !p.thought).map(p => p.text).join('') ||
+               parts.filter(p => p.text).map(p => p.text).join('');
+    }
 }
 
 async function runSlideEdit() {
@@ -5850,14 +5906,39 @@ async function runSlideEdit() {
         let newHtml = '';
 
         if (_editTab === 'regen') {
-            statusTxt.textContent = 'AI 重新生成版面中...';
+            statusTxt.textContent = 'AI 重新生成 HTML 版面中...';
             newHtml = await generateSlideHTML(sd, theme, s.imageB64 || null);
+
+        } else if (_editTab === 'pureimg') {
+            // Pure-image regeneration for this single slide
+            statusTxt.textContent = '背景 LLM 生成中...';
+            const bgGenModel  = (document.getElementById('sel-bg-gen-model') || {}).value || 'gemini-2.5-flash';
+            const layoutModel = (document.getElementById('sel-layout-model') || {}).value || 'gemini-2.5-pro';
+            const apiKey      = AppState.googleApiKey;
+            if (!apiKey) throw new Error('純圖模式需要 Gemini API Key');
+            const signal      = new AbortController().signal;
+            let bgB64 = AppState.bgTemplateBase64 || null;
+            if (!bgB64) {
+                try { bgB64 = await generateSlideBackgroundImage(sd, theme, bgGenModel, signal); } catch(e) { /* use null */ }
+            }
+            statusTxt.textContent = '排版 LLM 合成中...';
+            newHtml = await compositeSlideWithLayoutLLM(sd, bgB64, s.imageB64 || null, theme, layoutModel, apiKey, signal, !!AppState.bgTemplateBase64);
+            // Inject logo before screenshot
+            if (AppState.logoBase64) {
+                const lp = (document.getElementById('sel-logo-pos') || {}).value || 'TR';
+                const lpM = { TR:'right:40px;top:30px;', TL:'left:40px;top:30px;', BR:'right:40px;bottom:30px;', BL:'left:40px;bottom:30px;' };
+                const lTag = '<img id="slide-logo" src="' + AppState.logoBase64 + '" style="position:absolute;' + (lpM[lp]||lpM.TR) + 'height:60px;max-width:200px;object-fit:contain;z-index:9999;opacity:0.9;pointer-events:none;">';
+                if (!newHtml.includes('slide-logo')) newHtml = newHtml.replace('</body>', lTag + '\n</body>');
+            }
+            statusTxt.textContent = '截圖渲染中...';
+            const pureShot = await captureSlideScreenshot(newHtml);
+            // Update the slide record with both html and screenshot
+            AppState.generatedSlides[_editSlideIndex].screenshotB64 = pureShot;
+            AppState.generatedSlides[_editSlideIndex].isPureImage    = true;
+
         } else {
             if (!instruction) { showToast('⚠ 請輸入修改指示'); return; }
             statusTxt.textContent = 'AI 理解修改指示中...';
-
-            const apiKey = (document.getElementById('api-key-input') || {}).value || AppState.apiKey || '';
-            const model  = (document.getElementById('sel-text-model') || {}).value || 'gemini-2.5-flash';
 
             const modPrompt = ['你是世界頂級的 HTML/SVG 投影片設計師。',
                 '以下是投影片 HTML：', s.html.slice(0, 50000),
@@ -5866,7 +5947,7 @@ async function runSlideEdit() {
                 '規定：保留 .dg/.rb 結構，body 加 position:relative，嚴格在 1920×1080 內，只輸出純 HTML。'
             ].join('\n\n');
 
-            const rawResp = await callAnthropicAPI(modPrompt, model, apiKey);
+            const rawResp = await callTextLLM(modPrompt, 8192);
             const fenced  = rawResp && rawResp.match(/```html[\s\S]*?```/i);
             const rawHtml = fenced ? fenced[0].replace(/```html|```/gi,'').trim()
                           : (rawResp && rawResp.includes('<') ? rawResp.trim() : null);
@@ -5938,7 +6019,11 @@ async function runSlideEdit() {
     <div class="flex border-b border-slate-700 bg-slate-900/50">
       <button id="tab-regen" onclick="switchEditTab('regen')"
         class="flex-1 py-3 text-sm font-semibold transition-all border-b-2 border-violet-500 text-violet-400">
-        <i class="ph-bold ph-arrows-clockwise mr-1.5"></i>完整重新生成
+        <i class="ph-bold ph-code mr-1.5"></i>HTML重生成
+      </button>
+      <button id="tab-pureimg" onclick="switchEditTab('pureimg')"
+        class="flex-1 py-3 text-sm font-semibold transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+        <i class="ph-bold ph-image mr-1.5"></i>純圖重生成
       </button>
       <button id="tab-modify" onclick="switchEditTab('modify')"
         class="flex-1 py-3 text-sm font-semibold transition-all border-b-2 border-transparent text-slate-400 hover:text-slate-200">
@@ -5950,8 +6035,17 @@ async function runSlideEdit() {
     <div class="px-6 py-5 flex flex-col gap-4">
       <!-- Regen panel -->
       <div id="panel-regen" class="flex flex-col gap-3">
-        <p class="text-slate-300 text-sm">根據投影片原始大綱資料，讓 AI 重新設計版面配置、視覺風格和內容排列。</p>
+        <p class="text-slate-300 text-sm">根據投影片原始大綱資料，讓 AI 重新設計 <strong class="text-violet-300">HTML/CSS 向量版面</strong>（可拖曳、可編輯文字）。</p>
         <div class="bg-slate-800 rounded-xl p-4 text-xs text-slate-400 font-mono leading-relaxed max-h-24 overflow-y-auto" id="regen-outline-preview"></div>
+      </div>
+
+      <!-- Pure-image panel -->
+      <div id="panel-pureimg" class="hidden flex-col gap-3">
+        <p class="text-slate-300 text-sm">使用背景 LLM + 排版 LLM 重新生成此頁為<strong class="text-amber-300">純圖模式</strong>（高保真視覺效果，截圖輸出）。</p>
+        <div class="bg-slate-800/60 rounded-xl p-3 text-xs text-slate-400 flex items-center gap-2">
+          <i class="ph-bold ph-info text-amber-400"></i>
+          <span>生成時間較長（30~60秒），需要 Gemini API Key 及背景圖生成模型。</span>
+        </div>
       </div>
 
       <!-- Modify panel -->
