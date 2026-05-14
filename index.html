@@ -8324,7 +8324,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                     let origGeminiModel = appState.geminiModel;
                     if (appState.translateMode !== 'off') appState.geminiModel = 'gemini-3.1-flash-live-preview';
                     
-                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId });
+                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId, _textFilesInjected: injectedContext !== "" });
                     
                     if (appState.translateMode !== 'off') appState.geminiModel = origGeminiModel;
                 } catch (apiError) {
@@ -8332,7 +8332,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                         addMessage(`⚠️ Gemini 處理發生錯誤 (${apiError.message})，系統自動為您跳轉至 Grok 進行備援分析...`, 'system');
                         modelToUse = 'grok';
                         window.setModel('grok'); 
-                        finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId });
+                        finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId, _textFilesInjected: injectedContext !== "" });
                     } else {
                         throw apiError;
                     }
@@ -8483,6 +8483,22 @@ if (appState.pendingAnalyzeContextId) {
                 if (!options.isAnalysis && !options.isCollab) {
                 if (appState.replyLength === 'short') finalPrompt += "\n【限制：請使用極簡短的篇幅回覆，將字數控制在50字以內。】";
                 else if (appState.replyLength === 'medium') finalPrompt += "\n【限制：請使用中等長度的篇幅回覆，扼要說明重點即可。】";
+            }
+            
+            // ✅ 修正核心 Bug：文字類附件（含 Office 解析後純文字）在 fetchAIResponse 底層
+            //    直接注入 finalPrompt，確保 callAgent (深度研究) / 直接呼叫路徑都能正確讀到附件。
+            //    主對話流程的 injectedContext 已注入，故此處加 flag 防止重複。
+            if (options.files && options.files.length > 0 && !options._textFilesInjected) {
+                let textFileInjection = '';
+                options.files.forEach(f => {
+                    if (f.category === 'text' && f.data && !f.data.startsWith('data:')) {
+                        textFileInjection += `\n\n[附檔內容 - ${f.name}]:\n${f.data}`;
+                    }
+                });
+                if (textFileInjection) {
+                    finalPrompt += '\n\n' + textFileInjection;
+                    options._textFilesInjected = true; // 防止多輪呼叫重複注入
+                }
             }
             
             const _imgTestF = (s) => /(畫|生成|產生|製作|幫我畫|幫你畫|create|make|draw|generate).{0,200}(圖片|照片|圖像|picture|image|impage|photo)|(圖片|照片|圖像|picture|image|impage|photo).{0,50}(生成|產生|製作|畫出)/i.test(s);
