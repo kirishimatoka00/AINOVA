@@ -168,6 +168,12 @@
                         <button onclick="switchTab('schedule')" id="nav-schedule" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-calendar-check text-lg"></i><span>行程管理</span></button>
                         <button onclick="switchTab('notes')" id="nav-notes" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-notebook text-lg"></i><span>筆記/文件</span></button>
                         <button onclick="switchTab('audio')" id="nav-audio" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-waveform text-lg"></i><span>錄音紀錄</span></button>
+                        <!-- ✅ NOVA Browser -->
+                        <button onclick="openNOVABrowser()" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-all text-sm border border-slate-800 hover:border-cyan-500/30 mt-1">
+                            <i class="ph-fill ph-browsers text-lg text-cyan-500"></i>
+                            <span>Internet Explorer</span>
+                            <span class="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">NEW</span>
+                        </button>
                     </nav>
                 </div>
             </div>
@@ -228,6 +234,11 @@
                             <button onclick="switchTab('schedule'); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-calendar-check text-lg"></i><span>行程管理</span></button>
                             <button onclick="switchTab('notes'); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-notebook text-lg"></i><span>筆記/文件</span></button>
                             <button onclick="switchTab('audio'); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-waveform text-lg"></i><span>錄音紀錄</span></button>
+                            <button onclick="openNOVABrowser(); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-all text-sm border border-slate-800 hover:border-cyan-500/30">
+                                <i class="ph-fill ph-browsers text-lg text-cyan-500"></i>
+                                <span>Internet Explorer</span>
+                                <span class="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">NEW</span>
+                            </button>
                         </nav>
                     </div>
                 </div>
@@ -7408,6 +7419,18 @@ try {
         };
         
         window.closeAgentModal = function() { document.getElementById('agent-modal').classList.add('hidden'); document.getElementById('agent-modal').classList.remove('flex'); };
+
+        // ─────────────────────────────────────────────────────────
+        // ✅ NOVA Browser (Internet Explorer.html) — 開啟函數
+        // ─────────────────────────────────────────────────────────
+        window.openNOVABrowser = function() {
+            // 與 index.html 放在 GitHub 同一資料夾的 Internet Explorer.html
+            const base = window.location.href.replace(/[^/]*$/, '');
+            const browserUrl = base + 'Internet%20Explorer.html';
+            const pop = window.open(browserUrl, 'nova_ie',
+                'width=1300,height=860,toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no');
+            if (!pop) window.open(browserUrl, '_blank'); // popup 被封鎖的備援
+        };
 
 window.startMultiAgentResearch = async function() {
             closeAgentModal();

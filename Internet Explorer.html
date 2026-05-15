@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA Browser · Internet Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+  :root {
+    --bg-deepest: #040810;
+    --bg-deep: #070d1a;
+    --bg-panel: #0b1120;
+    --bg-card: #111827;
+    --bg-toolbar: #0d1526;
+    --border: rgba(255,255,255,0.07);
+    --border-active: rgba(99,179,237,0.4);
+    --text-primary: #e8edf5;
+    --text-secondary: #7a8ba0;
+    --text-muted: #3d4f63;
+    --accent-blue: #3b9eff;
+    --accent-cyan: #22d3ee;
+    --accent-green: #10b981;
+    --accent-purple: #8b5cf6;
+    --accent-red: #f87171;
+    --glow-blue: rgba(59,158,255,0.15);
+    --glow-cyan: rgba(34,211,238,0.1);
+    --toolbar-h: 52px;
+    --tabbar-h: 38px;
+    --ai-panel-h: 320px;
+    --divider-h: 6px;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg-deepest); color: var(--text-primary); font-family: var(--font-mono); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  /* ── Layout Shell ── */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* ── Header ── */
+  #header {
+    height: 42px;
+    background: var(--bg-deepest);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; padding: 0 14px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  #header::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(59,158,255,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-size: 13px; font-weight: 800;
+    color: var(--text-primary); letter-spacing: 0.06em;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .header-logo .logo-icon {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #fff;
+    box-shadow: 0 0 10px rgba(59,158,255,0.4);
+  }
+  .header-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+  .header-title {
+    font-size: 11px; color: var(--text-secondary); letter-spacing: 0.12em;
+    font-family: var(--font-mono); font-weight: 600;
+  }
+  .header-spacer { flex: 1; }
+  .header-back-link {
+    font-size: 10px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 5px;
+    text-decoration: none; padding: 4px 8px; border-radius: 5px;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .header-back-link:hover { color: var(--text-secondary); border-color: var(--border-active); }
+  #api-status {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-muted);
+    padding: 3px 8px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg-card);
+  }
+  #api-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  #api-status.connected .dot { background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green); }
+  #api-status.connected { color: var(--text-secondary); }
+
+  /* ── Tab Bar ── */
+  #tabbar {
+    height: var(--tabbar-h);
+    background: var(--bg-deep);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; gap: 2px;
+    padding: 0 8px; flex-shrink: 0;
+    overflow-x: auto; overflow-y: hidden;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 7px;
+    padding: 0 12px; height: 30px;
+    border-radius: 7px 7px 0 0;
+    font-size: 11px; color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent; border-bottom: none;
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.15s; min-width: 140px; max-width: 220px;
+    position: relative; user-select: none;
+  }
+  .tab.active {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    border-color: var(--border);
+    border-bottom-color: var(--bg-panel);
+  }
+  .tab:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--text-secondary); }
+  .tab-favicon { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+  .tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .tab-close {
+    width: 16px; height: 16px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text-muted);
+    flex-shrink: 0; opacity: 0;
+    transition: all 0.15s;
+    background: transparent; border: none; cursor: pointer;
+  }
+  .tab:hover .tab-close, .tab.active .tab-close { opacity: 1; }
+  .tab-close:hover { background: rgba(248,113,113,0.2); color: var(--accent-red); }
+  .tab-new-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); cursor: pointer;
+    background: transparent; border: none;
+    font-size: 16px; flex-shrink: 0; margin-bottom: 2px;
+    transition: all 0.15s;
+  }
+  .tab-new-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+  /* ── Toolbar ── */
+  #toolbar {
+    height: var(--toolbar-h);
+    background: var(--bg-toolbar);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px; flex-shrink: 0;
+  }
+  .nav-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none;
+    color: var(--text-muted); font-size: 15px;
+    cursor: pointer; transition: all 0.12s; flex-shrink: 0;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+  .nav-btn:active { transform: scale(0.92); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-btn.loading i { animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #url-bar-wrap {
+    flex: 1; display: flex; align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px; height: 34px;
+    padding: 0 10px; gap: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 0;
+  }
+  #url-bar-wrap:focus-within {
+    border-color: var(--border-active);
+    box-shadow: 0 0 0 3px var(--glow-blue);
+  }
+  #url-protocol { font-size: 11px; color: var(--accent-green); flex-shrink: 0; font-weight: 600; }
+  #url-bar {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text-primary); font-size: 12px; font-family: var(--font-mono);
+    min-width: 0;
+  }
+  #url-bar::selection { background: rgba(59,158,255,0.3); }
+  #url-go {
+    width: 26px; height: 26px; border-radius: 5px;
+    background: var(--accent-blue); border: none;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; cursor: pointer; flex-shrink: 0;
+    transition: all 0.12s;
+  }
+  #url-go:hover { background: #2563eb; }
+  #url-go:active { transform: scale(0.9); }
+  #security-icon { font-size: 13px; color: var(--accent-green); flex-shrink: 0; }
+  .toolbar-action-btn {
+    width: 32px; height: 32px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    color: var(--text-secondary); font-size: 14px; cursor: pointer;
+    transition: all 0.12s; flex-shrink: 0;
+  }
+  .toolbar-action-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+  /* ── Browser + AI split ── */
+  #main-split { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+
+  #browser-area {
+    flex: 1; position: relative; overflow: hidden;
+    background: var(--bg-deepest); min-height: 0;
+  }
+
+  /* Loading bar */
+  #progress-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: transparent; z-index: 20; pointer-events: none;
+  }
+  #progress-bar-fill {
+    height: 100%; width: 0%; border-radius: 1px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+    transition: width 0.2s ease;
+    box-shadow: 0 0 6px var(--accent-cyan);
+  }
+
+  #browser-iframe {
+    width: 100%; height: 100%; border: none;
+    background: #fff;
+    transition: opacity 0.2s;
+  }
+
+  /* Blocked overlay */
+  #blocked-overlay {
+    display: none;
+    position: absolute; inset: 0;
+    background: var(--bg-deepest);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; z-index: 10;
+  }
+  #blocked-overlay.visible { display: flex; }
+  .blocked-icon { font-size: 48px; color: var(--text-muted); }
+  .blocked-title { font-family: var(--font-display); font-size: 18px; color: var(--text-secondary); }
+  .blocked-desc { font-size: 11px; color: var(--text-muted); text-align: center; max-width: 380px; line-height: 1.7; }
+  .blocked-actions { display: flex; gap: 10px; }
+  .blocked-btn {
+    padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); transition: all 0.15s;
+    font-family: var(--font-mono);
+  }
+  .blocked-btn.primary { background: var(--accent-blue); color: #fff; border-color: transparent; }
+  .blocked-btn.primary:hover { background: #2563eb; }
+  .blocked-btn.secondary { background: var(--bg-card); color: var(--text-secondary); }
+  .blocked-btn.secondary:hover { color: var(--text-primary); border-color: var(--border-active); }
+
+  /* New tab welcome page */
+  #welcome-page {
+    display: none;
+    position: absolute; inset: 0;
+    background: var(--bg-deepest);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 32px; z-index: 5; padding: 40px;
+  }
+  #welcome-page.visible { display: flex; }
+  .welcome-logo { font-family: var(--font-display); font-size: 32px; font-weight: 800; color: var(--text-primary); letter-spacing: 0.05em; }
+  .welcome-logo span { background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .welcome-search-wrap {
+    display: flex; align-items: center;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 50px; padding: 0 20px; gap: 12px;
+    width: 100%; max-width: 560px; height: 50px;
+    transition: all 0.15s;
+  }
+  .welcome-search-wrap:focus-within { border-color: var(--border-active); box-shadow: 0 0 0 4px var(--glow-blue); }
+  #welcome-search { flex: 1; background: transparent; border: none; outline: none; font-size: 14px; color: var(--text-primary); font-family: var(--font-mono); }
+  #welcome-search-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent-blue); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; transition: all 0.12s; flex-shrink: 0;
+  }
+  #welcome-search-btn:hover { background: #2563eb; transform: scale(1.05); }
+  .quick-links { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 560px; }
+  .quick-link {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 12px 16px; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.15s; min-width: 80px;
+    text-decoration: none; color: var(--text-secondary); font-size: 10px;
+  }
+  .quick-link:hover { border-color: var(--border-active); color: var(--text-primary); transform: translateY(-2px); background: var(--bg-panel); }
+  .quick-link-icon { font-size: 22px; }
+
+  /* ── Divider ── */
+  #divider {
+    height: var(--divider-h); background: var(--bg-deepest);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    cursor: ns-resize; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    position: relative;
+  }
+  #divider::after {
+    content: '';
+    width: 40px; height: 2px; border-radius: 1px;
+    background: var(--text-muted);
+    display: block;
+    transition: all 0.15s;
+  }
+  #divider:hover { background: var(--glow-blue); }
+  #divider:hover::after { background: var(--accent-blue); width: 60px; }
+
+  /* ── AI Panel ── */
+  #ai-panel {
+    height: var(--ai-panel-h);
+    background: var(--bg-panel);
+    display: flex; flex-direction: column; flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    min-height: 140px; max-height: 75vh;
+  }
+  #ai-header {
+    height: 36px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; padding: 0 14px;
+    flex-shrink: 0; background: var(--bg-deepest);
+  }
+  .ai-header-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue); flex-shrink: 0; }
+  .ai-header-label { font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
+  .ai-header-model { font-size: 10px; color: var(--text-muted); margin-left: auto; }
+  #ai-clear-btn {
+    font-size: 11px; color: var(--text-muted); cursor: pointer;
+    padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border);
+    background: transparent; transition: all 0.12s; font-family: var(--font-mono);
+  }
+  #ai-clear-btn:hover { color: var(--accent-red); border-color: rgba(248,113,113,0.3); }
+
+  #ai-messages {
+    flex: 1; overflow-y: auto; padding: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg {
+    display: flex; gap: 8px; align-items: flex-start;
+    animation: msgIn 0.2s ease;
+  }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .msg-avatar {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0; margin-top: 1px;
+  }
+  .msg.user .msg-avatar { background: rgba(59,158,255,0.2); color: var(--accent-blue); }
+  .msg.ai .msg-avatar { background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,158,255,0.3)); color: var(--accent-cyan); }
+  .msg.system .msg-avatar { background: rgba(34,211,238,0.1); color: var(--accent-cyan); }
+  .msg-body { flex: 1; min-width: 0; }
+  .msg-role { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; font-weight: 600; letter-spacing: 0.08em; }
+  .msg-text {
+    font-size: 12px; line-height: 1.65; color: var(--text-primary);
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 4px 12px 12px 12px; padding: 8px 12px;
+    word-break: break-word;
+  }
+  .msg.user .msg-text { background: rgba(59,158,255,0.1); border-color: rgba(59,158,255,0.2); border-radius: 12px 4px 12px 12px; }
+  .msg.system .msg-text { background: rgba(34,211,238,0.05); border-color: rgba(34,211,238,0.15); font-size: 11px; color: var(--text-secondary); border-radius: 8px; }
+  .msg-text a { color: var(--accent-blue); text-decoration: underline; cursor: pointer; }
+  .action-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; padding: 3px 8px; border-radius: 20px;
+    background: rgba(59,158,255,0.15); border: 1px solid rgba(59,158,255,0.25);
+    color: var(--accent-blue); margin-top: 5px; cursor: pointer;
+    transition: all 0.12s;
+  }
+  .action-chip:hover { background: rgba(59,158,255,0.25); }
+
+  /* Thinking dots */
+  .thinking { display: flex; align-items: center; gap: 4px; padding: 10px 12px; }
+  .t-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-blue); animation: tDot 1.2s ease-in-out infinite; }
+  .t-dot:nth-child(2) { animation-delay: 0.2s; }
+  .t-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tDot { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+
+  /* ── AI Input ── */
+  #ai-input-area {
+    border-top: 1px solid var(--border);
+    padding: 8px 10px; display: flex; gap: 8px;
+    align-items: flex-end; flex-shrink: 0;
+    background: var(--bg-deepest);
+  }
+  #ai-input {
+    flex: 1; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 12px;
+    color: var(--text-primary); font-size: 12px; font-family: var(--font-mono);
+    outline: none; resize: none; max-height: 100px; min-height: 38px;
+    line-height: 1.5; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #ai-input:focus { border-color: var(--border-active); box-shadow: 0 0 0 3px var(--glow-blue); }
+  #ai-input::placeholder { color: var(--text-muted); }
+  #ai-send {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--accent-blue); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  #ai-send:hover { background: #2563eb; transform: scale(1.05); }
+  #ai-send:active { transform: scale(0.94); }
+  #ai-send.loading { background: var(--text-muted); cursor: not-allowed; }
+  #ai-send.loading i { animation: spin 0.6s linear infinite; }
+
+  /* quick prompt chips */
+  #quick-prompts { display: flex; gap: 5px; flex-wrap: wrap; padding: 0 10px 6px; }
+  .qp {
+    font-size: 10px; padding: 3px 9px; border-radius: 20px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; transition: all 0.12s;
+  }
+  .qp:hover { border-color: var(--border-active); color: var(--text-primary); background: var(--glow-blue); }
+
+  /* ── Notifications ── */
+  #toast-area { position: fixed; top: 60px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .toast {
+    padding: 10px 16px; border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    font-size: 12px; color: var(--text-primary); box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toastIn 0.25s ease; max-width: 320px;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+  .toast.success { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.08); }
+  .toast.error { border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.08); }
+  .toast.info { border-color: rgba(59,158,255,0.4); background: rgba(59,158,255,0.08); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Header ── -->
+  <div id="header">
+    <div class="header-logo">
+      <div class="logo-icon"><i class="ph-bold ph-infinity"></i></div>
+      NOVA
+    </div>
+    <div class="header-sep"></div>
+    <div class="header-title">INTERNET EXPLORER</div>
+    <div class="header-spacer"></div>
+    <div id="api-status">
+      <div class="dot"></div>
+      <span id="api-status-text">未連線</span>
+    </div>
+    <div class="header-back-link" onclick="window.close()">
+      <i class="ph-bold ph-arrow-left"></i> 返回
+    </div>
+  </div>
+
+  <!-- ── Tab Bar ── -->
+  <div id="tabbar">
+    <div id="tabs-container"></div>
+    <button class="tab-new-btn" onclick="newTab()" title="新分頁"><i class="ph-bold ph-plus"></i></button>
+  </div>
+
+  <!-- ── Toolbar ── -->
+  <div id="toolbar">
+    <button class="nav-btn" id="btn-back" onclick="goBack()" title="上一頁" disabled>
+      <i class="ph-bold ph-arrow-left"></i>
+    </button>
+    <button class="nav-btn" id="btn-forward" onclick="goForward()" title="下一頁" disabled>
+      <i class="ph-bold ph-arrow-right"></i>
+    </button>
+    <button class="nav-btn" id="btn-refresh" onclick="refreshPage()" title="重新整理">
+      <i class="ph-bold ph-arrow-clockwise"></i>
+    </button>
+    <button class="nav-btn" id="btn-home" onclick="goHome()" title="首頁">
+      <i class="ph-bold ph-house"></i>
+    </button>
+
+    <div id="url-bar-wrap">
+      <i id="security-icon" class="ph-fill ph-lock-simple-open" title="連線狀態"></i>
+      <span id="url-protocol"></span>
+      <input id="url-bar" type="text" placeholder="輸入網址或搜尋..." autocomplete="off" spellcheck="false">
+      <button id="url-go" onclick="navigateTo()" title="前往">
+        <i class="ph-bold ph-arrow-right"></i>
+      </button>
+    </div>
+
+    <button class="toolbar-action-btn" onclick="analyzeCurrentPage()" title="AI 分析此頁面">
+      <i class="ph-fill ph-robot"></i>
+    </button>
+    <button class="toolbar-action-btn" onclick="openExternalTab()" title="在新視窗開啟">
+      <i class="ph-bold ph-arrow-square-out"></i>
+    </button>
+  </div>
+
+  <!-- ── Main Split ── -->
+  <div id="main-split">
+
+    <!-- Browser Area -->
+    <div id="browser-area">
+      <div id="progress-bar"><div id="progress-bar-fill"></div></div>
+      <iframe id="browser-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals" allow="fullscreen"></iframe>
+
+      <!-- Welcome Page -->
+      <div id="welcome-page" class="visible">
+        <div class="welcome-logo">NOVA <span>Browser</span></div>
+        <div class="welcome-search-wrap">
+          <i class="ph-bold ph-magnifying-glass" style="color: var(--text-muted); font-size: 16px; flex-shrink:0"></i>
+          <input id="welcome-search" placeholder="搜尋或輸入網址…" autocomplete="off">
+          <button id="welcome-search-btn" onclick="welcomeSearch()"><i class="ph-bold ph-arrow-right"></i></button>
+        </div>
+        <div class="quick-links">
+          <a class="quick-link" onclick="loadUrl('https://www.google.com.tw')">
+            <span class="quick-link-icon">🔍</span>Google
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://tw.yahoo.com')">
+            <span class="quick-link-icon">🟣</span>Yahoo
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://www.youtube.com')">
+            <span class="quick-link-icon">▶️</span>YouTube
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://www.wikipedia.org')">
+            <span class="quick-link-icon">📚</span>Wikipedia
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://github.com')">
+            <span class="quick-link-icon">🐱</span>GitHub
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://news.ycombinator.com')">
+            <span class="quick-link-icon">🟠</span>Hacker News
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://duckduckgo.com')">
+            <span class="quick-link-icon">🦆</span>DuckDuckGo
+          </a>
+          <a class="quick-link" onclick="loadUrl('https://www.reddit.com')">
+            <span class="quick-link-icon">🤖</span>Reddit
+          </a>
+        </div>
+        <p style="font-size:10px; color: var(--text-muted); text-align:center; max-width:460px; line-height:1.7;">
+          在下方 AI 欄位以自然語言輸入指令，例如：「搜尋 iPhone 16 評測」、「幫我找台灣最新股市新聞」、「分析這個頁面」
+        </p>
+      </div>
+
+      <!-- Blocked Overlay -->
+      <div id="blocked-overlay">
+        <div class="blocked-icon"><i class="ph-fill ph-shield-warning"></i></div>
+        <div class="blocked-title">此網站封鎖了 iframe 嵌入</div>
+        <div class="blocked-desc" id="blocked-desc">
+          許多網站（如 Google、Facebook）出於安全考量禁止在 frame 中顯示。<br>
+          您可以直接在新分頁中開啟，或讓 AI 幫您搜尋並摘要這個頁面的內容。
+        </div>
+        <div class="blocked-actions">
+          <button class="blocked-btn primary" onclick="openExternalTab()">
+            <i class="ph-bold ph-arrow-square-out"></i> 在新分頁開啟
+          </button>
+          <button class="blocked-btn secondary" onclick="aiSummarizePage()">
+            <i class="ph-fill ph-robot"></i> 請 AI 摘要此頁
+          </button>
+          <button class="blocked-btn secondary" onclick="showWelcome()">
+            返回首頁
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Resizable Divider ── -->
+    <div id="divider"></div>
+
+    <!-- ── AI Panel ── -->
+    <div id="ai-panel">
+      <div id="ai-header">
+        <div class="ai-header-dot"></div>
+        <div class="ai-header-label">NOVA AI 瀏覽助理</div>
+        <div class="ai-header-model" id="ai-model-label">Gemini · 就緒</div>
+        <button id="ai-clear-btn" onclick="clearAIChat()">清除</button>
+      </div>
+
+      <div id="ai-messages">
+        <!-- Messages rendered here -->
+      </div>
+
+      <div id="quick-prompts">
+        <div class="qp" onclick="quickPrompt('幫我搜尋今日頭條新聞')">📰 今日新聞</div>
+        <div class="qp" onclick="quickPrompt('分析並摘要目前頁面')">🔍 分析頁面</div>
+        <div class="qp" onclick="quickPrompt('翻譯這個頁面成繁體中文')">🌐 翻譯頁面</div>
+        <div class="qp" onclick="quickPrompt('幫我找與這個頁面相關的資料')">🔗 相關資料</div>
+        <div class="qp" onclick="quickPrompt('找出這個頁面上所有的重要連結')">🔗 列出連結</div>
+      </div>
+
+      <div id="ai-input-area">
+        <textarea id="ai-input" rows="1" placeholder="輸入自然語言指令… 例：搜尋 GPT-5 最新消息、幫我開啟 YouTube、分析這個頁面"></textarea>
+        <button id="ai-send" onclick="sendAIMessage()">
+          <i class="ph-bold ph-paper-plane-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-area"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  NOVA Internet Explorer — Core State
+// ═══════════════════════════════════════════════════════
+const state = {
+  tabs: [],
+  activeTabId: null,
+  isLoading: false,
+  isAIThinking: false,
+  aiHistory: [],
+  pageContent: null,   // fetched HTML content of current page
+  dividerDragging: false,
+  aiPanelH: 320,
+};
+
+// ─── Read API Keys from NOVA's shared localStorage ───
+function getKeys() {
+  return {
+    gemini:  localStorage.getItem('nova_key_gemini') || '',
+    grok:    localStorage.getItem('nova_key_grok') || '',
+    serpapi: localStorage.getItem('nova_key_serpapi') || '',
+  };
+}
+
+// ─── Proxy URLs ───
+const PROXY_PREFIX = 'https://corsproxy.io/?url=';
+const ALLORIGINS   = 'https://api.allorigins.win/raw?url=';
+const HOME_URL     = 'newtab';
+
+// ═══════════════════════════════════════════════════════
+//  Initialisation
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  checkAPIKey();
+  newTab(HOME_URL);
+  setupDividerDrag();
+  setupUrlBar();
+  setupIframeHandlers();
+  setupWelcomeSearch();
+  addAIMessage('system', `👋 你好！我是 NOVA 瀏覽助理。\n\n你可以用自然語言告訴我要做什麼，例如：\n• 「搜尋 AI 最新消息」\n• 「幫我開啟 GitHub」\n• 「分析這個頁面的內容」\n• 「翻譯這個頁面」\n\n我會自動幫你操控瀏覽器完成任務。`);
+});
+
+function checkAPIKey() {
+  const { gemini } = getKeys();
+  const status = document.getElementById('api-status');
+  const text = document.getElementById('api-status-text');
+  if (gemini) {
+    status.classList.add('connected');
+    text.textContent = 'Gemini 已連線';
+    document.getElementById('ai-model-label').textContent = 'Gemini · 就緒';
+  } else {
+    text.textContent = 'API Key 未設定';
+    addAIMessage('system', '⚠️ 未偵測到 Gemini API Key。請先在 NOVA 主程式的「設定」頁面中填入 API Key，儲存後重新開啟此頁面。');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  Tab Management
+// ═══════════════════════════════════════════════════════
+let _tabIdCounter = 0;
+function genTabId() { return 'tab_' + (++_tabIdCounter); }
+
+function newTab(url = HOME_URL) {
+  const id = genTabId();
+  state.tabs.push({ id, url, title: '新分頁', favicon: null });
+  state.activeTabId = id;
+  renderTabs();
+  if (url === HOME_URL) {
+    showWelcome();
+    setUrlBar('');
+  } else {
+    loadUrl(url);
+  }
+}
+
+function switchTab(id) {
+  state.activeTabId = id;
+  const tab = state.tabs.find(t => t.id === id);
+  if (!tab) return;
+  renderTabs();
+  if (tab.url === HOME_URL) {
+    showWelcome();
+    setUrlBar('');
+  } else {
+    loadUrl(tab.url, false); // no push to history
+  }
+}
+
+function closeTab(id, e) {
+  e && e.stopPropagation();
+  state.tabs = state.tabs.filter(t => t.id !== id);
+  if (state.tabs.length === 0) { newTab(); return; }
+  if (state.activeTabId === id) state.activeTabId = state.tabs[state.tabs.length - 1].id;
+  renderTabs();
+  const active = state.tabs.find(t => t.id === state.activeTabId);
+  if (active) switchTab(active.id);
+}
+
+function renderTabs() {
+  const c = document.getElementById('tabs-container');
+  c.innerHTML = '';
+  state.tabs.forEach(tab => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (tab.id === state.activeTabId ? ' active' : '');
+    el.onclick = () => switchTab(tab.id);
+    const icon = tab.favicon
+      ? `<img class="tab-favicon" src="${tab.favicon}" onerror="this.style.display='none'">`
+      : `<i class="ph-fill ph-globe" style="font-size:13px; color: var(--text-muted); flex-shrink:0"></i>`;
+    el.innerHTML = `${icon}<span class="tab-title">${escHtml(tab.title)}</span><button class="tab-close" onclick="closeTab('${tab.id}', event)"><i class="ph-bold ph-x"></i></button>`;
+    c.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  Navigation
+// ═══════════════════════════════════════════════════════
+const navHistory = { stack: [], pos: -1 };
+
+function setUrlBar(url) {
+  const bar = document.getElementById('url-bar');
+  bar.value = url;
+  const sec = document.getElementById('security-icon');
+  const proto = document.getElementById('url-protocol');
+  if (url.startsWith('https://')) {
+    sec.className = 'ph-fill ph-lock-simple'; sec.style.color = 'var(--accent-green)';
+    proto.textContent = 'https://';
+    bar.value = url.replace(/^https:\/\//, '');
+  } else if (url.startsWith('http://')) {
+    sec.className = 'ph-fill ph-lock-simple-open'; sec.style.color = 'var(--accent-red)';
+    proto.textContent = 'http://';
+    bar.value = url.replace(/^http:\/\//, '');
+  } else {
+    sec.className = 'ph-fill ph-lock-simple-open'; sec.style.color = 'var(--text-muted)';
+    proto.textContent = '';
+  }
+}
+
+function resolveUrl(input) {
+  input = input.trim();
+  if (!input) return HOME_URL;
+  // Bare domain or URL?
+  if (/^https?:\/\//i.test(input)) return input;
+  if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(input) && !input.includes(' ')) {
+    return 'https://' + input;
+  }
+  // Otherwise treat as search query
+  return `https://www.google.com/search?q=${encodeURIComponent(input)}`;
+}
+
+function navigateTo() {
+  const raw = document.getElementById('url-bar').value.trim();
+  const proto = document.getElementById('url-protocol').textContent;
+  const full = raw ? resolveUrl(proto + raw) : HOME_URL;
+  loadUrl(full);
+}
+
+function loadUrl(url, addToHistory = true) {
+  if (!url || url === HOME_URL) { showWelcome(); return; }
+
+  setUrlBar(url);
+  hideBlocked(); hideWelcome();
+  state.pageContent = null;
+
+  // Update tab
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab) { tab.url = url; tab.title = getDomain(url); renderTabs(); }
+
+  // Navigation history
+  if (addToHistory) {
+    navHistory.stack = navHistory.stack.slice(0, navHistory.pos + 1);
+    navHistory.stack.push(url);
+    navHistory.pos = navHistory.stack.length - 1;
+  }
+  updateNavBtns();
+
+  // Progress bar start
+  startProgress();
+
+  // Load in iframe
+  const iframe = document.getElementById('browser-iframe');
+  iframe.style.opacity = '0';
+
+  // Try direct load first
+  iframe.src = url;
+
+  // Fetch page content for AI in background
+  fetchPageContentAsync(url);
+}
+
+function getDomain(url) {
+  try { return new URL(url).hostname.replace('www.', ''); } catch { return url; }
+}
+
+function goBack() {
+  if (navHistory.pos > 0) { navHistory.pos--; loadUrl(navHistory.stack[navHistory.pos], false); }
+}
+function goForward() {
+  if (navHistory.pos < navHistory.stack.length - 1) { navHistory.pos++; loadUrl(navHistory.stack[navHistory.pos], false); }
+}
+function refreshPage() {
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab && tab.url !== HOME_URL) loadUrl(tab.url, false);
+  else { document.getElementById('browser-iframe').src = document.getElementById('browser-iframe').src; }
+}
+function goHome() { showWelcome(); setUrlBar(''); }
+function updateNavBtns() {
+  document.getElementById('btn-back').disabled = navHistory.pos <= 0;
+  document.getElementById('btn-forward').disabled = navHistory.pos >= navHistory.stack.length - 1;
+}
+
+function setupUrlBar() {
+  const bar = document.getElementById('url-bar');
+  bar.addEventListener('keydown', e => { if (e.key === 'Enter') navigateTo(); });
+  bar.addEventListener('focus', () => {
+    const proto = document.getElementById('url-protocol').textContent;
+    bar.value = proto + bar.value;
+    document.getElementById('url-protocol').textContent = '';
+    bar.select();
+  });
+  bar.addEventListener('blur', () => { setUrlBar(resolveUrl(bar.value) || ''); });
+}
+
+function setupIframeHandlers() {
+  const iframe = document.getElementById('browser-iframe');
+  iframe.addEventListener('load', () => {
+    stopProgress();
+    iframe.style.opacity = '1';
+    // Try to read title (same-origin only)
+    try {
+      const title = iframe.contentDocument?.title || getDomain(iframe.src);
+      updateTabTitle(title);
+      const favicon = `https://www.google.com/s2/favicons?domain=${getDomain(iframe.src)}&sz=32`;
+      updateTabFavicon(favicon);
+    } catch(e) {
+      updateTabTitle(getDomain(iframe.src));
+      updateTabFavicon(`https://www.google.com/s2/favicons?domain=${getDomain(iframe.src)}&sz=32`);
+    }
+    hideBlocked();
+  });
+  iframe.addEventListener('error', () => {
+    stopProgress();
+    showBlocked();
+  });
+}
+
+function updateTabTitle(title) {
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab) { tab.title = title || tab.title; renderTabs(); }
+}
+function updateTabFavicon(url) {
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab) { tab.favicon = url; renderTabs(); }
+}
+
+function showWelcome() {
+  document.getElementById('welcome-page').classList.add('visible');
+  document.getElementById('blocked-overlay').classList.remove('visible');
+  document.getElementById('browser-iframe').style.opacity = '0';
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab) { tab.url = HOME_URL; tab.title = '新分頁'; renderTabs(); }
+}
+function hideWelcome() { document.getElementById('welcome-page').classList.remove('visible'); }
+function showBlocked() {
+  document.getElementById('blocked-overlay').classList.add('visible');
+  document.getElementById('browser-iframe').style.opacity = '0';
+}
+function hideBlocked() { document.getElementById('blocked-overlay').classList.remove('visible'); }
+
+function openExternalTab() {
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab && tab.url !== HOME_URL) window.open(tab.url, '_blank');
+}
+
+// ─── Progress Bar ───
+let _progressTimer = null;
+function startProgress() {
+  const fill = document.getElementById('progress-bar-fill');
+  let w = 0;
+  fill.style.width = '0%';
+  clearInterval(_progressTimer);
+  _progressTimer = setInterval(() => {
+    w += Math.random() * 8;
+    if (w > 90) w = 90;
+    fill.style.width = w + '%';
+  }, 200);
+}
+function stopProgress() {
+  clearInterval(_progressTimer);
+  const fill = document.getElementById('progress-bar-fill');
+  fill.style.width = '100%';
+  setTimeout(() => { fill.style.width = '0%'; }, 400);
+}
+
+// ─── Welcome Search ───
+function setupWelcomeSearch() {
+  const input = document.getElementById('welcome-search');
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') welcomeSearch(); });
+}
+function welcomeSearch() {
+  const q = document.getElementById('welcome-search').value.trim();
+  if (!q) return;
+  loadUrl(resolveUrl(q));
+}
+
+// ═══════════════════════════════════════════════════════
+//  Page Content Fetching (for AI)
+// ═══════════════════════════════════════════════════════
+async function fetchPageContentAsync(url) {
+  try {
+    const res = await fetch(ALLORIGINS + encodeURIComponent(url), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return;
+    const html = await res.text();
+    // Strip tags, keep text
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+    const text = tmp.textContent.replace(/\s+/g, ' ').trim().slice(0, 12000);
+    state.pageContent = { url, text };
+  } catch(e) {
+    // Silently fail - AI will use search instead
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  AI Interface
+// ═══════════════════════════════════════════════════════
+function addAIMessage(role, text, extra = '') {
+  const msgs = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const icons = { user: 'ph-user', ai: 'ph-robot', system: 'ph-info' };
+  const labels = { user: '你', ai: 'NOVA AI', system: '系統' };
+  const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.07);padding:1px 4px;border-radius:3px;font-family:var(--font-mono)">$1</code>');
+  div.innerHTML = `
+    <div class="msg-avatar"><i class="ph-fill ${icons[role]}"></i></div>
+    <div class="msg-body">
+      <div class="msg-role">${labels[role]}</div>
+      <div class="msg-text">${formattedText}${extra}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  // Store in history
+  if (role === 'user' || role === 'ai') {
+    state.aiHistory.push({ role: role === 'user' ? 'user' : 'model', text });
+  }
+  return div;
+}
+
+function addThinkingIndicator() {
+  const msgs = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'thinking-indicator';
+  div.innerHTML = `<div class="msg-avatar"><i class="ph-fill ph-robot"></i></div><div class="msg-body"><div class="msg-role">NOVA AI</div><div class="msg-text"><div class="thinking"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function removeThinkingIndicator() {
+  document.getElementById('thinking-indicator')?.remove();
+}
+
+function clearAIChat() {
+  state.aiHistory = [];
+  state.pageContent = null;
+  document.getElementById('ai-messages').innerHTML = '';
+  addAIMessage('system', '對話已清除。有什麼我可以幫助你的嗎？');
+}
+
+function quickPrompt(text) {
+  document.getElementById('ai-input').value = text;
+  sendAIMessage();
+}
+
+async function sendAIMessage() {
+  if (state.isAIThinking) return;
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  addAIMessage('user', text);
+  await processAICommand(text);
+}
+
+// Auto-resize textarea
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('ai-input');
+  if (ta) {
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 100) + 'px'; });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAIMessage(); } });
+  }
+});
+
+// ─── Main AI Processing ───
+async function processAICommand(userText) {
+  const { gemini } = getKeys();
+  if (!gemini) {
+    addAIMessage('system', '⚠️ 請先在 NOVA 設定頁面設定 Gemini API Key 後再使用 AI 功能。');
+    return;
+  }
+
+  state.isAIThinking = true;
+  const sendBtn = document.getElementById('ai-send');
+  sendBtn.classList.add('loading');
+  sendBtn.innerHTML = '<i class="ph-bold ph-spinner"></i>';
+
+  const thinking = addThinkingIndicator();
+
+  const currentTab = state.tabs.find(t => t.id === state.activeTabId);
+  const currentUrl = currentTab?.url || 'newtab';
+  const pageCtx = state.pageContent
+    ? `\n\n【目前頁面內容（前段）】:\nURL: ${state.pageContent.url}\n${state.pageContent.text.slice(0, 6000)}`
+    : '';
+
+  const systemPrompt = `你是 NOVA Browser 的 AI 瀏覽助理。今天日期：${new Date().toLocaleDateString('zh-TW')}。
+目前瀏覽器網址：${currentUrl}
+${pageCtx}
+
+你的任務是理解使用者的自然語言指令，並決定最佳行動。
+
+你必須以 JSON 格式回應（只輸出 JSON，不要有任何前言或代碼塊符號）：
+{
+  "action": "navigate" | "search" | "analyze" | "summarize" | "answer" | "translate",
+  "url": "(若 action 為 navigate 時填入完整 URL)",
+  "query": "(若 action 為 search 時填入搜尋詞)",
+  "message": "給使用者看的說明文字（繁體中文，Markdown 格式）",
+  "analysis": "(若 action 為 analyze/summarize/translate 時填入分析結果，繁體中文)",
+  "followup": "(選填) 給使用者的後續建議"
+}
+
+行動說明：
+- navigate: 直接前往某個 URL（適用於「開啟 YouTube」「前往 GitHub」等）
+- search: 在 Google 搜尋（適用於「搜尋 XX」「找 XX 資料」等）
+- analyze: 分析目前頁面的內容並提供見解
+- summarize: 摘要目前頁面的主要內容
+- translate: 翻譯或解釋頁面內容
+- answer: 直接回答問題，不需要導航
+
+重要：URL 必須是完整的 https:// 開頭的網址。搜尋時構造 https://www.google.com/search?q=編碼後的搜尋詞。`;
+
+  try {
+    // Build Gemini messages
+    const geminiMessages = [];
+    // Add recent history (last 6 turns)
+    const recentHistory = state.aiHistory.slice(-12);
+    for (const h of recentHistory) {
+      geminiMessages.push({ role: h.role, parts: [{ text: h.text }] });
+    }
+    // Remove the last user message (just added to history) and use it as current
+    if (geminiMessages.length > 0 && geminiMessages[geminiMessages.length-1].role === 'user') {
+      geminiMessages.pop();
+    }
+
+    const payload = {
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [
+        ...geminiMessages,
+        { role: 'user', parts: [{ text: userText }] }
+      ],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
+    };
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${gemini}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error?.message || `API Error ${res.status}`);
+
+    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    let parsed;
+    try { parsed = JSON.parse(rawText); }
+    catch(e) {
+      // If not valid JSON, treat as plain answer
+      parsed = { action: 'answer', message: rawText };
+    }
+
+    removeThinkingIndicator();
+    await executeAIAction(parsed, userText);
+
+  } catch (err) {
+    removeThinkingIndicator();
+    addAIMessage('ai', `⚠️ AI 發生錯誤：${err.message}\n\n請確認 API Key 是否正確，或稍後再試。`);
+  } finally {
+    state.isAIThinking = false;
+    sendBtn.classList.remove('loading');
+    sendBtn.innerHTML = '<i class="ph-bold ph-paper-plane-right"></i>';
+  }
+}
+
+async function executeAIAction(parsed, originalUserText) {
+  const { action, url, query, message, analysis, followup } = parsed;
+
+  switch(action) {
+    case 'navigate': {
+      if (!url) { addAIMessage('ai', message || '無法找到要開啟的網址。'); return; }
+      const chips = `<br><br><span class="action-chip" onclick="loadUrl('${escHtml(url)}')"><i class="ph-bold ph-arrow-square-out"></i> 開啟 ${escHtml(getDomain(url))}</span>`;
+      addAIMessage('ai', (message || `正在前往 ${url}...`) + `\n\n▶ 已導航至：\`${url}\``, chips);
+      loadUrl(url);
+      break;
+    }
+    case 'search': {
+      const searchUrl = url || `https://www.google.com/search?q=${encodeURIComponent(query || originalUserText)}`;
+      const chips = `<br><br><span class="action-chip" onclick="loadUrl('${escHtml(searchUrl)}')"><i class="ph-bold ph-magnifying-glass"></i> 查看搜尋結果</span>`;
+      addAIMessage('ai', (message || `正在搜尋：「${query || originalUserText}」`) + `\n\n▶ 搜尋網址已載入`, chips);
+      loadUrl(searchUrl);
+      break;
+    }
+    case 'analyze':
+    case 'summarize':
+    case 'translate': {
+      let resp = '';
+      if (analysis) {
+        resp = analysis;
+      } else if (!state.pageContent) {
+        resp = `⚠️ 無法擷取此頁面的文字內容（可能是 iframe 限制）。\n\n請嘗試：\n1. 按右上角「在新分頁開啟」\n2. 或告訴我頁面的主題，我可以搜尋相關資料`;
+      } else {
+        resp = message || '（未能取得分析結果）';
+      }
+      if (followup) resp += `\n\n💡 **建議**：${followup}`;
+      addAIMessage('ai', resp);
+      break;
+    }
+    case 'answer':
+    default: {
+      let resp = message || '（無回應）';
+      if (followup) resp += `\n\n💡 ${followup}`;
+      addAIMessage('ai', resp);
+      break;
+    }
+  }
+}
+
+// ─── Quick Actions ───
+function analyzeCurrentPage() {
+  quickPrompt('請幫我深度分析並摘要目前這個頁面的所有重要資訊');
+}
+function aiSummarizePage() {
+  quickPrompt('請幫我摘要這個頁面的內容，並列出主要重點');
+}
+
+// ═══════════════════════════════════════════════════════
+//  Resizable Divider
+// ═══════════════════════════════════════════════════════
+function setupDividerDrag() {
+  const divider = document.getElementById('divider');
+  const aiPanel = document.getElementById('ai-panel');
+  const split = document.getElementById('main-split');
+
+  let startY = 0, startH = 0;
+
+  divider.addEventListener('mousedown', e => {
+    state.dividerDragging = true;
+    startY = e.clientY;
+    startH = aiPanel.offsetHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!state.dividerDragging) return;
+    const delta = startY - e.clientY;
+    const newH = Math.max(140, Math.min(window.innerHeight * 0.75, startH + delta));
+    aiPanel.style.height = newH + 'px';
+    state.aiPanelH = newH;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (state.dividerDragging) {
+      state.dividerDragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
+
+  // Touch support
+  divider.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY; startH = aiPanel.offsetHeight;
+    state.dividerDragging = true; e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if (!state.dividerDragging) return;
+    const delta = startY - e.touches[0].clientY;
+    const newH = Math.max(140, Math.min(window.innerHeight * 0.75, startH + delta));
+    aiPanel.style.height = newH + 'px';
+  }, { passive: false });
+  document.addEventListener('touchend', () => { state.dividerDragging = false; });
+}
+
+// ═══════════════════════════════════════════════════════
+//  Utilities
+// ═══════════════════════════════════════════════════════
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'info', duration = 3000) {
+  const area = document.getElementById('toast-area');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, duration);
+}
+</script>
+</body>
+</html>
