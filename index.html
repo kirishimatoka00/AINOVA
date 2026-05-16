@@ -20,9 +20,6 @@
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1500.0.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
-    <!-- 新增：Office 文件解析庫 (mammoth for DOCX, JSZip for PPTX) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- 引入 Google 字體 Inter -->
     <script src="./telegram.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -168,12 +165,6 @@
                         <button onclick="switchTab('schedule')" id="nav-schedule" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-calendar-check text-lg"></i><span>行程管理</span></button>
                         <button onclick="switchTab('notes')" id="nav-notes" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-notebook text-lg"></i><span>筆記/文件</span></button>
                         <button onclick="switchTab('audio')" id="nav-audio" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-waveform text-lg"></i><span>錄音紀錄</span></button>
-                        <!-- ✅ NOVA Browser -->
-                        <button onclick="openNOVABrowser()" class="flex items-center space-x-3 w-full p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-all text-sm border border-slate-800 hover:border-cyan-500/30 mt-1">
-                            <i class="ph-fill ph-browsers text-lg text-cyan-500"></i>
-                            <span>Internet Explorer</span>
-                            <span class="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">NEW</span>
-                        </button>
                     </nav>
                 </div>
             </div>
@@ -234,11 +225,6 @@
                             <button onclick="switchTab('schedule'); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-calendar-check text-lg"></i><span>行程管理</span></button>
                             <button onclick="switchTab('notes'); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-notebook text-lg"></i><span>筆記/文件</span></button>
                             <button onclick="switchTab('audio'); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-sm"><i class="ph-fill ph-waveform text-lg"></i><span>錄音紀錄</span></button>
-                            <button onclick="openNOVABrowser(); toggleMobileMenu();" class="flex items-center space-x-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-all text-sm border border-slate-800 hover:border-cyan-500/30">
-                                <i class="ph-fill ph-browsers text-lg text-cyan-500"></i>
-                                <span>Internet Explorer</span>
-                                <span class="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">NEW</span>
-                            </button>
                         </nav>
                     </div>
                 </div>
@@ -624,7 +610,7 @@
                     </div>
                     <div class="space-y-4 overflow-y-auto pr-2 scrollbar-thin flex-1">
                         <div class="bg-purple-900/20 border border-purple-500/30 p-3 rounded-xl flex items-center justify-between shrink-0">
-                            <p class="text-xs text-purple-300 font-medium">工作流：1.意圖拆解 ➡️ 2.資料研究 ➡️ 3.交叉驗證 ➡️ 4.長篇報告 ➡️ 5.產生配圖 &nbsp;｜&nbsp; 支援 🌐 聯網 / 📎 純附件 兩種模式</p>
+                            <p class="text-xs text-purple-300 font-medium">工作流：1.意圖拆解 ➡️ 2.連網檢索 ➡️ 3.交叉驗證 ➡️ 4.長篇報告 ➡️ 5.產生配圖</p>
                         </div>
                         
                         <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 shrink-0 shadow-inner">
@@ -673,40 +659,6 @@
                                 <label class="text-xs text-slate-400 mb-1 block">自動配圖模型 (選擇具有生圖能力的模型)</label>
                                 <select id="agent-image-model" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:border-purple-500 outline-none">
                                     </select>
-                            </div>
-                        </div>
-
-                        <!-- ✅ 新增：研究模式選擇 -->
-                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                            <label class="text-xs font-bold text-slate-300 block"><i class="ph-fill ph-sliders text-indigo-400"></i> 研究模式設定</label>
-                            <!-- 資料來源模式 -->
-                            <div class="space-y-2">
-                                <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">📂 資料來源</p>
-                                <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-700 bg-slate-900 hover:border-purple-500/60 cursor-pointer transition-colors">
-                                    <input type="radio" name="agent-data-mode" id="agent-mode-web" value="web" checked class="mt-0.5 accent-purple-500">
-                                    <div>
-                                        <p class="text-sm font-bold text-white">🌐 聯網研究模式（預設）</p>
-                                        <p class="text-[11px] text-slate-400 mt-0.5">研究員會主動連網搜尋最新資料，並結合上傳附件進行交叉分析。適合需要即時資訊的研究主題。</p>
-                                    </div>
-                                </label>
-                                <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-700 bg-slate-900 hover:border-teal-500/60 cursor-pointer transition-colors">
-                                    <input type="radio" name="agent-data-mode" id="agent-mode-file" value="fileOnly" class="mt-0.5 accent-teal-500">
-                                    <div>
-                                        <p class="text-sm font-bold text-white">📎 純附件分析模式</p>
-                                        <p class="text-[11px] text-slate-400 mt-0.5">嚴格只分析您上傳的附件，<span class="text-teal-400 font-bold">完全不使用網路資料</span>。適合機密文件、合約審查、私有資料集分析，確保 AI 回應 100% 基於您的文件。</p>
-                                    </div>
-                                </label>
-                            </div>
-                            <!-- 時效性設定（僅聯網模式顯示） -->
-                            <div id="agent-recency-panel" class="border-t border-slate-800 pt-3 space-y-1">
-                                <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">📅 資料時效性</p>
-                                <label class="flex items-center gap-3 p-2.5 rounded-lg bg-slate-900 border border-slate-700">
-                                    <input type="checkbox" id="agent-force-latest" checked class="accent-blue-500">
-                                    <div>
-                                        <p class="text-xs font-bold text-white">強制取得最新當代資料</p>
-                                        <p class="text-[10px] text-slate-400">研究員會被明確要求以今日日期為基準，優先搜尋最近資訊，避免引用過時數據。</p>
-                                    </div>
-                                </label>
                             </div>
                         </div>
                     </div>
@@ -2303,6 +2255,11 @@ return html;
             if (hideLiveCaptureEl) hideLiveCaptureEl.checked = appState.hideLiveCapture;
             const autoTTSEl2 = document.getElementById('key-auto-tts');
             if (autoTTSEl2) autoTTSEl2.checked = appState.autoTTS;
+            // ── 每次開啟設定都從 appState 還原 Telegram 欄位（type="password" 不會自動保留）
+            const tgTokenEl = document.getElementById('key-tg-token');
+            if (tgTokenEl) tgTokenEl.value = appState.tgToken || '';
+            const tgChatIdEl = document.getElementById('key-tg-chatid');
+            if (tgChatIdEl) tgChatIdEl.value = appState.tgChatId || '';
         };
         window.closeSettings = function() { document.getElementById('settings-modal').classList.add('hidden'); };
 
@@ -3143,53 +3100,6 @@ handleSendMessage(); }
             }
             renderChatFilePreview();
         };
-        // 🔧 Office 文件文字提取通用函數（支援 .docx/.doc 與 .pptx/.ppt）
-        async function extractOfficeFileText(file) {
-            const name = file.name.toLowerCase();
-            const arrayBuffer = await file.arrayBuffer();
-
-            // ── DOCX / DOC → mammoth ─────────────────────────────
-            if (name.endsWith('.docx') || name.endsWith('.doc')) {
-                try {
-                    if (typeof mammoth !== 'undefined') {
-                        const result = await mammoth.extractRawText({ arrayBuffer });
-                        return `[Word 文件內容 - ${file.name}]\n${result.value}`;
-                    }
-                    throw new Error('mammoth 未載入');
-                } catch(e) { return `[Word 文件 - ${file.name}]（解析失敗：${e.message}）`; }
-            }
-
-            // ── PPTX / PPT → JSZip + XML 文字提取 ──────────────────
-            if (name.endsWith('.pptx') || name.endsWith('.ppt')) {
-                try {
-                    if (typeof JSZip === 'undefined') throw new Error('JSZip 未載入');
-                    const zip = await JSZip.loadAsync(arrayBuffer);
-                    // 依投影片編號排序
-                    const slideKeys = Object.keys(zip.files)
-                        .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
-                        .sort((a, b) => {
-                            const na = parseInt(a.match(/\d+/)[0]);
-                            const nb = parseInt(b.match(/\d+/)[0]);
-                            return na - nb;
-                        });
-                    let textContent = `[PowerPoint 內容 - ${file.name}]\n`;
-                    for (const key of slideKeys) {
-                        const xml = await zip.files[key].async('text');
-                        const slideNum = key.match(/slide(\d+)/)[1];
-                        // 擷取所有 <a:t> 文字節點
-                        const matches = xml.match(/<a:t[^>]*>([^<]*)<\/a:t>/g) || [];
-                        const slideText = matches
-                            .map(m => m.replace(/<[^>]+>/g, '').trim())
-                            .filter(t => t.length > 0)
-                            .join(' ');
-                        if (slideText) textContent += `[第 ${slideNum} 頁] ${slideText}\n`;
-                    }
-                    return textContent || `[PowerPoint 文件 - ${file.name}]（未能擷取文字內容）`;
-                } catch(e) { return `[PowerPoint 文件 - ${file.name}]（解析失敗：${e.message}）`; }
-            }
-            return null; // 非 Office 文件
-        }
-
         window.handleChatFileSelect = async function(e) {
             const files = Array.from(e.target.files);
             if(files.length === 0) return;
@@ -3198,34 +3108,27 @@ handleSendMessage(); }
                 const isImage = file.type.startsWith('image/');
                 const isMedia = file.type.startsWith('audio') || file.type.startsWith('video');
                 const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls') || file.name.toLowerCase().endsWith('.csv');
-                // ✅ 修正：將 Office 文件（docx/doc/pptx/ppt）歸類為 text，由前端解析後以純文字傳給 AI
-                const isOfficeDoc = /\.(docx|doc|pptx|ppt)$/i.test(file.name);
-                const isText = file.type.startsWith('text/') || file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || isExcel || isOfficeDoc;
+                const isText = file.type.startsWith('text/') || file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || isExcel;
                 const category = isImage ? 'image' : (isMedia ? 'media' : (isText ? 'text' : 'document'));
-                let data;
-                if (isOfficeDoc) {
-                    // ✅ 前端直接解析 Office 文件，不傳送二進位給 API
-                    data = await extractOfficeFileText(file);
-                } else {
-                    const reader = new FileReader();
-                    data = await new Promise(resolve => {
-                        reader.onload = evt => {
-                            if (isExcel) {
-                                try {
-                                    const dataUint8 = new Uint8Array(evt.target.result);
-                                    const wb = XLSX.read(dataUint8, { type: 'array' });
-                                    let res = "";
-                                    wb.SheetNames.forEach(name => { res += `[Sheet: ${name}]\n` + XLSX.utils.sheet_to_csv(wb.Sheets[name]) + "\n\n"; });
-                                    resolve(res);
-                                } catch(e) { resolve("Excel解析失敗: " + e.message); }
-                            } else resolve(evt.target.result);
-                        };
-                        if (isExcel) reader.readAsArrayBuffer(file);
-                        else if (category === 'text') reader.readAsText(file);
-                        else reader.readAsDataURL(file);
-                    });
-                }
-                appState.chatFiles.push({ category, name: file.name, mime: isOfficeDoc ? 'text/plain' : (file.type || 'application/octet-stream'), data: data });
+                const reader = new FileReader();
+                const data = await new Promise(resolve => {
+                    reader.onload = evt => {
+                        if (isExcel) {
+                            try {
+                                // 修正: 將 ArrayBuffer 轉換為 Uint8Array，避免 XLSX 讀取發生語法與型態錯誤
+                                const dataUint8 = new Uint8Array(evt.target.result);
+                                const wb = XLSX.read(dataUint8, { type: 'array' });
+                                let res = "";
+                                wb.SheetNames.forEach(name => { res += `[Sheet: ${name}]\n` + XLSX.utils.sheet_to_csv(wb.Sheets[name]) + "\n\n"; });
+                                resolve(res);
+                            } catch(e) { resolve("Excel解析失敗: " + e.message); }
+                        } else resolve(evt.target.result);
+                    };
+                    if (isExcel) reader.readAsArrayBuffer(file);
+                    else if (category === 'text') reader.readAsText(file);
+                    else reader.readAsDataURL(file);
+                });
+                appState.chatFiles.push({ category, name: file.name, mime: file.type || 'application/octet-stream', data: data });
             }
             renderChatFilePreview();
             document.getElementById('plus-menu').classList.add('hidden'); document.getElementById('plus-icon').classList.remove('rotate-45');
@@ -7334,34 +7237,27 @@ try {
                 const isImage = file.type.startsWith('image/');
                 const isMedia = file.type.startsWith('audio') || file.type.startsWith('video');
                 const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls') || file.name.toLowerCase().endsWith('.csv');
-                // ✅ 修正：深度研究模式同樣支援 Office 文件前端解析
-                const isOfficeDoc = /\.(docx|doc|pptx|ppt)$/i.test(file.name);
-                const isText = file.type.startsWith('text/') || file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || isExcel || isOfficeDoc;
+                const isText = file.type.startsWith('text/') || file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || isExcel;
                 const category = isImage ? 'image' : (isMedia ? 'media' : (isText ? 'text' : 'document'));
-                let data;
-                if (isOfficeDoc) {
-                    data = await extractOfficeFileText(file);
-                } else {
-                    const reader = new FileReader();
-                    data = await new Promise(resolve => {
-                        reader.onload = evt => {
-                            if (isExcel) {
-                                try {
-                                    // 修正: 將 ArrayBuffer 轉換為 Uint8Array，避免 XLSX 讀取發生語法與型態錯誤
-                                    const dataUint8 = new Uint8Array(evt.target.result);
-                                    const wb = XLSX.read(dataUint8, { type: 'array' });
-                                    let res = "";
-                                    wb.SheetNames.forEach(name => { res += `[Sheet: ${name}]\n` + XLSX.utils.sheet_to_csv(wb.Sheets[name]) + "\n\n"; });
-                                    resolve(res);
-                                } catch(e) { resolve("Excel解析失敗: " + e.message); }
-                            } else resolve(evt.target.result);
-                        };
-                        if (isExcel) reader.readAsArrayBuffer(file);
-                        else if (category === 'text') reader.readAsText(file);
-                        else reader.readAsDataURL(file);
-                    });
-                }
-                appState.agentFiles.push({ category, name: file.name, mime: isOfficeDoc ? 'text/plain' : (file.type || 'application/octet-stream'), data: data });
+                const reader = new FileReader();
+                const data = await new Promise(resolve => {
+                    reader.onload = evt => {
+                        if (isExcel) {
+                            try {
+                                // 修正: 將 ArrayBuffer 轉換為 Uint8Array，避免 XLSX 讀取發生語法與型態錯誤
+                                const dataUint8 = new Uint8Array(evt.target.result);
+                                const wb = XLSX.read(dataUint8, { type: 'array' });
+                                let res = "";
+                                wb.SheetNames.forEach(name => { res += `[Sheet: ${name}]\n` + XLSX.utils.sheet_to_csv(wb.Sheets[name]) + "\n\n"; });
+                                resolve(res);
+                            } catch(e) { resolve("Excel解析失敗: " + e.message); }
+                        } else resolve(evt.target.result);
+                    };
+                    if (isExcel) reader.readAsArrayBuffer(file);
+                    else if (category === 'text') reader.readAsText(file);
+                    else reader.readAsDataURL(file);
+                });
+                appState.agentFiles.push({ category, name: file.name, mime: file.type || 'application/octet-stream', data: data });
             }
             document.getElementById('agent-file-name').innerText = `已選取 ${appState.agentFiles.length} 個檔案`;
             document.getElementById('agent-file-clear').classList.remove('hidden');
@@ -7408,63 +7304,31 @@ try {
             } catch(e) {}
 
             document.getElementById('agent-modal').classList.remove('hidden'); document.getElementById('agent-modal').classList.add('flex');
-            
-            // ✅ 研究模式切換：純附件模式時隱藏時效性設定
-            const recencyPanel = document.getElementById('agent-recency-panel');
-            document.querySelectorAll('input[name="agent-data-mode"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (recencyPanel) recencyPanel.style.display = this.value === 'fileOnly' ? 'none' : '';
-                });
-            });
         };
         
         window.closeAgentModal = function() { document.getElementById('agent-modal').classList.add('hidden'); document.getElementById('agent-modal').classList.remove('flex'); };
-
-        // ─────────────────────────────────────────────────────────
-        // ✅ NOVA Browser (Internet Explorer.html) — 開啟函數
-        // ─────────────────────────────────────────────────────────
-        window.openNOVABrowser = function() {
-            // 與 index.html 放在 GitHub 同一資料夾的 Internet Explorer.html
-            const base = window.location.href.replace(/[^/]*$/, '');
-            const browserUrl = base + 'Internet%20Explorer.html';
-            const pop = window.open(browserUrl, 'nova_ie',
-                'width=1300,height=860,toolbar=no,menubar=no,scrollbars=no,resizable=yes,location=no,status=no');
-            if (!pop) window.open(browserUrl, '_blank'); // popup 被封鎖的備援
-        };
 
 window.startMultiAgentResearch = async function() {
             closeAgentModal();
             const query = document.getElementById('agent-topic').value.trim();
             const reportLength = document.getElementById('agent-report-length').value;
             
-            // ✅ 讀取研究模式與時效性設定
-            const dataModeEl = document.querySelector('input[name="agent-data-mode"]:checked');
-            const isFileOnlyMode = dataModeEl ? dataModeEl.value === 'fileOnly' : false;
-            const forceLatestEl = document.getElementById('agent-force-latest');
-            const forceLatest = forceLatestEl ? forceLatestEl.checked : true;
-            
-            // ✅ 動態取得今日日期（供聯網研究時效性提示用）
-            const todayStr = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
-            
             const orchestratorModel = document.getElementById('agent-orchestrator').value; 
             const researcherModel = document.getElementById('agent-researcher').value; 
             const verifierModel = document.getElementById('agent-verifier').value; 
             const imageModel = document.getElementById('agent-image-model').value;
             
-            if(!query && (!appState.agentFiles || appState.agentFiles.length === 0)) { alert("請在設定面板輸入研究主題，或上傳相關檔案！"); openAgentModal(); return; }
-            // ✅ 純附件模式：若無附件則警告
-            if(isFileOnlyMode && (!appState.agentFiles || appState.agentFiles.length === 0)) { alert("「純附件分析模式」需要至少上傳一個檔案！"); openAgentModal(); return; }
+            if(!query && !appState.agentFile) { alert("請在設定面板輸入研究主題，或上傳相關檔案！"); openAgentModal(); return; }
             
-            const fileContent = (appState.agentFiles && appState.agentFiles.length > 0) ? `\n\n【參考檔案資料】:\n檔名：${appState.agentFiles.map(f=>f.name).join('、')}\n` : '';
-            const topic = query || ((appState.agentFiles && appState.agentFiles.length > 0) ? `全面分析上傳的檔案「${appState.agentFiles.map(f=>f.name).join('、')}」並進行延伸深度研究` : "");
+            const fileContent = appState.agentFile ? `\n\n【參考檔案資料】:\n檔名：${appState.agentFile.name}\n` : '';
+            const topic = query || (appState.agentFile ? `全面分析上傳的檔案「${appState.agentFile.name}」並進行延伸深度研究` : "");
             
             document.getElementById('user-input').value = ''; 
             if(typeof autoResizeInput === 'function') autoResizeInput(document.getElementById('user-input'));
             
-            const modeLabel = isFileOnlyMode ? '📎 純附件分析模式（不使用網路資料）' : `🌐 聯網研究模式${forceLatest ? ' + 強制最新資料' : ''}`;
-            addMessage(`🧠 **啟動多 AI 協同深度研究**\n📌 主題：「${topic}」\n📏 長度設定：${reportLength}\n🗃️ 模式：${modeLabel}\n👨‍💼 專案經理：${orchestratorModel}\n🔍 研究員：${researcherModel}\n⚖️ 審查委員：${verifierModel}`, 'system');
+            addMessage(`🧠 **啟動多 AI 協同深度研究**\n📌 主題：「${topic}」\n📏 長度設定：${reportLength}\n👨‍💼 專案經理：${orchestratorModel}\n🔍 研究員：${researcherModel}\n⚖️ 審查委員：${verifierModel}`, 'system');
             
-            // 安全呼叫底層 API 的封裝函數
+            // 安全呼叫底層 API 的封裝函數 (徹底解決 API Key 錯亂與廠牌路由問題)
             const callAgent = async (prompt, subModel, opts = {}) => {
                 let provider = 'gemini';
                 if(subModel.toLowerCase().includes('grok')) provider = 'grok';
@@ -7476,7 +7340,7 @@ window.startMultiAgentResearch = async function() {
                 const origGemini = appState.geminiModel;
                 const origGrok = appState.grokModel;
                 
-                appState.currentModel = provider;
+                appState.currentModel = provider; // 【修復】強制切換主系統模型，防止底層 API 迷路
                 if(provider === 'gemini') appState.geminiModel = subModel;
                 if(provider === 'grok') appState.grokModel = subModel;
                 
@@ -7494,53 +7358,30 @@ window.startMultiAgentResearch = async function() {
 
                 // --- 階段 1：Orchestrator (任務拆解) ---
             addMessage(`⏳ [階段 1/4] 專案經理模型 (${orchestratorModel})：正在拆解研究子任務...`, 'system');
-            const fileOnlyInstruction = isFileOnlyMode ? '\n\n⚠️【重要限制】本次為「純附件分析模式」，所有分析必須嚴格只根據使用者上傳的附件內容，禁止引用或假設任何外部網路資訊。' : '';
-            const p1Prompt = `你現在是專案經理。請將以下主題拆解成 3 到 4 個最重要的「子問題」，以便進行後續的深度研究。只需列出問題清單，不要有任何廢話或問候語。\n\n主題：${topic} ${fileContent ? "(請務必深入解讀上傳之檔案)" : ""}${fileOnlyInstruction}`; 
-            let p1Options = { isAnalysis: true };
+            const p1Prompt = `你現在是專案經理。請將以下主題拆解成 3 到 4 個最重要的「子問題」，以便進行後續的深度研究。只需列出問題清單，不要有任何廢話或問候語。\n\n主題：${topic} ${fileContent ? "(請務必深入解讀上傳之檔案)" : ""}`; let p1Options = { isAnalysis: true };
+            // 💡 修正 1：將多 AI 協作升級為支援真實多檔案上傳的陣列
             if(appState.agentFiles && appState.agentFiles.length > 0) p1Options.files = appState.agentFiles; 
             let p1Res = await callAgent(p1Prompt, orchestratorModel, p1Options);
-            let subQuestions = (typeof p1Res === 'string' ? p1Res : (p1Res.text || "")); 
-            addMessage(`📋 **拆解出的研究維度：**\n${subQuestions}`, 'system');
+            let subQuestions = (typeof p1Res === 'string' ? p1Res : (p1Res.text || "")); addMessage(`📋 **拆解出的研究維度：**\n${subQuestions}`, 'system');
 
-                // --- 階段 2：Researcher (資料搜集與局部摘要) ---
-                let p2Res, facts;
-                if (isFileOnlyMode) {
-                    // ✅ 純附件模式：完全不啟用網路搜尋，只分析附件
-                    addMessage(`🔍 [階段 2/4] 研究員模型 (${researcherModel})：正在深度解讀上傳的附件內容（不使用網路資料）...`, 'system');
-                    const p2Prompt = `你現在是資深研究員。以下是需要分析的子問題，請根據使用者提供的【附件資料】進行深度分析，並整理出客觀的事實摘要。\n\n⚠️【嚴格限制】你只能使用使用者上傳的附件作為唯一資料來源，禁止引用或補充任何附件以外的資訊、假設或猜測。所有回覆必須有附件內容為依據。\n\n【待研究問題】：\n${subQuestions}`;
-                    let p2Options = { isAnalysis: true, disableSearch: true };
-                    if(appState.agentFiles && appState.agentFiles.length > 0) p2Options.files = appState.agentFiles;
-                    p2Res = await callAgent(p2Prompt, researcherModel, p2Options);
-                    facts = (typeof p2Res === 'string' ? p2Res : (p2Res.text || ""));
-                } else {
-                    // ✅ 聯網模式：啟用搜尋，並加入時效性指令
-                    addMessage(`🔍 [階段 2/4] 研究員模型 (${researcherModel})：正在連網搜集最新數據並過濾雜訊...`, 'system');
-                    // ✅ Fix 4：加入今日日期與最新資料要求
-                    const latestDataInstruction = forceLatest 
-                        ? `\n\n📅【時效性要求】今天的日期是 ${todayStr}。請以此為基準，優先搜尋並引用最近 6 個月內的最新資訊與數據，避免引用 2 年前以上的過時資料。若搜尋到最新結果，請明確標注資料的發布日期或時間範圍。`
-                        : '';
-                    const p2Prompt = `你現在是資深研究員。請針對以下子問題，連網搜尋最新資訊並進行「客觀的事實摘要」。請剔除無用雜訊，只列出最重要的數據、事實與不同觀點：${latestDataInstruction}\n\n【待研究問題】：\n${subQuestions}`;
-                    let p2Options = { enableSearch: true, isAnalysis: true }; 
-                    if(appState.agentFiles && appState.agentFiles.length > 0 && orchestratorModel !== researcherModel) p2Options.files = appState.agentFiles;
-                    p2Res = await callAgent(p2Prompt, researcherModel, p2Options);
-                    facts = (typeof p2Res === 'string' ? p2Res : (p2Res.text || ""));
-                }
+               // --- 階段 2：Researcher (資料搜集與局部摘要) ---
+            addMessage(`🔍 [階段 2/4] 研究員模型 (${researcherModel})：正在連網搜集最新數據並過濾雜訊...`, 'system'); const p2Prompt = `你現在是資深研究員。請針對以下子問題，連網搜尋最新資訊並進行「客觀的事實摘要」。請剔除無用雜訊，只列出最重要的數據、事實與不同觀點：\n\n【待研究問題】：\n${subQuestions}`;
+            let p2Options = { enableSearch: true, isAnalysis: true }; 
+            // 💡 修正 2：將多 AI 協作升級為支援真實多檔案上傳的陣列
+            if(appState.agentFiles && appState.agentFiles.length > 0 && orchestratorModel !== researcherModel) p2Options.files = appState.agentFiles;
+            let p2Res = await callAgent(p2Prompt, researcherModel, p2Options); let facts = (typeof p2Res === 'string' ? p2Res : (p2Res.text || ""));
 
                 // --- 階段 3：Verifier (多模型交叉驗證) ---
                 addMessage(`⚖️ [階段 3/4] 審查委員模型 (${verifierModel})：正在交叉驗證事實的邏輯與完整性...`, 'system');
-                const fileOnlyVerifyNote = isFileOnlyMode ? '（注意：本次為純附件模式，請確認所有事實均來自原始附件，若有超出附件範圍的內容請標記為「需確認」）' : '';
-                const p3Prompt = `你是一位嚴格的審查委員。以下是研究員收集到的「事實摘要」。請檢查邏輯是否連貫、是否有矛盾，並針對原始主題「${topic}」給出一份最終的【已驗證事實清單】供總編輯寫報告用。不要廢話。${fileOnlyVerifyNote}\n\n【研究員事實摘要】：\n${facts}`;
+                const p3Prompt = `你是一位嚴格的審查委員。以下是研究員收集到的「事實摘要」。請檢查邏輯是否連貫、是否有矛盾，並針對原始主題「${topic}」給出一份最終的【已驗證事實清單】供總編輯寫報告用。不要廢話。\n\n【研究員事實摘要】：\n${facts}`;
                 
-                // ✅ 純附件模式下驗證也不上網；聯網模式下驗證可使用搜尋
-                let p3Options = isFileOnlyMode ? { isAnalysis: true, disableSearch: true } : { enableSearch: true, isAnalysis: true };
-                let p3Res = await callAgent(p3Prompt, verifierModel, p3Options);
+                let p3Res = await callAgent(p3Prompt, verifierModel, { enableSearch: true, isAnalysis: true });
                 let verifiedFacts = (typeof p3Res === 'string' ? p3Res : (p3Res.text || ""));
 
                 // --- 階段 4：The Writer (總編輯最終聚合) ---
                 addMessage(`✍️ [階段 4/4] 總編輯模型 (${orchestratorModel})：正在聚合資訊撰寫最終報告...`, 'system');
                 let lengthInstruction = reportLength === 'short' ? '約 500 字的精煉高管摘要 (Executive Summary)' : (reportLength === 'long' ? '超過 2500 字的深度專論，需包含詳細論證、多角度分析、清晰標題段落與結論' : '約 1000~1500 字的結構化專業報告');
-                const sourceNote = isFileOnlyMode ? '\n4. 資料來源：本報告完全基於使用者上傳的附件，請在報告末尾加上「📎 資料來源：僅限上傳附件」的說明。' : (forceLatest ? `\n4. 時效性：請在報告中標注主要資料的時間範圍，並在末尾注明「📅 資料時效截至 ${todayStr}」。` : '');
-                const p4Prompt = `你現在是一位資深總編輯。請根據以下「已驗證的事實清單」，撰寫一份關於「${topic}」的最終報告。\n\n【嚴格要求】：\n1. 長度：${lengthInstruction}\n2. 格式：前言、核心段落(需加上 Markdown 標題與列點)、客觀結論。\n3. 語氣：專業且具備洞察力，絕對不可口語化。${sourceNote}\n\n【事實清單】：\n${verifiedFacts}`;
+                const p4Prompt = `你現在是一位資深總編輯。請根據以下「已驗證的事實清單」，撰寫一份關於「${topic}」的最終報告。\n\n【嚴格要求】：\n1. 長度：${lengthInstruction}\n2. 格式：前言、核心段落(需加上 Markdown 標題與列點)、客觀結論。\n3. 語氣：專業且具備洞察力，絕對不可口語化。\n\n【事實清單】：\n${verifiedFacts}`;
                 
                 let p4Res = await callAgent(p4Prompt, orchestratorModel, { isAnalysis: true });
                 let finalReport = (typeof p4Res === 'string' ? p4Res : (p4Res.text || ""));
@@ -8347,7 +8188,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                     let origGeminiModel = appState.geminiModel;
                     if (appState.translateMode !== 'off') appState.geminiModel = 'gemini-3.1-flash-live-preview';
                     
-                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId, _textFilesInjected: injectedContext !== "" });
+                    finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId });
                     
                     if (appState.translateMode !== 'off') appState.geminiModel = origGeminiModel;
                 } catch (apiError) {
@@ -8355,7 +8196,7 @@ if (appState.deepDiveMode) { systemPromptAddon = "【深度探究模式開啟 - 
                         addMessage(`⚠️ Gemini 處理發生錯誤 (${apiError.message})，系統自動為您跳轉至 Grok 進行備援分析...`, 'system');
                         modelToUse = 'grok';
                         window.setModel('grok'); 
-                        finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId, _textFilesInjected: injectedContext !== "" });
+                        finalRes = await fetchAIResponse(promptToSent, modelToUse, { enableSearch: enableSearchTool, disableSearch: !enableSearchTool && injectedContext !== "", files: filesDataToPass, isAnalysis: !!appState.pendingAnalyzeContextId });
                     } else {
                         throw apiError;
                     }
@@ -8506,22 +8347,6 @@ if (appState.pendingAnalyzeContextId) {
                 if (!options.isAnalysis && !options.isCollab) {
                 if (appState.replyLength === 'short') finalPrompt += "\n【限制：請使用極簡短的篇幅回覆，將字數控制在50字以內。】";
                 else if (appState.replyLength === 'medium') finalPrompt += "\n【限制：請使用中等長度的篇幅回覆，扼要說明重點即可。】";
-            }
-            
-            // ✅ 修正核心 Bug：文字類附件（含 Office 解析後純文字）在 fetchAIResponse 底層
-            //    直接注入 finalPrompt，確保 callAgent (深度研究) / 直接呼叫路徑都能正確讀到附件。
-            //    主對話流程的 injectedContext 已注入，故此處加 flag 防止重複。
-            if (options.files && options.files.length > 0 && !options._textFilesInjected) {
-                let textFileInjection = '';
-                options.files.forEach(f => {
-                    if (f.category === 'text' && f.data && !f.data.startsWith('data:')) {
-                        textFileInjection += `\n\n[附檔內容 - ${f.name}]:\n${f.data}`;
-                    }
-                });
-                if (textFileInjection) {
-                    finalPrompt += '\n\n' + textFileInjection;
-                    options._textFilesInjected = true; // 防止多輪呼叫重複注入
-                }
             }
             
             const _imgTestF = (s) => /(畫|生成|產生|製作|幫我畫|幫你畫|create|make|draw|generate).{0,200}(圖片|照片|圖像|picture|image|impage|photo)|(圖片|照片|圖像|picture|image|impage|photo).{0,50}(生成|產生|製作|畫出)/i.test(s);
